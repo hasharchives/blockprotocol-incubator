@@ -108,6 +108,7 @@ pub struct Entity {
     properties: EntityProperties,
     #[serde(default)]
     link_data: Option<LinkData>,
+    metadata: EntityMetadata,
 }
 
 // TODO: versions and such, todo: parsing
