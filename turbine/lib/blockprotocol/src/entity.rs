@@ -112,6 +112,8 @@ pub struct Entity {
 }
 
 // TODO: versions and such, todo: parsing
+// TODO: filter from all entities (and their types) -> output of graph
+// TODO: important is also the serialization!
 pub struct EntityVertex<T>(BTreeMap<OffsetDateTime, T>);
 
 impl<T> EntityVertex<T> {

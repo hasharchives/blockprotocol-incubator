@@ -3,10 +3,10 @@
 
 extern crate alloc;
 
-use alloc::{borrow::ToOwned, collections::BTreeMap};
+use alloc::borrow::ToOwned;
 
 use error_stack::{Context, Result};
-use time::OffsetDateTime;
+use serde::Serialize;
 use type_system::url::BaseUrl;
 
 use crate::entity::Entity;
@@ -62,14 +62,14 @@ macro_rules! url {
     };
 }
 
-pub trait TypeRef: Sized {
+pub trait TypeRef: Serialize + Sized {
     type Owned;
 
     // called into_owned instead of to_owned to prevent confusion
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait Type: Sized {
+pub trait Type: Serialize + Sized {
     type Ref<'a>: TypeRef<Owned = Self>
     where
         Self: 'a;
@@ -109,7 +109,6 @@ pub trait PropertyTypeRef<'a>: TypeRef {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
-// TODO: versions! fn latest(), should be from somewhere else (vertices? -> should be unified)
 pub trait EntityType: Type
 where
     for<'a> Self::Ref<'a>: EntityTypeRef<'a>,

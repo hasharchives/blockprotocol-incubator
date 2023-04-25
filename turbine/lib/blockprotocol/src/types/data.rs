@@ -3,6 +3,7 @@ use core::ops::Deref;
 
 use error_stack::Report;
 use onlyerror::Error;
+use serde::{Serialize, Serializer};
 use serde_json::Value;
 
 use crate::{url, DataType, DataTypeRef, Type, TypeRef, VersionedUrlRef};
@@ -13,6 +14,7 @@ pub enum TextError {
     NotText(Value),
 }
 
+#[derive(Debug, Clone, Serialize)]
 pub struct Text(String);
 
 impl Deref for Text {
@@ -46,6 +48,7 @@ impl DataType for Text {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize)]
 pub struct TextRef<'a>(&'a str);
 
 impl TypeRef for TextRef<'_> {
@@ -81,6 +84,7 @@ pub enum NumberError {
     NotANumber(Value),
 }
 
+#[derive(Debug, Clone, Serialize)]
 pub struct Number(serde_json::Number);
 
 impl Deref for Number {
@@ -114,6 +118,7 @@ impl DataType for Number {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize)]
 pub struct NumberRef<'a>(&'a serde_json::Number);
 
 impl Deref for NumberRef<'_> {
@@ -150,7 +155,7 @@ pub enum BooleanError {
     NotABoolean(Value),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize)]
 pub struct Boolean(bool);
 
 impl Deref for Boolean {
@@ -209,7 +214,7 @@ pub enum NullError {
     NotNull(Value),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize)]
 pub struct Null;
 
 impl Type for Null {
@@ -264,7 +269,7 @@ pub enum EmptyListError {
     NotEmpty,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize)]
 pub struct EmptyList;
 
 impl Type for EmptyList {
@@ -325,6 +330,7 @@ pub enum ObjectError {
     NotAnObject(Value),
 }
 
+#[derive(Debug, Clone, Serialize)]
 pub struct Object(serde_json::Map<String, Value>);
 
 impl Type for Object {
@@ -358,6 +364,7 @@ impl Deref for Object {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize)]
 pub struct ObjectRef<'a>(&'a serde_json::Map<String, Value>);
 
 impl Deref for ObjectRef<'_> {
