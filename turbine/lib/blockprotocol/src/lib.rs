@@ -62,14 +62,14 @@ macro_rules! url {
     };
 }
 
-pub trait TypeRef: Serialize + Sized {
+pub trait TypeRef: Sized {
     type Owned;
 
     // called into_owned instead of to_owned to prevent confusion
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait Type: Serialize + Sized {
+pub trait Type: Sized {
     type Ref<'a>: TypeRef<Owned = Self>
     where
         Self: 'a;
@@ -79,13 +79,13 @@ pub trait Type: Serialize + Sized {
     fn as_ref(&self) -> Self::Ref<'_>;
 }
 
-pub trait DataTypeRef<'a>: TypeRef {
+pub trait DataTypeRef<'a>: Serialize + TypeRef {
     type Error: Context;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
-pub trait DataType: Type
+pub trait DataType: Serialize + Type
 where
     for<'a> Self::Ref<'a>: DataTypeRef<'a>,
 {
@@ -94,7 +94,7 @@ where
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
 }
 
-pub trait PropertyType: Type
+pub trait PropertyType: Serialize + Type
 where
     for<'a> Self::Ref<'a>: PropertyTypeRef<'a>,
 {
@@ -103,12 +103,13 @@ where
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
 }
 
-pub trait PropertyTypeRef<'a>: TypeRef {
+pub trait PropertyTypeRef<'a>: Serialize + TypeRef {
     type Error: Context;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
+// TODO: this is a bit more complicated <3
 pub trait EntityType: Type
 where
     for<'a> Self::Ref<'a>: EntityTypeRef<'a>,
