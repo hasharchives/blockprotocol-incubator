@@ -3,11 +3,15 @@
 
 extern crate alloc;
 
-use alloc::borrow::ToOwned;
+use alloc::{borrow::ToOwned, collections::BTreeMap};
 
 use error_stack::{Context, Result};
+use time::OffsetDateTime;
 use type_system::url::BaseUrl;
 
+use crate::entity::Entity;
+
+pub mod entity;
 pub mod types;
 
 #[derive(Debug, Copy, Clone)]
@@ -90,6 +94,33 @@ where
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
 }
 
-pub trait PropertyType: Type {}
+pub trait PropertyType: Type
+where
+    for<'a> Self::Ref<'a>: PropertyTypeRef<'a>,
+{
+    type Error: Context;
 
-pub trait EntityType: Type {}
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
+}
+
+pub trait PropertyTypeRef<'a>: TypeRef {
+    type Error: Context;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
+}
+
+// TODO: versions! fn latest(), should be from somewhere else (vertices? -> should be unified)
+pub trait EntityType: Type
+where
+    for<'a> Self::Ref<'a>: EntityTypeRef<'a>,
+{
+    type Error: Context;
+
+    fn try_from_entity(value: Entity) -> Result<Self, Self::Error>;
+}
+
+pub trait EntityTypeRef<'a>: TypeRef {
+    type Error: Context;
+
+    fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error>;
+}
