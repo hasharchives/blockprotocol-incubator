@@ -17,6 +17,7 @@
 //          if duplicate error out,
 //              sort properties,
 //                  then increment
+//              same for import problems, just alias with the name we want
 //
 // internally we also need to keep track which entity is in which file
 // todo: generate code, that selects Ref out of all verticies of a specific type, should not be
@@ -24,4 +25,13 @@
 //
 // result: BTreeMap<File, String>
 // where File is the module name as a Path, so it can be created by e.g. CLI
+//
+// Problematic: multi layered objects/properties (validating them correctly ~> needs intermediate
+// types (with names (?)))
+//
+// If multiple versions, the latest version is named Example, while the others are called ExampleV1
+//
+// TODO: entities can also have link data associated with them! (important on self?)
+//
+// TODO: tests?
 fn fetch() {}

@@ -9,7 +9,7 @@ use error_stack::{Context, Result};
 use serde::Serialize;
 use type_system::url::BaseUrl;
 
-use crate::entity::Entity;
+use crate::entity::{Entity, EntityId};
 
 pub mod entity;
 pub mod types;
@@ -123,4 +123,17 @@ pub trait EntityTypeRef<'a>: TypeRef {
     type Error: Context;
 
     fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error>;
+}
+
+pub trait LinkEntityType: EntityType
+where
+    for<'a> Self::Ref<'a>: LinkEntityTypeRef<'a>,
+{
+    fn left_entity_id(&self) -> EntityId;
+    fn right_entity_id(&self) -> EntityId;
+}
+
+pub trait LinkEntityTypeRef<'a>: EntityTypeRef<'a> {
+    fn left_entity_id(&self) -> EntityId;
+    fn right_entity_id(&self) -> EntityId;
 }
