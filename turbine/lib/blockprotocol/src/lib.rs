@@ -1,6 +1,12 @@
-use std::borrow::Borrow;
+#![no_std]
+#![feature(error_in_core)]
 
-use type_system::url::{BaseUrl, VersionedUrl};
+extern crate alloc;
+
+use alloc::borrow::ToOwned;
+
+use error_stack::{Context, Result};
+use type_system::url::BaseUrl;
 
 pub mod types;
 
@@ -52,14 +58,14 @@ macro_rules! url {
     };
 }
 
-pub trait TypeRef {
+pub trait TypeRef: Sized {
     type Owned;
 
     // called into_owned instead of to_owned to prevent confusion
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait Type {
+pub trait Type: Sized {
     type Ref<'a>: TypeRef<Owned = Self>
     where
         Self: 'a;
@@ -69,7 +75,20 @@ pub trait Type {
     fn as_ref(&self) -> Self::Ref<'_>;
 }
 
-pub trait DataType: Type {}
+pub trait DataTypeRef<'a>: TypeRef {
+    type Error: Context;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
+}
+
+pub trait DataType: Type
+where
+    for<'a> Self::Ref<'a>: DataTypeRef<'a>,
+{
+    type Error: Context;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
+}
 
 pub trait PropertyType: Type {}
 
