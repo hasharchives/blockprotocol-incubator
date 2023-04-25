@@ -1,7 +1,7 @@
 use alloc::{borrow::ToOwned, string::String};
 use core::ops::Deref;
 
-use error_stack::{Report, Result};
+use error_stack::Report;
 use onlyerror::Error;
 use serde_json::Value;
 
@@ -37,7 +37,7 @@ impl Type for Text {
 impl DataType for Text {
     type Error = TextError;
 
-    fn try_from_value(value: Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: Value) -> error_stack::Result<Self, Self::Error> {
         if let Value::String(value) = value {
             Ok(Self(value))
         } else {
@@ -59,12 +59,11 @@ impl TypeRef for TextRef<'_> {
 impl<'a> DataTypeRef<'a> for TextRef<'a> {
     type Error = TextError;
 
-    fn try_from_value(value: &'a Value) -> Result<Self, Self::Error> {
-        if let Some(value) = value.as_str() {
-            Ok(Self(value))
-        } else {
-            Err(Report::new(TextError::NotText(value.clone())))
-        }
+    fn try_from_value(value: &'a Value) -> error_stack::Result<Self, Self::Error> {
+        value.as_str().map_or_else(
+            || Err(Report::new(TextError::NotText(value.clone()))),
+            |value| Ok(Self(value)),
+        )
     }
 }
 
@@ -106,7 +105,7 @@ impl Type for Number {
 impl DataType for Number {
     type Error = NumberError;
 
-    fn try_from_value(value: Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: Value) -> error_stack::Result<Self, Self::Error> {
         if let Value::Number(value) = value {
             Ok(Self(value))
         } else {
@@ -136,7 +135,7 @@ impl TypeRef for NumberRef<'_> {
 impl<'a> DataTypeRef<'a> for NumberRef<'a> {
     type Error = NumberError;
 
-    fn try_from_value(value: &'a Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: &'a Value) -> error_stack::Result<Self, Self::Error> {
         if let Value::Number(value) = value {
             Ok(Self(value))
         } else {
@@ -176,7 +175,7 @@ impl Type for Boolean {
 impl DataType for Boolean {
     type Error = BooleanError;
 
-    fn try_from_value(value: Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: Value) -> error_stack::Result<Self, Self::Error> {
         if let Value::Bool(value) = value {
             Ok(Self(value))
         } else {
@@ -188,12 +187,11 @@ impl DataType for Boolean {
 impl<'a> DataTypeRef<'a> for Boolean {
     type Error = BooleanError;
 
-    fn try_from_value(value: &'a Value) -> Result<Self, Self::Error> {
-        if let Some(value) = value.as_bool() {
-            Ok(Self(value))
-        } else {
-            Err(Report::new(BooleanError::NotABoolean(value.clone())))
-        }
+    fn try_from_value(value: &'a Value) -> error_stack::Result<Self, Self::Error> {
+        value.as_bool().map_or_else(
+            || Err(Report::new(BooleanError::NotABoolean(value.clone()))),
+            |value| Ok(Self(value)),
+        )
     }
 }
 
@@ -228,7 +226,7 @@ impl Type for Null {
 impl DataType for Null {
     type Error = NullError;
 
-    fn try_from_value(value: Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: Value) -> error_stack::Result<Self, Self::Error> {
         if value.is_null() {
             Ok(Self)
         } else {
@@ -240,7 +238,7 @@ impl DataType for Null {
 impl<'a> DataTypeRef<'a> for Null {
     type Error = NullError;
 
-    fn try_from_value(value: &'a Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: &'a Value) -> error_stack::Result<Self, Self::Error> {
         if value.is_null() {
             Ok(Self)
         } else {
@@ -283,7 +281,7 @@ impl Type for EmptyList {
 impl DataType for EmptyList {
     type Error = EmptyListError;
 
-    fn try_from_value(value: Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: Value) -> error_stack::Result<Self, Self::Error> {
         if let Value::Array(value) = value {
             if value.is_empty() {
                 Ok(Self)
@@ -299,16 +297,17 @@ impl DataType for EmptyList {
 impl<'a> DataTypeRef<'a> for EmptyList {
     type Error = EmptyListError;
 
-    fn try_from_value(value: &'a Value) -> Result<Self, Self::Error> {
-        if let Some(value) = value.as_array() {
-            if value.is_empty() {
-                Ok(Self)
-            } else {
-                Err(Report::new(EmptyListError::NotEmpty))
-            }
-        } else {
-            Err(Report::new(EmptyListError::NotAnArray(value.clone())))
-        }
+    fn try_from_value(value: &'a Value) -> error_stack::Result<Self, Self::Error> {
+        value.as_array().map_or_else(
+            || Err(Report::new(EmptyListError::NotAnArray(value.clone()))),
+            |value| {
+                if value.is_empty() {
+                    Ok(Self)
+                } else {
+                    Err(Report::new(EmptyListError::NotEmpty))
+                }
+            },
+        )
     }
 }
 
@@ -342,7 +341,7 @@ impl Type for Object {
 impl DataType for Object {
     type Error = ObjectError;
 
-    fn try_from_value(value: Value) -> Result<Self, Self::Error> {
+    fn try_from_value(value: Value) -> error_stack::Result<Self, Self::Error> {
         if let Value::Object(value) = value {
             Ok(Self(value))
         } else {
@@ -379,10 +378,10 @@ impl TypeRef for ObjectRef<'_> {
 impl<'a> DataTypeRef<'a> for ObjectRef<'a> {
     type Error = ObjectError;
 
-    fn try_from_value(value: &'a Value) -> Result<Self, Self::Error> {
-        value
-            .as_object()
-            .map(Self)
-            .ok_or_else(|| Report::new(ObjectError::NotAnObject(value.clone())))
+    fn try_from_value(value: &'a Value) -> error_stack::Result<Self, Self::Error> {
+        value.as_object().map_or_else(
+            || Err(Report::new(ObjectError::NotAnObject(value.clone()))),
+            |value| Ok(Self(value)),
+        )
     }
 }
