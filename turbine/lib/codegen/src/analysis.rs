@@ -59,11 +59,17 @@ fn record_cycle<N, E>(
     let mut pointer = stack.len() - 1;
 
     path.push(stack[pointer]);
+    pointer -= 1;
 
     while path.last().copied() != Some(node) {
-        pointer -= 1;
-
         path.push(stack[pointer]);
+
+        if let Some(p) = pointer.checked_sub(1) {
+            pointer = p;
+        } else {
+            // exhausted the stack
+            break;
+        }
     }
 
     if path.len() == 1 {
@@ -124,6 +130,7 @@ fn process_dfs_tree<N, E>(
 }
 
 // Adapted from https://www.baeldung.com/cs/detecting-cycles-in-directed-graph
+// won't work correctly! Different approach is needed!
 fn find_cycles<N, E>(graph: &DiGraph<N, E>) -> Vec<Vec<EdgeIndex>> {
     let mut visited = vec![CycleState::Unvisited; graph.node_count()];
     let mut cycles = vec![];
