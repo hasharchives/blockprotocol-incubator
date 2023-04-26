@@ -5,11 +5,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use error_stack::Result;
+use error_stack::{IntoReport, Result, ResultExt};
 use quote::__private::TokenStream;
 use serde_json::Value;
 use thiserror::Error;
-use type_system::repr;
+use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
 
 // what we need to do:
 // 1) Configuration:
@@ -58,16 +58,51 @@ pub struct File {
 }
 
 #[derive(Debug, Clone, Error)]
-pub enum Error {}
+pub enum Error {
+    #[error("unable to parse type from repr")]
+    Parse,
+}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(untagged)]
-pub enum AnyType {
+pub enum AnyTypeRepr {
     Data(repr::DataType),
-    Entity(repr::EntityType),
     Property(repr::PropertyType),
+    Entity(repr::EntityType),
 }
 
-pub fn process(values: Vec<AnyType>) -> Result<BTreeMap<File, TokenStream>, Error> {
-    todo!()
+#[derive(Debug, Clone)]
+pub enum AnyType {
+    Data(DataType),
+    Property(PropertyType),
+    Entity(EntityType),
+}
+
+impl AnyType {
+    fn id(&self) -> &VersionedUrl {
+        match self {
+            AnyType::Data(ty) => ty.id(),
+            AnyType::Property(ty) => ty.id(),
+            AnyType::Entity(ty) => ty.id(),
+        }
+    }
+}
+
+pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, Error> {
+    let values: Result<Vec<_>, _> = values
+        .into_iter()
+        .map(|any| match any {
+            AnyTypeRepr::Data(data) => DataType::try_from(data)
+                .into_report()
+                .change_context(Error::Parse),
+            AnyTypeRepr::Property(property) => PropertyType::try_from(property)
+                .into_report()
+                .change_context(Error::Parse),
+            AnyTypeRepr::Entity(entity) => EntityType::try_from(entity)
+                .into_report()
+                .change_context(Error::Parse),
+        })
+        .collect();
+
+    let values = values?;
 }
