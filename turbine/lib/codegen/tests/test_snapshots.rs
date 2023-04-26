@@ -32,8 +32,7 @@ fn snapshots() {
 
     for path in snapshots {
         let snapshot = fs::read_to_string(&path).expect("unable to read snapshot");
-        let contents =
-            serde_json::from_str::<Vec<Value>>(&snapshot).expect("snapshot is invalid JSON");
+        let contents = serde_json::from_str(&snapshot).expect("snapshot is invalid JSON");
 
         let output = codegen::process(contents).expect("able to generate valid rust");
 

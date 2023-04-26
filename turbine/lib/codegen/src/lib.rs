@@ -1,3 +1,5 @@
+mod analysis;
+
 use std::{
     collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
@@ -7,6 +9,7 @@ use error_stack::Result;
 use quote::__private::TokenStream;
 use serde_json::Value;
 use thiserror::Error;
+use type_system::repr;
 
 // what we need to do:
 // 1) Configuration:
@@ -57,6 +60,14 @@ pub struct File {
 #[derive(Debug, Clone, Error)]
 pub enum Error {}
 
-pub fn process(values: Vec<Value>) -> Result<BTreeMap<File, TokenStream>, Error> {
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(untagged)]
+pub enum AnyType {
+    Data(repr::DataType),
+    Entity(repr::EntityType),
+    Property(repr::PropertyType),
+}
+
+pub fn process(values: Vec<AnyType>) -> Result<BTreeMap<File, TokenStream>, Error> {
     todo!()
 }
