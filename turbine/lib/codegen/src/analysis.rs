@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use petgraph::graph::{DiGraph, NodeIndex};
+use ciclo::all_cycles;
+use petgraph::{
+    graph::{DiGraph, NodeIndex},
+    Direction, EdgeDirection,
+};
 use type_system::{
     url::VersionedUrl, DataType, EntityType, PropertyType, PropertyTypeReference, PropertyValues,
     ValueOrArray,
@@ -36,6 +40,64 @@ pub struct Edge {
 type Graph<'a> = DiGraph<Node<'a>, Edge>;
 type TempGraph<'a> = DiGraph<Option<Node<'a>>, Edge>;
 type Lookup = HashMap<VersionedUrl, NodeIndex>;
+
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub enum CycleState {
+    Unvisited,
+    OnStack,
+    Processed,
+}
+
+fn record_cycle(stack: &mut Vec<NodeIndex>, node: NodeIndex, cycles: &mut Vec<Vec<NodeIndex>>) {
+    let mut path = vec![];
+    path.push(
+        *stack
+            .last()
+            .expect("stack should have at least one element"),
+    );
+
+    while path.last().copied() != Some(node) {
+        path.push(*stack.last().expect("stack should be non-empty"));
+    }
+}
+
+fn process_dfs_tree(
+    graph: &Graph,
+    mut stack: &mut Vec<NodeIndex>,
+    visited: &mut [CycleState],
+    cycles: &mut Vec<Vec<NodeIndex>>,
+) {
+    for node in graph.neighbors_directed(top, Direction::Outgoing) {
+        if visited[node] == CycleState::OnStack {
+            record_cycle(stack, node, cycles);
+        } else if visited[node] == CycleState::Unvisited {
+            stack.push(node);
+            visited[node] = CycleState::OnStack;
+
+            process_dfs_tree(graph, stack, visited, cycles);
+        }
+    }
+
+    visited[stack.pop().expect("stack should be non-empty")] = CycleState::Processed;
+}
+
+// Adapted from https://www.baeldung.com/cs/detecting-cycles-in-directed-graph
+fn find_cycles(graph: &Graph) -> Vec<Vec<NodeIndex>> {
+    let mut visited = vec![CycleState::Unvisited, graph.node_count()];
+    let mut cycles = vec![];
+
+    for node in graph.node_indices() {
+        if visited[node] == CycleState::Unvisited {
+            let mut stack = vec![];
+            stack.push(node);
+
+            visited[node] = CycleState::OnStack;
+            process_dfs_tree(graph, &mut stack, &mut visited, &mut cycles);
+        }
+    }
+
+    cycles
+}
 
 pub struct Analysis<'a> {
     lookup: Lookup,
@@ -147,6 +209,11 @@ impl<'a> Analysis<'a> {
         }
     }
 
+    /// Try to resolve all cycles in a graph by boxing individual nodes
+    ///
+    /// This is by far the most computationally intensive task.
+    fn cycles(graph: Graph) {}
+
     pub fn new(types: &'a [AnyType]) -> Self {
         let mut graph = TempGraph::new();
         let mut lookup = Lookup::new();
@@ -201,3 +268,6 @@ impl<'a> Analysis<'a> {
         Self { graph, lookup }
     }
 }
+
+// when trying to resolve cycles, use edges that are involved in most cycles, otherwise sort by
+// EdgeIndex?

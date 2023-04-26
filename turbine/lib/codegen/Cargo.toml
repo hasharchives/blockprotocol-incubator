@@ -15,6 +15,7 @@ error-stack = "0.3.1"
 serde = { version = "1.0.160", features = ['derive'] }
 petgraph = "0.6.3"
 tracing = "0.1.38"
+ciclo = "0.1.0"
 
 type-system = { git = "https://github.com/blockprotocol/blockprotocol", rev = "542836" }
 
