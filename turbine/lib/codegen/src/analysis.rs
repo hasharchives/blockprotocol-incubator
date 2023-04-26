@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use ciclo::all_cycles;
 use petgraph::{
+    csr::EdgeIndex,
     graph::{DiGraph, NodeIndex},
     visit::IntoNeighborsDirected,
     Direction, EdgeDirection,
@@ -49,7 +49,12 @@ pub enum CycleState {
     Processed,
 }
 
-fn record_cycle(stack: &mut Vec<NodeIndex>, node: NodeIndex, cycles: &mut Vec<Vec<NodeIndex>>) {
+fn record_cycle<N, E>(
+    graph: &DiGraph<N, E>,
+    stack: &mut Vec<NodeIndex>,
+    node: NodeIndex,
+    cycles: &mut Vec<Vec<EdgeIndex>>,
+) {
     let mut path = vec![];
     path.push(
         *stack
@@ -61,14 +66,19 @@ fn record_cycle(stack: &mut Vec<NodeIndex>, node: NodeIndex, cycles: &mut Vec<Ve
         path.push(*stack.last().expect("stack should be non-empty"));
     }
 
+    let path = path
+        .windows(2)
+        .filter_map(|window| graph.find_edge(window[0], window[1]))
+        .collect();
+
     cycles.push(path);
 }
 
-fn process_dfs_tree(
-    graph: &Graph,
+fn process_dfs_tree<N, E>(
+    graph: &DiGraph<N, E>,
     mut stack: &mut Vec<NodeIndex>,
     visited: &mut [CycleState],
-    cycles: &mut Vec<Vec<NodeIndex>>,
+    cycles: &mut Vec<Vec<EdgeIndex>>,
 ) {
     while let Some(&last) = stack.last() {
         // no more outgoing neighbours that have been processed, it is safe to remove it from the
@@ -85,7 +95,7 @@ fn process_dfs_tree(
 
         for node in graph.neighbors_directed(*last, Direction::Outgoing) {
             if visited[node] == CycleState::OnStack {
-                record_cycle(stack, node, cycles);
+                record_cycle(stack, stack, node, cycles);
             } else if visited[node] == CycleState::Unvisited {
                 stack.push(node);
 
@@ -96,7 +106,7 @@ fn process_dfs_tree(
 }
 
 // Adapted from https://www.baeldung.com/cs/detecting-cycles-in-directed-graph
-fn find_cycles(graph: &Graph) -> Vec<Vec<NodeIndex>> {
+fn find_cycles<N, E>(graph: &DiGraph<N, E>) -> Vec<Vec<EdgeIndex>> {
     let mut visited = vec![CycleState::Unvisited, graph.node_count()];
     let mut cycles = vec![];
 
@@ -226,7 +236,60 @@ impl<'a> Analysis<'a> {
     /// Try to resolve all cycles in a graph by boxing individual nodes
     ///
     /// This is by far the most computationally intensive task.
-    fn cycles(graph: Graph) {}
+    fn remove_cycles(graph: &mut Graph) {
+        let mut iterations: usize = 1024;
+
+        loop {
+            // we need to retain the original edge index, we generate this every time, as otherwise
+            // our edge indices would get out of sync
+            let plain = graph.filter_map(
+                |index, _| Some(()),
+                |index, weight| (weight.kind == EdgeKind::Plain).then_some(index),
+            );
+
+            let cycles = find_cycles(&plain);
+
+            if cycles.is_empty() {
+                break;
+            }
+
+            let occurrences = vec![0usize; plain.edge_count()];
+
+            for cycle in cycles {
+                for edge in cycle {
+                    occurrences[edge] += 1;
+                }
+            }
+
+            let mut edges: Vec<_> = plain
+                .edge_indices()
+                .filter(|index| occurrences[index] > 0)
+                .collect();
+
+            if edges.is_empty() {
+                // should never happen, but in that case we can already stop, as there is no cycle
+                break;
+            }
+
+            // sort by occurrences then index to stay stable
+            edges.sort_by(|a, b| occurrences[a].cmp(occurrences[b]).then(a.cmp(b)));
+
+            let chosen = *plain.edge_weight(edges[0]).expect("should exist in graph");
+            graph
+                .edge_weight_mut(chosen)
+                .expect("should exist in graph")
+                .kind = EdgeKind::Boxed;
+
+            iterations -= 1;
+
+            if iterations == 0 {
+                panic!(
+                    "unable to recover, found cycle that couldn't be broken, this should never \
+                     happen!"
+                );
+            }
+        }
+    }
 
     pub fn new(types: &'a [AnyType]) -> Self {
         let mut graph = TempGraph::new();
@@ -265,7 +328,7 @@ impl<'a> Analysis<'a> {
             Self::outgoing(&mut graph, &mut lookup, index, ty);
         }
 
-        let graph = graph.filter_map(
+        let mut graph = graph.filter_map(
             |index, node| {
                 if node.is_none() {
                     tracing::warn!(
@@ -278,6 +341,8 @@ impl<'a> Analysis<'a> {
             },
             |index, edge| Some(*edge),
         );
+
+        Self::remove_cycles(&mut graph);
 
         Self { graph, lookup }
     }
