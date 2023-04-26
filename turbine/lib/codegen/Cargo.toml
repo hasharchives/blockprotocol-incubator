@@ -16,7 +16,7 @@ error-stack = "0.3.1"
 type-system = { git = "https://github.com/blockprotocol/blockprotocol", rev = "542836" }
 
 [dev-dependencies]
-rustfmt = "0.10.0"
+similar-asserts = "1.4.2"
 
 [[test]]
 name = "harness"

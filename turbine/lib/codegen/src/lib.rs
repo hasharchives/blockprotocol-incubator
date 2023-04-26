@@ -51,7 +51,7 @@ fn fetch() {}
 
 #[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub struct File {
-    path: String,
+    pub path: String,
 }
 
 #[derive(Debug, Clone, Error)]
