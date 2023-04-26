@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use ciclo::all_cycles;
 use petgraph::{
     graph::{DiGraph, NodeIndex},
+    visit::IntoNeighborsDirected,
     Direction, EdgeDirection,
 };
 use type_system::{
@@ -59,6 +60,8 @@ fn record_cycle(stack: &mut Vec<NodeIndex>, node: NodeIndex, cycles: &mut Vec<Ve
     while path.last().copied() != Some(node) {
         path.push(*stack.last().expect("stack should be non-empty"));
     }
+
+    cycles.push(path);
 }
 
 fn process_dfs_tree(
@@ -67,18 +70,29 @@ fn process_dfs_tree(
     visited: &mut [CycleState],
     cycles: &mut Vec<Vec<NodeIndex>>,
 ) {
-    for node in graph.neighbors_directed(top, Direction::Outgoing) {
-        if visited[node] == CycleState::OnStack {
-            record_cycle(stack, node, cycles);
-        } else if visited[node] == CycleState::Unvisited {
-            stack.push(node);
-            visited[node] = CycleState::OnStack;
+    while let Some(&last) = stack.last() {
+        // no more outgoing neighbours that have been processed, it is safe to remove it from the
+        // stack
+        if graph
+            .neighbors_directed(*last, Direction::Outgoing)
+            .all(|index| visited[index] == CycleState::Processed)
+        {
+            let index = stack.pop().expect("non-empty");
+            visited[index] = CycleState::Processed;
 
-            process_dfs_tree(graph, stack, visited, cycles);
+            continue;
+        }
+
+        for node in graph.neighbors_directed(*last, Direction::Outgoing) {
+            if visited[node] == CycleState::OnStack {
+                record_cycle(stack, node, cycles);
+            } else if visited[node] == CycleState::Unvisited {
+                stack.push(node);
+
+                visited[node] = CycleState::OnStack;
+            }
         }
     }
-
-    visited[stack.pop().expect("stack should be non-empty")] = CycleState::Processed;
 }
 
 // Adapted from https://www.baeldung.com/cs/detecting-cycles-in-directed-graph
