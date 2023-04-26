@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use petgraph::{
-    csr::EdgeIndex,
-    graph::{DiGraph, NodeIndex},
-    visit::IntoNeighborsDirected,
+    algo::tarjan_scc,
+    graph::{DiGraph, EdgeIndex, NodeIndex},
+    visit::{EdgeRef, IntoEdgesDirected, IntoNeighborsDirected},
     Direction, EdgeDirection,
 };
 use type_system::{
@@ -26,7 +26,7 @@ pub struct Node<'a> {
     kind: NodeKind,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum EdgeKind {
     Plain,
     Boxed,
@@ -56,50 +56,68 @@ fn record_cycle<N, E>(
     cycles: &mut Vec<Vec<EdgeIndex>>,
 ) {
     let mut path = vec![];
-    path.push(
-        *stack
-            .last()
-            .expect("stack should have at least one element"),
-    );
+    let mut pointer = stack.len() - 1;
+
+    path.push(stack[pointer]);
 
     while path.last().copied() != Some(node) {
-        path.push(*stack.last().expect("stack should be non-empty"));
+        pointer -= 1;
+
+        path.push(stack[pointer]);
     }
 
-    let path = path
+    if path.len() == 1 {
+        // self loop
+        path.push(path[0]);
+    }
+
+    let edges = path
         .windows(2)
         .filter_map(|window| graph.find_edge(window[0], window[1]))
         .collect();
 
-    cycles.push(path);
+    cycles.push(edges);
 }
 
 fn process_dfs_tree<N, E>(
     graph: &DiGraph<N, E>,
-    mut stack: &mut Vec<NodeIndex>,
+    stack: &mut Vec<NodeIndex>,
     visited: &mut [CycleState],
     cycles: &mut Vec<Vec<EdgeIndex>>,
 ) {
     while let Some(&last) = stack.last() {
+        if let Some(edge) = graph
+            .edges_directed(last, Direction::Outgoing)
+            .find(|edge| edge.target() == last)
+        {
+            cycles.push(vec![edge.id()]);
+        }
+
         // no more outgoing neighbours that have been processed, it is safe to remove it from the
         // stack
         if graph
-            .neighbors_directed(*last, Direction::Outgoing)
-            .all(|index| visited[index] == CycleState::Processed)
+            .neighbors_directed(last, Direction::Outgoing)
+            .all(|node| node == last || visited[node.index()] == CycleState::Processed)
         {
-            let index = stack.pop().expect("non-empty");
+            let index = stack.pop().expect("non-empty").index();
             visited[index] = CycleState::Processed;
 
             continue;
         }
 
-        for node in graph.neighbors_directed(*last, Direction::Outgoing) {
-            if visited[node] == CycleState::OnStack {
-                record_cycle(stack, stack, node, cycles);
-            } else if visited[node] == CycleState::Unvisited {
+        for node in graph.neighbors_directed(last, Direction::Outgoing) {
+            if node == last {
+                continue;
+            }
+
+            let index = node.index();
+
+            if visited[index] == CycleState::OnStack {
+                record_cycle(graph, stack, node, cycles);
+            } else if visited[index] == CycleState::Unvisited {
                 stack.push(node);
 
-                visited[node] = CycleState::OnStack;
+                visited[index] = CycleState::OnStack;
             }
         }
     }
@@ -107,15 +125,17 @@ fn process_dfs_tree<N, E>(
 
 // Adapted from https://www.baeldung.com/cs/detecting-cycles-in-directed-graph
 fn find_cycles<N, E>(graph: &DiGraph<N, E>) -> Vec<Vec<EdgeIndex>> {
-    let mut visited = vec![CycleState::Unvisited, graph.node_count()];
+    let mut visited = vec![CycleState::Unvisited; graph.node_count()];
     let mut cycles = vec![];
 
     for node in graph.node_indices() {
-        if visited[node] == CycleState::Unvisited {
+        let index = node.index();
+
+        if visited[index] == CycleState::Unvisited {
             let mut stack = vec![];
             stack.push(node);
 
-            visited[node] = CycleState::OnStack;
+            visited[index] = CycleState::OnStack;
             process_dfs_tree(graph, &mut stack, &mut visited, &mut cycles);
         }
     }
@@ -123,33 +143,32 @@ fn find_cycles<N, E>(graph: &DiGraph<N, E>) -> Vec<Vec<EdgeIndex>> {
     cycles
 }
 
-pub struct Analysis<'a> {
+pub struct DependencyAnalyzer<'a> {
     lookup: Lookup,
     graph: Graph<'a>,
 }
 
-impl<'a> Analysis<'a> {
-    fn add_link<'a>(
+impl<'a> DependencyAnalyzer<'a> {
+    fn add_link(
         graph: &mut TempGraph<'a>,
         lookup: &mut Lookup,
         source: NodeIndex,
-        target: &VersionedUrl,
+        target: &'a VersionedUrl,
         kind: EdgeKind,
     ) {
-        let target = match lookup.get(target).copied() {
-            None => {
+        let target = lookup.get(target).copied().map_or_else(
+            || {
                 let index = graph.add_node(None);
                 lookup.insert(target.clone(), index);
                 index
-            }
-
-            Some(index) => index,
-        };
+            },
+            |index| index,
+        );
 
         graph.update_edge(source, target, Edge { kind });
     }
 
-    fn outgoing_entity_type<'a>(
+    fn outgoing_entity_type(
         graph: &mut TempGraph<'a>,
         lookup: &mut Lookup,
         index: NodeIndex,
@@ -165,7 +184,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn outgoing_property_value<'a>(
+    fn outgoing_property_value(
         graph: &mut TempGraph<'a>,
         lookup: &mut Lookup,
         index: NodeIndex,
@@ -209,7 +228,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn outgoing_property_type<'a>(
+    fn outgoing_property_type(
         graph: &mut TempGraph<'a>,
         lookup: &mut Lookup,
         index: NodeIndex,
@@ -220,12 +239,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn outgoing<'a>(
-        graph: &mut TempGraph<'a>,
-        lookup: &mut Lookup,
-        index: NodeIndex,
-        ty: &'a AnyType,
-    ) {
+    fn outgoing(graph: &mut TempGraph<'a>, lookup: &mut Lookup, index: NodeIndex, ty: &'a AnyType) {
         match ty {
             AnyType::Data(_) => {}
             AnyType::Property(ty) => Self::outgoing_property_type(graph, lookup, index, ty),
@@ -243,7 +257,7 @@ impl<'a> Analysis<'a> {
             // we need to retain the original edge index, we generate this every time, as otherwise
             // our edge indices would get out of sync
             let plain = graph.filter_map(
-                |index, _| Some(()),
+                |_, _| Some(()),
                 |index, weight| (weight.kind == EdgeKind::Plain).then_some(index),
             );
 
@@ -253,17 +267,17 @@ impl<'a> Analysis<'a> {
                 break;
             }
 
-            let occurrences = vec![0usize; plain.edge_count()];
+            let mut occurrences = vec![0usize; plain.edge_count()];
 
             for cycle in cycles {
                 for edge in cycle {
-                    occurrences[edge] += 1;
+                    occurrences[edge.index()] += 1;
                 }
             }
 
             let mut edges: Vec<_> = plain
                 .edge_indices()
-                .filter(|index| occurrences[index] > 0)
+                .filter(|edge| occurrences[edge.index()] > 0)
                 .collect();
 
             if edges.is_empty() {
@@ -272,7 +286,11 @@ impl<'a> Analysis<'a> {
             }
 
             // sort by occurrences then index to stay stable
-            edges.sort_by(|a, b| occurrences[a].cmp(occurrences[b]).then(a.cmp(b)));
+            edges.sort_by(|a, b| {
+                occurrences[a.index()]
+                    .cmp(&occurrences[b.index()])
+                    .then(a.cmp(b))
+            });
 
             let chosen = *plain.edge_weight(edges[0]).expect("should exist in graph");
             graph
@@ -282,12 +300,10 @@ impl<'a> Analysis<'a> {
 
             iterations -= 1;
 
-            if iterations == 0 {
-                panic!(
-                    "unable to recover, found cycle that couldn't be broken, this should never \
-                     happen!"
-                );
-            }
+            assert_ne!(
+                iterations, 0,
+                "unable to recover, found cycle that couldn't be broken, this should never happen!"
+            );
         }
     }
 
@@ -348,5 +364,72 @@ impl<'a> Analysis<'a> {
     }
 }
 
-// when trying to resolve cycles, use edges that are involved in most cycles, otherwise sort by
-// EdgeIndex?
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    #[test]
+    fn remove_cycles_self_loop() {
+        let url = VersionedUrl::from_str("https://example.com/v/1").unwrap();
+
+        let mut graph = Graph::new();
+        let index = graph.add_node(Node {
+            id: &url,
+            kind: NodeKind::DataType,
+        });
+
+        let edge = graph.add_edge(index, index, Edge {
+            kind: EdgeKind::Plain,
+        });
+
+        DependencyAnalyzer::remove_cycles(&mut graph);
+
+        let weight = graph.edge_weight(edge).unwrap();
+        assert_eq!(weight.kind, EdgeKind::Boxed);
+    }
+
+    #[test]
+    fn remove_larger_cycle() {
+        let a = VersionedUrl::from_str("https://example.com/v/1").unwrap();
+        let b = VersionedUrl::from_str("https://example.com/v/2").unwrap();
+        let c = VersionedUrl::from_str("https://example.com/v/3").unwrap();
+
+        let mut graph = Graph::new();
+        let idx_a = graph.add_node(Node {
+            id: &a,
+            kind: NodeKind::DataType,
+        });
+        let idx_b = graph.add_node(Node {
+            id: &a,
+            kind: NodeKind::DataType,
+        });
+        let idx_c = graph.add_node(Node {
+            id: &a,
+            kind: NodeKind::DataType,
+        });
+
+        let ab = graph.add_edge(idx_a, idx_b, Edge {
+            kind: EdgeKind::Plain,
+        });
+        let bc = graph.add_edge(idx_b, idx_c, Edge {
+            kind: EdgeKind::Plain,
+        });
+        let ca = graph.add_edge(idx_c, idx_a, Edge {
+            kind: EdgeKind::Plain,
+        });
+
+        DependencyAnalyzer::remove_cycles(&mut graph);
+
+        assert_eq!(graph.edge_weight(ab).unwrap().kind, EdgeKind::Boxed);
+        assert_eq!(graph.edge_weight(bc).unwrap().kind, EdgeKind::Plain);
+        assert_eq!(graph.edge_weight(ca).unwrap().kind, EdgeKind::Plain);
+    }
+
+    #[test]
+    fn correctly_identify_loop_with_self() {}
+
+    #[test]
+    fn overlapping_cycles() {}
+}

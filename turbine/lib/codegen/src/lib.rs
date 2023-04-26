@@ -96,15 +96,20 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, 
         .map(|any| match any {
             AnyTypeRepr::Data(data) => DataType::try_from(data)
                 .into_report()
+                .map(AnyType::Data)
                 .change_context(Error::Parse),
             AnyTypeRepr::Property(property) => PropertyType::try_from(property)
                 .into_report()
+                .map(AnyType::Property)
                 .change_context(Error::Parse),
             AnyTypeRepr::Entity(entity) => EntityType::try_from(entity)
                 .into_report()
+                .map(AnyType::Entity)
                 .change_context(Error::Parse),
         })
         .collect();
 
     let values = values?;
+
+    todo!()
 }

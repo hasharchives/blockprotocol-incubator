@@ -21,7 +21,3 @@ type-system = { git = "https://github.com/blockprotocol/blockprotocol", rev = "5
 
 [dev-dependencies]
 similar-asserts = "1.4.2"
-
-[[test]]
-name = "harness"
-test = false
