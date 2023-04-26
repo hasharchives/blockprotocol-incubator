@@ -1,3 +1,5 @@
+#![feature(result_option_inspect)]
+
 mod analysis;
 
 use std::{

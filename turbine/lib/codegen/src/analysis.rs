@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
 use petgraph::graph::{DiGraph, NodeIndex};
-use type_system::{url::VersionedUrl, DataType, EntityType, PropertyType};
+use type_system::{
+    url::VersionedUrl, DataType, EntityType, PropertyType, PropertyTypeReference, PropertyValues,
+    ValueOrArray,
+};
 
 use crate::{AnyType, AnyTypeRepr};
 
 #[derive(Debug, Copy, Clone)]
-pub enum NodeType {
+pub enum NodeKind {
     DataType,
     PropertyType,
     EntityType,
@@ -15,11 +18,20 @@ pub enum NodeType {
 #[derive(Debug, Copy, Clone)]
 pub struct Node<'a> {
     id: &'a VersionedUrl,
-    ty: NodeType,
+    kind: NodeKind,
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Edge {}
+pub enum EdgeKind {
+    Plain,
+    Boxed,
+    Array,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Edge {
+    kind: EdgeKind,
+}
 
 type Graph<'a> = DiGraph<Node<'a>, Edge>;
 type TempGraph<'a> = DiGraph<Option<Node<'a>>, Edge>;
@@ -36,6 +48,7 @@ impl<'a> Analysis<'a> {
         lookup: &mut Lookup,
         source: NodeIndex,
         target: &VersionedUrl,
+        kind: EdgeKind,
     ) {
         let target = match lookup.get(target).copied() {
             None => {
@@ -47,7 +60,7 @@ impl<'a> Analysis<'a> {
             Some(index) => index,
         };
 
-        graph.update_edge(source, target, Edge {});
+        graph.update_edge(source, target, Edge { kind });
     }
 
     fn outgoing_entity_type<'a>(
@@ -56,8 +69,57 @@ impl<'a> Analysis<'a> {
         index: NodeIndex,
         ty: &'a EntityType,
     ) {
-        for reference in ty.property_type_references() {
-            Self::add_link(graph, lookup, index, reference.url());
+        let references = ty.properties().values().map(|value| match value {
+            ValueOrArray::Value(url) => (url, EdgeKind::Plain),
+            ValueOrArray::Array(array) => (array.items(), EdgeKind::Array),
+        });
+
+        for (reference, kind) in references {
+            Self::add_link(graph, lookup, index, reference.url(), kind);
+        }
+    }
+
+    fn outgoing_property_value<'a>(
+        graph: &mut TempGraph<'a>,
+        lookup: &mut Lookup,
+        index: NodeIndex,
+        value: &'a PropertyValues,
+        kind: Option<EdgeKind>,
+    ) {
+        let kind = kind.unwrap_or(EdgeKind::Plain);
+
+        match value {
+            PropertyValues::DataTypeReference(data) => {
+                Self::add_link(graph, lookup, index, data.url(), kind)
+            }
+            PropertyValues::PropertyTypeObject(object) => {
+                for value in object.properties().values() {
+                    match value {
+                        ValueOrArray::Value(value) => {
+                            Self::add_link(graph, lookup, index, value.url(), kind)
+                        }
+
+                        ValueOrArray::Array(array) => Self::add_link(
+                            graph,
+                            lookup,
+                            index,
+                            array.items().url(),
+                            EdgeKind::Array,
+                        ),
+                    }
+                }
+            }
+            PropertyValues::ArrayOfPropertyValues(array) => {
+                for value in array.items().one_of() {
+                    Self::outgoing_property_value(
+                        graph,
+                        lookup,
+                        index,
+                        value,
+                        Some(EdgeKind::Array),
+                    );
+                }
+            }
         }
     }
 
@@ -67,12 +129,8 @@ impl<'a> Analysis<'a> {
         index: NodeIndex,
         ty: &'a PropertyType,
     ) {
-        for reference in ty.property_type_references() {
-            Self::add_link(graph, lookup, index, reference.url());
-        }
-
-        for reference in ty.data_type_references() {
-            Self::add_link(graph, lookup, index, reference.url());
+        for value in ty.one_of() {
+            Self::outgoing_property_value(graph, lookup, index, value, None);
         }
     }
 
@@ -89,7 +147,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub fn new(types: &'a [AnyType]) {
+    pub fn new(types: &'a [AnyType]) -> Self {
         let mut graph = TempGraph::new();
         let mut lookup = Lookup::new();
 
@@ -97,15 +155,15 @@ impl<'a> Analysis<'a> {
             let node = match ty {
                 AnyType::Data(data) => Node {
                     id: data.id(),
-                    ty: NodeType::DataType,
+                    kind: NodeKind::DataType,
                 },
                 AnyType::Property(property) => Node {
                     id: property.id(),
-                    ty: NodeType::PropertyType,
+                    kind: NodeKind::PropertyType,
                 },
                 AnyType::Entity(entity) => Node {
                     id: entity.id(),
-                    ty: NodeType::EntityType,
+                    kind: NodeKind::EntityType,
                 },
             };
 
@@ -123,8 +181,23 @@ impl<'a> Analysis<'a> {
                 index
             };
 
-            // TODO: analyse all the outgoing connections
             Self::outgoing(&mut graph, &mut lookup, index, ty);
         }
+
+        let graph = graph.filter_map(
+            |index, node| {
+                if node.is_none() {
+                    tracing::warn!(
+                        "unable to find definition for type, ignoring in codegen, expect import \
+                         errors!"
+                    );
+                }
+
+                *node
+            },
+            |index, edge| Some(*edge),
+        );
+
+        Self { graph, lookup }
     }
 }
