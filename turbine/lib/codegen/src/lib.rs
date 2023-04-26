@@ -1,3 +1,13 @@
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
+
+use error_stack::Result;
+use quote::__private::TokenStream;
+use serde_json::Value;
+use thiserror::Error;
+
 // what we need to do:
 // 1) Configuration:
 //      - URL to get entity types
@@ -11,8 +21,11 @@
 // 4) create modules for each type, they are designated by
 //      if hash: url base (backwards) / org / entity|property / id.rs
 //      if blockprotocol: bp / org / entity|property / id.rs
-// 4) when referring to those just use crate::<URL>::...
-// 5) generate the code required: 2 variants: Owned and Ref (ref is lightweight)
+// 5) if there are multiple versions transform into a module, put the current one in mod, there
+//      others in v1.rs etc and suffix name w/ V1
+// 6) for property types inner types should be named Inner (if multiple Inner1, Inner2, etc.)
+// 7) when referring to those just use crate::<URL>::...
+// 8) generate the code required: 2 variants: Owned and Ref (ref is lightweight)
 //      with proper accessors, id converted to snake_case,
 //          if duplicate error out,
 //              sort properties,
@@ -35,3 +48,15 @@
 //
 // TODO: tests?
 fn fetch() {}
+
+#[derive(Debug, Clone, Hash)]
+pub struct File {
+    path: String,
+}
+
+#[derive(Debug, Clone, Error)]
+pub enum Error {}
+
+pub fn process(values: Vec<Value>) -> Result<HashMap<File, TokenStream>, Error> {
+    todo!()
+}

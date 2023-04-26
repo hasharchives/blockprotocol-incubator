@@ -7,4 +7,17 @@ edition = "2021"
 
 [dependencies]
 quote = "1.0.26"
+proc-macro2 = "1.0.56"
 reqwest = "0.11.16"
+serde_json = "1.0.96"
+thiserror = "1.0.40"
+error-stack = "0.3.1"
+
+type-system = { git = "https://github.com/blockprotocol/blockprotocol", rev = "542836" }
+
+[dev-dependencies]
+rustfmt = "0.10.0"
+
+[[test]]
+name = "harness"
+test = false
