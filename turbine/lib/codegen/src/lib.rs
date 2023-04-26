@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
 };
 
@@ -49,7 +49,7 @@ use thiserror::Error;
 // TODO: tests?
 fn fetch() {}
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub struct File {
     path: String,
 }
@@ -57,6 +57,6 @@ pub struct File {
 #[derive(Debug, Clone, Error)]
 pub enum Error {}
 
-pub fn process(values: Vec<Value>) -> Result<HashMap<File, TokenStream>, Error> {
+pub fn process(values: Vec<Value>) -> Result<BTreeMap<File, TokenStream>, Error> {
     todo!()
 }
