@@ -16,6 +16,7 @@ serde = { version = "1.0.160", features = ['derive'] }
 petgraph = "0.6.3"
 tracing = "0.1.38"
 ciclo = "0.1.0"
+indexmap = "1.9.3"
 
 type-system = { git = "https://github.com/blockprotocol/blockprotocol", rev = "542836" }
 

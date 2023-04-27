@@ -1,6 +1,7 @@
 #![feature(result_option_inspect)]
 
 mod analysis;
+mod graph;
 
 use std::{
     collections::{BTreeMap, HashMap},
