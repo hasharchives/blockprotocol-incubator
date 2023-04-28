@@ -5,7 +5,6 @@ use std::{
     process::{Command, Stdio},
 };
 
-use serde_json::Value;
 use similar_asserts::assert_eq;
 
 #[test]

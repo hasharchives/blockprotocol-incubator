@@ -2,17 +2,19 @@
 
 mod analysis;
 mod graph;
+mod name;
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     path::{Path, PathBuf},
 };
 
 use error_stack::{IntoReport, Result, ResultExt};
 use quote::__private::TokenStream;
-use serde_json::Value;
 use thiserror::Error;
 use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
+
+use crate::analysis::DependencyAnalyzer;
 
 // what we need to do:
 // 1) Configuration:
@@ -64,6 +66,8 @@ pub struct File {
 pub enum Error {
     #[error("unable to parse type from repr")]
     Parse,
+    #[error("error while trying to analyze dependencies")]
+    DependencyAnalysis,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -82,15 +86,18 @@ pub enum AnyType {
 }
 
 impl AnyType {
-    fn id(&self) -> &VersionedUrl {
+    const fn id(&self) -> &VersionedUrl {
         match self {
-            AnyType::Data(ty) => ty.id(),
-            AnyType::Property(ty) => ty.id(),
-            AnyType::Entity(ty) => ty.id(),
+            Self::Data(ty) => ty.id(),
+            Self::Property(ty) => ty.id(),
+            Self::Entity(ty) => ty.id(),
         }
     }
 }
 
+/// ## Errors
+///
+/// if `AnyTypeRepr` is malformed, or an error occurred while generating code
 pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, Error> {
     let values: Result<Vec<_>, _> = values
         .into_iter()
@@ -111,6 +118,8 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, 
         .collect();
 
     let values = values?;
+
+    let analyzer = DependencyAnalyzer::new(&values).change_context(Error::DependencyAnalysis)?;
 
     todo!()
 }

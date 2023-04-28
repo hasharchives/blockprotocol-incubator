@@ -17,7 +17,7 @@ type ElementaryCircuit = Vec<EdgeIndex>;
 
 /// Marker type, used so that we don't confuse indices
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, PartialEq, Ord, Eq)]
-struct Stable<T>(T);
+pub(crate) struct Stable<T>(pub(crate) T);
 
 /// The main loop of the cycle-enumeration algorithm of Johnson.
 fn johnson_cycle_search(
@@ -43,7 +43,6 @@ fn johnson_cycle_search(
     while let Some(neighbours) = stack.last_mut() {
         if neighbours.peek().is_none() {
             // exhausted; no more neighbours to process
-            // TODO: won't work, because stack is already mutably borrowed
             stack.pop();
             let node = path.pop().expect("infallible; non-empty");
 
@@ -162,7 +161,7 @@ fn directed_cycle_search(
 
     while let Some(component) = components.pop() {
         // filter using the weight, as the index is not stable!
-        let subgraph = graph.filter_map(
+        let mut subgraph = graph.filter_map(
             |_, weight| component.contains(weight).then_some(*weight),
             |_, weight| Some(*weight),
         );
@@ -172,7 +171,7 @@ fn directed_cycle_search(
             .copied()
             .expect("infallible; `IndexSet` has at least 2 nodes");
 
-        let johnson_node = subgraph
+        let subgraph_node = subgraph
             .node_references()
             .find_map(|(index, weight)| (*weight == node).then_some(index))
             .expect("infallible; must exist");
@@ -182,11 +181,15 @@ fn directed_cycle_search(
             .find_map(|(index, weight)| (*weight == node).then_some(index))
             .expect("infallible; must exist");
 
-        circuits.extend(johnson_cycle_search(&subgraph, johnson_node));
+        circuits.extend(johnson_cycle_search(&subgraph, subgraph_node));
 
         // delete `node` after searching `graph`, to make sure we can find `v`
+        // unlike networkx, subgraph views do not share the same nodes as the graph, therefore need
+        // to remove them from both
         graph.remove_node(graph_node);
-        components.extend(scc(&graph));
+        subgraph.remove_node(subgraph_node);
+
+        components.extend(scc(&subgraph));
     }
 
     circuits
