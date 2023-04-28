@@ -4,10 +4,7 @@ mod analysis;
 mod graph;
 mod name;
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    path::{Path, PathBuf},
-};
+use std::collections::{BTreeMap, HashMap};
 
 use error_stack::{IntoReport, Result, ResultExt};
 use quote::__private::TokenStream;
@@ -42,7 +39,7 @@ use crate::{analysis::DependencyAnalyzer, name::NameResolver};
 //
 // internally we also need to keep track which entity is in which file
 // todo: generate code, that selects Ref out of all verticies of a specific type, should not be
-// generated, but generic code instead
+//  generated, but generic code instead
 //
 // result: BTreeMap<File, String>
 // where File is the module name as a Path, so it can be created by e.g. CLI
