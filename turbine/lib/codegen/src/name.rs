@@ -28,7 +28,7 @@ pub(crate) struct Path(Vec<Directory>, File);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Name {
-    name: String,
+    value: String,
     alias: Option<String>,
 }
 
@@ -323,7 +323,7 @@ impl<'a> NameResolver<'a> {
             }
         }
 
-        Name { name, alias }
+        Name { value: name, alias }
     }
 
     fn other_versions_of_url(&self, url: &VersionedUrl) -> BTreeMap<u32, &'a AnyType> {
@@ -408,18 +408,38 @@ impl<'a> NameResolver<'a> {
     /// Same as [`Self::location`], but is aware of name clashes and will resolve those properly
     pub(crate) fn locations<'b>(
         &self,
-        ids: &[&'b VersionedUrl],
+        urls: &[&'b VersionedUrl],
     ) -> HashMap<&'b VersionedUrl, Location> {
-        let mut urls_by_base: HashMap<_, Vec<_>> = HashMap::new();
+        let mut locations_by_base: HashMap<String, Vec<_>> = HashMap::new();
 
-        for id in ids {
-            let urls = urls_by_base.entry(&id.base_url).or_default();
-            urls.push(self.location(id));
+        // TODO: nah should be by name
+        for url in urls {
+            let location = self.location(url);
+
+            let urls = locations_by_base
+                .entry(location.name.value.clone())
+                .or_default();
+
+            urls.push((url, location));
         }
 
-        // TODO: we now need to fix collisions and can then export
+        let mut output = HashMap::new();
 
-        todo!()
+        for mut locations in locations_by_base.into_values() {
+            if locations.len() > 1 {
+                // suffix names with their position
+                for (index, (_, location)) in locations.iter_mut().enumerate() {
+                    // TODO: should we prefer the alias here for import? ~> method on Name?
+                    location.alias = Some(format!("{}{index}", location.name.value));
+                }
+            }
+
+            for (url, location) in locations {
+                output.insert(*url, location);
+            }
+        }
+
+        output
     }
 
     /// Return the name of the structure or enum for the specified URL, if there are multiple
