@@ -33,11 +33,22 @@ pub(crate) struct Name {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Location {
+pub(crate) enum LocationKind<'a> {
+    /// Indicates that we are the latest version, if other is non-empty we need to create `use`
+    /// statements and import those types.
+    Latest { other: Vec<&'a VersionedUrl> },
+    /// Specific older version, that is not current, implies that there is a latest version it is
+    /// referenced in.
+    Version,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) struct Location<'a> {
     path: Path,
     name: Name,
 
     alias: Option<String>,
+    kind: LocationKind<'a>,
 }
 
 // TODO: what if we create regex masks for this sort of thing with replacements in overrides?
@@ -367,6 +378,7 @@ impl<'a> NameResolver<'a> {
         };
 
         let name = self.determine_name(url, parts.as_ref(), &versions);
+        let mut kind = LocationKind::Latest { other: vec![] };
 
         // we need to handle multiple versions, the latest version is always in the `mod.rs`,
         // `module.rs`, while all other files are in `v<N>` files.
@@ -379,7 +391,13 @@ impl<'a> NameResolver<'a> {
                 let File(old) = path.1;
                 path.0.push(Directory(old));
                 path.1 = File(format!("v{}", url.version));
+
+                kind = LocationKind::Version;
             } else {
+                kind = LocationKind::Latest {
+                    other: versions.into_values().map(AnyType::id).collect(),
+                };
+
                 // we're the newest version, hoist it up to the `module.rs` or `mod.rs` file,
                 // depending on flavor.
                 match self.module {
@@ -398,6 +416,7 @@ impl<'a> NameResolver<'a> {
             path,
             name,
             alias: None,
+            kind,
         }
     }
 
@@ -469,7 +488,12 @@ impl<'a> NameResolver<'a> {
         PropertyName(name)
     }
 
-    /// Same as [`Self::property_name`], but is aware of name clashes and will resolve those
+    // TODO: we need a HashMap of `base_url`: <children>, which we can use in the main one?
+    // TODO: we need a way to determine the "main" one and if it requires has children
+    //  (and which they are)
+
+    /// Same as [`Self::property_name`], but is aware of name clashes and will resolve those by
+    /// using a suffix for each
     pub(crate) fn property_names<'b>(
         &self,
         urls: &[&'b VersionedUrl],
