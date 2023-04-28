@@ -4,9 +4,28 @@ use type_system::url::VersionedUrl;
 
 use crate::{analysis::DependencyAnalyzer, AnyType};
 
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum ModuleFlavor {
     ModRs,
     ModuleRs,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Name {
+    name: String,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Location {
+    path: Vec<String>,
+    name: Name,
+
+    alias: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct PropertyName {
+    name: String,
 }
 
 // TODO: I don't like the name
@@ -48,18 +67,18 @@ impl<'a> NameResolver<'a> {
     ///
     /// We need to resolve the name and if there are multiple versions we need to make sure that
     /// those are in the correct file! (`mod.rs` vs `module.rs`)
-    pub(crate) fn location(id: &VersionedUrl) {
+    pub(crate) fn location(id: &VersionedUrl) -> Location {
         todo!()
     }
 
     /// Same as [`Self::location`], but is aware of name clashes and will resolve those properly
-    pub(crate) fn locations(ids: &[&VersionedUrl]) {
+    pub(crate) fn locations<'b>(ids: &[&'b VersionedUrl]) -> HashMap<&'b VersionedUrl, Location> {
         todo!()
     }
 
     /// Return the name of the structure or enum for the specified URL, if there are multiple
     /// versions, later versions will have `V<n>` appended to their name
-    pub(crate) fn name(id: &VersionedUrl) {
+    pub(crate) fn name(id: &VersionedUrl) -> Name {
         todo!()
     }
 
@@ -68,12 +87,14 @@ impl<'a> NameResolver<'a> {
     // TODO: inner (cannot by done by the name resolver)
 
     /// Returns the name for the accessor or property for the specified URL
-    pub(crate) fn property_name(id: &VersionedUrl) {
+    pub(crate) fn property_name(id: &VersionedUrl) -> PropertyName {
         todo!()
     }
 
     /// Same as [`Self::property_name`], but is aware of name clashes and will resolve those
-    pub(crate) fn property_names(id: &[&VersionedUrl]) {
+    pub(crate) fn property_names<'b>(
+        id: &[&'b VersionedUrl],
+    ) -> HashMap<&'b VersionedUrl, PropertyName> {
         todo!()
     }
 }
