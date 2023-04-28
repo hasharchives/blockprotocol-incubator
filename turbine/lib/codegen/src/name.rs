@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, HashMap, HashSet},
     fmt::{Display, Formatter},
 };
@@ -134,7 +135,7 @@ impl Flavor {
 
 static BLOCKPROTOCOL_FLAVOR: Lazy<Flavor> = Lazy::new(|| {
     let pattern = Regex::new(
-        r"/@(?P<namespace>[\w-]+)/types/(?P<kind>data|property|entity)-type/(?P<id>[\w\-_%]+)/",
+        r"^/@(?P<namespace>[\w-]+)/types/(?P<kind>data|property|entity)-type/(?P<id>[\w\-_%]+)/$",
     )
     .expect("valid pattern");
 
@@ -142,6 +143,11 @@ static BLOCKPROTOCOL_FLAVOR: Lazy<Flavor> = Lazy::new(|| {
 });
 
 static BUILTIN_FLAVORS: &[&Lazy<Flavor>] = &[&BLOCKPROTOCOL_FLAVOR];
+
+const BUILTIN_OVERRIDES: &[Override] = &[Override::from_parts(Some(OverrideAction::new_static(
+    "https://blockprotocol.org",
+    "blockprotocol",
+)))];
 
 #[derive(Debug, Copy, Clone)]
 enum Kind {
@@ -169,19 +175,27 @@ struct UrlParts<'a> {
 
 #[derive(Debug, Clone)]
 pub(crate) struct OverrideAction {
-    matches: String,
-    replacement: String,
+    matches: Cow<'static, str>,
+    replacement: Cow<'static, str>,
 }
 
 impl OverrideAction {
-    pub(crate) fn new(replace: impl Into<String>, with: impl Into<String>) -> Self {
+    pub(crate) fn new(matches: impl Into<String>, replacement: impl Into<String>) -> Self {
         Self {
-            matches: replace.into(),
-            replacement: with.into(),
+            matches: Cow::Owned(matches.into()),
+            replacement: Cow::Owned(replacement.into()),
+        }
+    }
+
+    const fn new_static(matches: &'static str, replacement: &'static str) -> Self {
+        Self {
+            matches: Cow::Borrowed(matches),
+            replacement: Cow::Borrowed(replacement),
         }
     }
 }
 
+#[derive(Debug, Clone)]
 pub(crate) struct Override {
     origin: Option<OverrideAction>,
 }
@@ -191,9 +205,13 @@ impl Override {
         Self { origin: None }
     }
 
+    const fn from_parts(origin: Option<OverrideAction>) -> Self {
+        Self { origin }
+    }
+
     #[allow(clippy::missing_const_for_fn)]
-    pub(crate) fn with_origin(mut self, host: OverrideAction) -> Self {
-        self.origin = Some(host);
+    pub(crate) fn with_origin(mut self, origin: OverrideAction) -> Self {
+        self.origin = Some(origin);
 
         self
     }
@@ -201,7 +219,7 @@ impl Override {
     fn apply(&self, url: &mut UrlParts) {
         if let Some(origin) = &self.origin {
             if url.origin == origin.matches {
-                url.origin = origin.replacement.clone();
+                url.origin = origin.replacement.clone().into_owned();
             }
         }
     }
@@ -261,7 +279,21 @@ impl<'a> NameResolver<'a> {
             let Some(captures)= flavor.pattern.captures(target) else { continue; };
 
             let origin = match flavor.mode {
-                Mode::MatchPath => url.origin().ascii_serialization(),
+                Mode::MatchPath => {
+                    let origin = url.origin().ascii_serialization();
+
+                    // origin already does not include the password or username field from before
+                    // the path, this additionally removes the scheme, as it is unlikely that from
+                    // the same origin two different protocols are used to serve the exact same id
+                    // that is used in two different places.
+                    // This overall creates some nicer urls, e.g. `blockprotocol_org` instead of
+                    // `https_blockprotocol_org`
+                    if let Some((_, origin)) = origin.split_once("://") {
+                        origin.to_owned()
+                    } else {
+                        origin
+                    }
+                }
                 Mode::MatchAll => captures
                     .name("origin")
                     .expect("infallible; checked by constructor")
@@ -295,7 +327,7 @@ impl<'a> NameResolver<'a> {
                 id,
             };
 
-            for r#override in &self.overrides {
+            for r#override in BUILTIN_OVERRIDES.iter().chain(self.overrides.iter()) {
                 r#override.apply(&mut url);
             }
 
@@ -526,3 +558,5 @@ impl<'a> NameResolver<'a> {
         output
     }
 }
+
+// TODO: tests
