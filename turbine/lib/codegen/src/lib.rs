@@ -5,7 +5,7 @@ mod graph;
 mod name;
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
 };
 
@@ -117,9 +117,13 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, 
         })
         .collect();
 
-    let values = values?;
+    let values: HashMap<_, _> = values?
+        .into_iter()
+        .map(|value| (value.id().clone(), value))
+        .collect();
 
-    let analyzer = DependencyAnalyzer::new(&values).change_context(Error::DependencyAnalysis)?;
+    let analyzer =
+        DependencyAnalyzer::new(values.values()).change_context(Error::DependencyAnalysis)?;
 
     todo!()
 }
