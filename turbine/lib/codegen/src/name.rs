@@ -33,6 +33,15 @@ pub(crate) struct Location {
     alias: Option<String>,
 }
 
+// TODO: what if we create regex masks for this sort of thing with replacements in overrides?
+//  like a blockprotocol mask, hash mask, custom mask, to extract the type, with a default mask that
+//  simply calls heck
+//  custom simply chooses a flat name with heck
+
+// BP: https://blockprotocol.org/@blockprotocol/types/data-type/text/v/1
+// HASH: http://localhost:3000/@alice/types/property-type/cbrsUuid/v/1
+// I'VE LIVED A LIE FOR MONTHS
+
 #[derive(Debug, Clone)]
 pub(crate) struct PropertyName {
     name: String,
