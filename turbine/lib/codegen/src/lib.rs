@@ -90,6 +90,14 @@ impl AnyType {
             Self::Entity(ty) => ty.id(),
         }
     }
+
+    fn title(&self) -> &str {
+        match self {
+            Self::Data(ty) => ty.title(),
+            Self::Property(ty) => ty.title(),
+            Self::Entity(ty) => ty.title(),
+        }
+    }
 }
 
 /// ## Errors
