@@ -196,10 +196,8 @@ impl Override {
     }
 }
 
-#[derive(Debug, Clone)]
-pub(crate) struct PropertyName {
-    name: String,
-}
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) struct PropertyName(String);
 
 pub(crate) struct NameResolver<'a> {
     lookup: &'a HashMap<VersionedUrl, AnyType>,
@@ -412,7 +410,6 @@ impl<'a> NameResolver<'a> {
     ) -> HashMap<&'b VersionedUrl, Location> {
         let mut locations_by_base: HashMap<String, Vec<_>> = HashMap::new();
 
-        // TODO: nah should be by name
         for url in urls {
             let location = self.location(url);
 
@@ -447,9 +444,9 @@ impl<'a> NameResolver<'a> {
     pub(crate) fn name(&self, url: &VersionedUrl) -> Name {
         let versions = self.other_versions_of_url(url);
         let base_url = url.base_url.to_url();
-        let deconstructed_url = self.url_into_parts(&base_url);
+        let parts = self.url_into_parts(&base_url);
 
-        self.determine_name(url, deconstructed_url.as_ref(), &versions)
+        self.determine_name(url, parts.as_ref(), &versions)
     }
 
     // TODO: we need to generate the code for `mod` also!
@@ -457,14 +454,51 @@ impl<'a> NameResolver<'a> {
     // TODO: inner (cannot by done by the name resolver)
 
     /// Returns the name for the accessor or property for the specified URL
-    pub(crate) fn property_name(id: &VersionedUrl) -> PropertyName {
-        todo!()
+    pub(crate) fn property_name(&self, url: &VersionedUrl) -> PropertyName {
+        let base_url = url.base_url.to_url();
+
+        let parts = self.url_into_parts(&base_url);
+
+        // here we don't differentiate between versions, as it is highly unlikely that we end up
+        // with properties that are of different versions in the same property or entity type.
+        let name = match parts {
+            None => self.lookup[url].title().to_snek_case(),
+            Some(UrlParts { id, .. }) => id.to_snek_case(),
+        };
+
+        PropertyName(name)
     }
 
     /// Same as [`Self::property_name`], but is aware of name clashes and will resolve those
     pub(crate) fn property_names<'b>(
-        id: &[&'b VersionedUrl],
+        &self,
+        urls: &[&'b VersionedUrl],
     ) -> HashMap<&'b VersionedUrl, PropertyName> {
-        todo!()
+        let mut names: HashMap<String, Vec<_>> = HashMap::new();
+
+        for url in urls {
+            let name = self.property_name(url);
+
+            let urls = names.entry(name.0.clone()).or_default();
+
+            urls.push((*url, name));
+        }
+
+        let mut output = HashMap::new();
+
+        for mut names in names.into_values() {
+            if names.len() > 1 {
+                // we have a naming clash, suffix with their index
+                for (index, (_, name)) in names.iter_mut().enumerate() {
+                    name.0 = format!("{}_{index}", name.0);
+                }
+            }
+
+            for (url, name) in names {
+                output.insert(url, name);
+            }
+        }
+
+        output
     }
 }
