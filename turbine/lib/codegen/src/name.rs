@@ -340,7 +340,7 @@ impl<'a> NameResolver<'a> {
             Some(DeconstructedUrl { id, .. }) => id.to_pascal_case(),
         };
 
-        // TODO: import vX versions
+        // TODO: import vX version mod and import in codegen
         // Default handling, if we're the newest version (very often the case), then we also export
         // a versioned identifier to the "default" one.
         let mut alias = Some(format!("{name}V{}", id.version));
@@ -387,7 +387,19 @@ impl<'a> NameResolver<'a> {
     // TODO: pub use previous versions in mod.rs if multiple files
 
     /// Same as [`Self::location`], but is aware of name clashes and will resolve those properly
-    pub(crate) fn locations<'b>(ids: &[&'b VersionedUrl]) -> HashMap<&'b VersionedUrl, Location> {
+    pub(crate) fn locations<'b>(
+        &self,
+        ids: &[&'b VersionedUrl],
+    ) -> HashMap<&'b VersionedUrl, Location> {
+        let mut urls_by_base: HashMap<_, Vec<_>> = HashMap::new();
+
+        for id in ids {
+            let urls = urls_by_base.entry(&id.base_url).or_default();
+            urls.push(self.location(id));
+        }
+
+        // TODO: we now need to fix collisions and can then export
+
         todo!()
     }
 
