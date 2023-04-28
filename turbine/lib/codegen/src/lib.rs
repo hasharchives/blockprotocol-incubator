@@ -14,7 +14,7 @@ use quote::__private::TokenStream;
 use thiserror::Error;
 use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
 
-use crate::analysis::DependencyAnalyzer;
+use crate::{analysis::DependencyAnalyzer, name::NameResolver};
 
 // what we need to do:
 // 1) Configuration:
@@ -117,13 +117,15 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, 
         })
         .collect();
 
-    let values: HashMap<_, _> = values?
+    let lookup: HashMap<_, _> = values?
         .into_iter()
         .map(|value| (value.id().clone(), value))
         .collect();
 
     let analyzer =
-        DependencyAnalyzer::new(values.values()).change_context(Error::DependencyAnalysis)?;
+        DependencyAnalyzer::new(lookup.values()).change_context(Error::DependencyAnalysis)?;
+
+    let names = NameResolver::new(&lookup, &analyzer);
 
     todo!()
 }
