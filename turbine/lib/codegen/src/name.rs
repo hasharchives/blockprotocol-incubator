@@ -65,6 +65,8 @@ impl Mode {
     fn verify_pattern(self, regex: &Regex) {
         match self {
             Self::MatchPath => {
+                // we do not check for extra groups, as they might be used, this is mostly just to
+                // encourage future checks
                 let mut optional: HashSet<_> = std::iter::once("namespace").collect();
                 let mut required: HashSet<_> = ["kind", "id"].into_iter().collect();
 
@@ -97,26 +99,33 @@ impl Mode {
 }
 
 pub(crate) struct Flavor {
+    name: &'static str,
     mode: Mode,
     pattern: Regex,
 }
 
 impl Flavor {
-    pub(crate) fn new(mode: Mode, pattern: Regex) -> Self {
+    pub(crate) fn new(name: &'static str, mode: Mode, pattern: Regex) -> Self {
         mode.verify_pattern(&pattern);
 
-        Self { mode, pattern }
+        Self {
+            name,
+            mode,
+            pattern,
+        }
     }
 }
 
-static BLOCKPROTOCOL_PATTERN: Lazy<Flavor> = Lazy::new(|| {
+static BLOCKPROTOCOL_FLAVOR: Lazy<Flavor> = Lazy::new(|| {
     let pattern = Regex::new(
         r"/@(?P<namespace>[\w-]+)/types/(?P<kind>data|property|entity)-type/(?P<id>[\w\-_%]+)/",
     )
     .expect("valid pattern");
 
-    Flavor::new(Mode::MatchPath, pattern)
+    Flavor::new("block-protocol", Mode::MatchPath, pattern)
 });
+
+static BUILTIN_FLAVORS: &[&Lazy<Flavor>] = &[&BLOCKPROTOCOL_FLAVOR];
 
 enum Kind {
     Property,
@@ -131,6 +140,37 @@ struct SegmentedUrl<'a> {
     id: &'a str,
 }
 
+pub(crate) struct OverrideAction {
+    replace: String,
+    with: String,
+}
+
+impl OverrideAction {
+    pub(crate) fn new(replace: impl Into<String>, with: impl Into<String>) -> Self {
+        Self {
+            replace: replace.into(),
+            with: with.into(),
+        }
+    }
+}
+
+pub(crate) struct Override {
+    host: Option<OverrideAction>,
+}
+
+impl Override {
+    pub(crate) const fn new() -> Self {
+        Self { host: None }
+    }
+
+    #[allow(clippy::missing_const_for_fn)]
+    pub(crate) fn with_host(mut self, host: OverrideAction) -> Self {
+        self.host = Some(host);
+
+        self
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct PropertyName {
     name: String,
@@ -140,12 +180,13 @@ pub(crate) struct NameResolver<'a> {
     lookup: &'a HashMap<VersionedUrl, AnyType>,
     analyzer: &'a DependencyAnalyzer<'a>,
 
-    overrides: HashMap<String, String>,
-    flavor: ModuleFlavor,
+    overrides: Vec<Override>,
+    module: ModuleFlavor,
+    flavors: Vec<Flavor>,
 }
 
 impl<'a> NameResolver<'a> {
-    pub(crate) fn new(
+    pub(crate) const fn new(
         lookup: &'a HashMap<VersionedUrl, AnyType>,
         analyzer: &'a DependencyAnalyzer<'a>,
     ) -> Self {
@@ -153,21 +194,22 @@ impl<'a> NameResolver<'a> {
             lookup,
             analyzer,
 
-            overrides: HashMap::new(),
-            flavor: ModuleFlavor::ModRs,
+            overrides: Vec::new(),
+            module: ModuleFlavor::ModRs,
+            flavors: Vec::new(),
         }
     }
 
-    pub(crate) fn with_override(
-        &mut self,
-        prefix: impl Into<String>,
-        replace_with: impl Into<String>,
-    ) {
-        self.overrides.insert(prefix.into(), replace_with.into());
+    pub(crate) fn with_override(&mut self, value: Override) {
+        self.overrides.push(value);
     }
 
-    pub(crate) fn with_flavor(&mut self, flavor: ModuleFlavor) {
-        self.flavor = flavor;
+    pub(crate) fn with_module_flavor(&mut self, flavor: ModuleFlavor) {
+        self.module = flavor;
+    }
+
+    pub(crate) fn with_flavor(&mut self, flavor: Flavor) {
+        self.flavors.push(flavor);
     }
 
     /// Return the module location for the structure or enum for the specified URL
