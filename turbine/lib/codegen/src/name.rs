@@ -145,7 +145,7 @@ static BLOCKPROTOCOL_FLAVOR: Lazy<Flavor> = Lazy::new(|| {
 static BUILTIN_FLAVORS: &[&Lazy<Flavor>] = &[&BLOCKPROTOCOL_FLAVOR];
 
 const BUILTIN_OVERRIDES: &[Override] = &[Override::from_parts(Some(OverrideAction::new_static(
-    "https://blockprotocol.org",
+    "blockprotocol.org",
     "blockprotocol",
 )))];
 
