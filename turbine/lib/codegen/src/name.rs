@@ -1,5 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
+use once_cell::sync::Lazy;
+use regex::Regex;
 use type_system::url::VersionedUrl;
 
 use crate::{analysis::DependencyAnalyzer, AnyType};
@@ -41,6 +43,93 @@ pub(crate) struct Location {
 // BP: https://blockprotocol.org/@blockprotocol/types/data-type/text/v/1
 // HASH: http://localhost:3000/@alice/types/property-type/cbrsUuid/v/1
 // I'VE LIVED A LIE FOR MONTHS
+
+/// Pattern matching mode
+///
+/// We only match path and host/protocol, everything else is stripped
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum Mode {
+    MatchPath,
+    MatchAll,
+}
+
+impl Mode {
+    /// Verification step that panics as this will lead to corruption either way
+    ///
+    /// Will verify that all named groups required by the [`NameResolver`] are present depending on
+    /// the name.
+    ///
+    /// ## Panics
+    ///
+    /// If the regex pattern is incomplete or does not have the required capture groups
+    fn verify_pattern(self, regex: &Regex) {
+        match self {
+            Self::MatchPath => {
+                let mut optional: HashSet<_> = std::iter::once("namespace").collect();
+                let mut required: HashSet<_> = ["kind", "id"].into_iter().collect();
+
+                for name in regex.capture_names().flatten() {
+                    required.remove(name);
+                    optional.remove(name);
+                }
+
+                assert!(
+                    required.is_empty(),
+                    "match path pattern requires `kind` and `id` named groups"
+                );
+            }
+            Self::MatchAll => {
+                let mut optional: HashSet<_> = std::iter::once("namespace").collect();
+                let mut required: HashSet<_> = ["host", "link", "id"].into_iter().collect();
+
+                for name in regex.capture_names().flatten() {
+                    required.remove(name);
+                    optional.remove(name);
+                }
+
+                assert!(
+                    required.is_empty(),
+                    "match all pattern requires `host`, `kind` and `id` named groups"
+                );
+            }
+        }
+    }
+}
+
+pub(crate) struct Flavor {
+    mode: Mode,
+    pattern: Regex,
+}
+
+impl Flavor {
+    pub(crate) fn new(mode: Mode, pattern: Regex) -> Self {
+        mode.verify_pattern(&pattern);
+
+        Self { mode, pattern }
+    }
+}
+
+static BLOCKPROTOCOL_PATTERN: Lazy<Flavor> = Lazy::new(|| {
+    let pattern = Regex::new(
+        r"/@(?P<namespace>[\w-]+)/types/(?P<kind>data|property|entity)-type/(?P<id>[\w\-_%]+)/",
+    )
+    .expect("valid pattern");
+
+    Flavor::new(Mode::MatchPath, pattern)
+});
+
+enum Kind {
+    Property,
+    Data,
+    Entity,
+}
+
+struct SegmentedUrl<'a> {
+    host: &'a str,
+    namespace: Option<&'a str>,
+    kind: Kind,
+    id: &'a str,
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct PropertyName {
