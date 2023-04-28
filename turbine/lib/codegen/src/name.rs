@@ -149,7 +149,7 @@ impl Display for Kind {
     }
 }
 
-struct DeconstructedUrl<'a> {
+struct UrlParts<'a> {
     origin: String,
     namespace: Option<&'a str>,
     kind: Kind,
@@ -187,7 +187,7 @@ impl Override {
         self
     }
 
-    fn apply(&self, url: &mut DeconstructedUrl) {
+    fn apply(&self, url: &mut UrlParts) {
         if let Some(origin) = &self.origin {
             if url.origin == origin.matches {
                 url.origin = origin.replacement.clone();
@@ -237,7 +237,7 @@ impl<'a> NameResolver<'a> {
         self.flavors.push(flavor);
     }
 
-    fn deconstruct_url<'b>(&self, url: &'b Url) -> Option<DeconstructedUrl<'b>> {
+    fn url_into_parts<'b>(&self, url: &'b Url) -> Option<UrlParts<'b>> {
         let flavors = BUILTIN_FLAVORS
             .iter()
             .map(|flavor| &***flavor)
@@ -279,7 +279,7 @@ impl<'a> NameResolver<'a> {
                 .map(|m| m.as_str())
                 .expect("infallible; checked by constructor");
 
-            let mut url = DeconstructedUrl {
+            let mut url = UrlParts {
                 origin,
                 namespace,
                 kind,
@@ -296,28 +296,61 @@ impl<'a> NameResolver<'a> {
         None
     }
 
+    fn determine_name(
+        &self,
+        url: &VersionedUrl,
+        parts: Option<&UrlParts>,
+        versions: &BTreeMap<u32, &AnyType>,
+    ) -> Name {
+        let mut name = match parts {
+            None => self.lookup[url].title().to_pascal_case(),
+            Some(UrlParts { id, .. }) => id.to_pascal_case(),
+        };
+
+        // TODO: import vX version mod and import in codegen
+        // Default handling, if we're the newest version (very often the case), then we also export
+        // a versioned identifier to the "default" one.
+        let mut alias = Some(format!("{name}V{}", url.version));
+
+        if let Some((&other_latest, _)) = versions.last_key_value() {
+            if other_latest > url.version {
+                // we also need to suffix the version number to the type name to stay consistent and
+                // avoid ambiguity
+                name = format!("{name}V{}", url.version);
+
+                // the name is the actual alias, so we don't need to export it multiple times
+                alias = None;
+            }
+        }
+
+        Name { name, alias }
+    }
+
+    fn other_versions_of_url(&self, url: &VersionedUrl) -> BTreeMap<u32, &'a AnyType> {
+        self.lookup
+            .iter()
+            .filter(|(key, _)| key.base_url == url.base_url)
+            .filter(|(key, _)| **key != *url)
+            .map(|(key, value)| (key.version, value))
+            .collect()
+    }
+
     /// Return the module location for the structure or enum for the specified URL
     ///
     /// We need to resolve the name and if there are multiple versions we need to make sure that
     /// those are in the correct file! (`mod.rs` vs `module.rs`)
-    pub(crate) fn location(&self, id: &VersionedUrl) -> Location {
-        let versions: BTreeMap<_, _> = self
-            .lookup
-            .iter()
-            .filter(|(key, _)| key.base_url == id.base_url)
-            .filter(|(key, _)| **key != *id)
-            .map(|(key, value)| (key.version, value))
-            .collect();
+    pub(crate) fn location(&self, url: &VersionedUrl) -> Location {
+        let versions = self.other_versions_of_url(url);
 
-        let base_url = id.base_url.to_url();
+        let base_url = url.base_url.to_url();
 
-        let url = self.deconstruct_url(&base_url);
+        let parts = self.url_into_parts(&base_url);
 
-        let mut path = match &url {
+        let mut path = match &parts {
             // we don't know the URL, so the file is simply called the snake_case version of the
             // URL
             None => Path(Vec::new(), File(base_url.as_str().to_snek_case())),
-            Some(DeconstructedUrl {
+            Some(UrlParts {
                 origin,
                 namespace,
                 kind,
@@ -335,33 +368,19 @@ impl<'a> NameResolver<'a> {
             }
         };
 
-        let mut name = match url {
-            None => self.lookup[id].title().to_pascal_case(),
-            Some(DeconstructedUrl { id, .. }) => id.to_pascal_case(),
-        };
-
-        // TODO: import vX version mod and import in codegen
-        // Default handling, if we're the newest version (very often the case), then we also export
-        // a versioned identifier to the "default" one.
-        let mut alias = Some(format!("{name}V{}", id.version));
+        let name = self.determine_name(url, parts.as_ref(), &versions);
 
         // we need to handle multiple versions, the latest version is always in the `mod.rs`,
         // `module.rs`, while all other files are in `v<N>` files.
         // in the case that there are no other versions, we can just continue and use the name
         // provided earlier.
         if let Some((&other_latest, _)) = versions.last_key_value() {
-            if other_latest > id.version {
-                // we're an older version, therefore we need to be in a folder
-
+            if other_latest > url.version {
+                // we're an older version, therefore we need to be in a directory, with `v<N>` as
+                // file
                 let File(old) = path.1;
                 path.0.push(Directory(old));
-                path.1 = File(format!("v{}", id.version));
-
-                // we also need to suffix the version number to the type name to stay consistent
-                name = format!("{name}V{}", id.version);
-
-                // the name is the actual alias, so we don't need to export it multiple times
-                alias = None;
+                path.1 = File(format!("v{}", url.version));
             } else {
                 // we're the newest version, hoist it up to the `module.rs` or `mod.rs` file,
                 // depending on flavor.
@@ -379,7 +398,7 @@ impl<'a> NameResolver<'a> {
 
         Location {
             path,
-            name: Name { name, alias },
+            name,
             alias: None,
         }
     }
@@ -405,9 +424,12 @@ impl<'a> NameResolver<'a> {
 
     /// Return the name of the structure or enum for the specified URL, if there are multiple
     /// versions, older versions will have `V<n>` appended to their name
-    // TODO: type alias for current version!
-    pub(crate) fn name(id: &VersionedUrl) -> Name {
-        todo!()
+    pub(crate) fn name(&self, url: &VersionedUrl) -> Name {
+        let versions = self.other_versions_of_url(url);
+        let base_url = url.base_url.to_url();
+        let deconstructed_url = self.url_into_parts(&base_url);
+
+        self.determine_name(url, deconstructed_url.as_ref(), &versions)
     }
 
     // TODO: we need to generate the code for `mod` also!
