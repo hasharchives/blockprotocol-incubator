@@ -10,6 +10,7 @@ localhost_3000/alice/entity/country.rs
 use blockprotocol::{
     entity::Entity, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef, VersionedUrlRef,
 };
+use error_stack::Result;
 use serde::Serialize;
 
 use crate::localhost_3000::alice::property::properties::{
@@ -38,7 +39,7 @@ impl Type for Country {
 impl blockprotocol::EntityType for Country {
     type Error = GenericEntityError;
 
-    fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
+    fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
         todo!()
     }
 }
@@ -61,7 +62,7 @@ impl TypeRef for CountryRef<'_> {
 impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     type Error = GenericEntityError;
 
-    fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
+    fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
         todo!()
     }
 }

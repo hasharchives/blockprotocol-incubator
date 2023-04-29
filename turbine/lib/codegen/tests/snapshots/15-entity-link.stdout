@@ -4,6 +4,7 @@ use blockprotocol::{
     entity::{Entity, LinkData},
     EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef, VersionedUrlRef,
 };
+use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {}
@@ -26,7 +27,7 @@ impl Type for PartOf {
 impl blockprotocol::EntityType for PartOf {
     type Error = GenericEntityError;
 
-    fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
+    fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
         todo!()
     }
 }
@@ -47,7 +48,7 @@ impl TypeRef for PartOfRef<'_> {
 impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
     type Error = GenericEntityError;
 
-    fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
+    fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
         todo!()
     }
 }
