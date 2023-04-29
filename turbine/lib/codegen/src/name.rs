@@ -19,10 +19,10 @@ pub(crate) enum ModuleFlavor {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Directory(String);
+pub(crate) struct Directory(pub(crate) String);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct File(String);
+pub(crate) struct File(pub(crate) String);
 
 impl File {
     pub(crate) fn is_mod(&self) -> bool {
@@ -31,7 +31,7 @@ impl File {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Path(Vec<Directory>, File);
+pub(crate) struct Path(pub(crate) Vec<Directory>, pub(crate) File);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Name {
@@ -49,6 +49,11 @@ pub(crate) enum LocationKind<'a> {
     Version,
 }
 
+pub struct Alias {
+    pub(crate) owned: Option<String>,
+    pub(crate) reference: Option<String>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Location<'a> {
     pub(crate) path: Path,
@@ -56,7 +61,7 @@ pub(crate) struct Location<'a> {
     pub(crate) name: Name,
     pub(crate) ref_name: Name,
 
-    pub(crate) alias: Option<String>,
+    pub(crate) alias: Alias,
     pub(crate) kind: LocationKind<'a>,
 }
 
@@ -458,7 +463,10 @@ impl<'a> NameResolver<'a> {
             path,
             name,
             ref_name,
-            alias: None,
+            alias: Alias {
+                owned: None,
+                reference: None,
+            },
             kind,
         }
     }
@@ -489,12 +497,15 @@ impl<'a> NameResolver<'a> {
                 // suffix names with their position
                 for (index, (_, location)) in locations.iter_mut().enumerate() {
                     // TODO: should we prefer the alias here for import? ~> method on Name?
-                    location.alias = Some(format!("{}{index}", location.name.value));
+                    location.alias = Alias {
+                        owned: Some(format!("{}{index}", location.name.value)),
+                        reference: Some(format!("{}{index}", location.ref_name.value)),
+                    };
                 }
             }
 
             for (url, location) in locations {
-                output.insert(*url, location);
+                output.insert(url, location);
             }
         }
 
