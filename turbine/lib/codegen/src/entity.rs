@@ -1,65 +1,29 @@
+use std::{collections::HashMap, ops::Deref};
+
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use type_system::{EntityType, ValueOrArray};
+use type_system::{url::VersionedUrl, EntityType, ValueOrArray};
 
-use crate::name::{LocationKind, NameResolver};
+use crate::name::{Location, LocationKind, NameResolver, PropertyName};
 
-pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStream {
-    let url = entity.id();
-
-    let location = resolver.location(url);
-
-    let name = Ident::new(&location.name.value, Span::call_site());
-    let ref_name = Ident::new(&location.ref_name.value, Span::call_site());
-
-    let alias = location.name.alias.map(|alias| {
-        let alias = Ident::new(&alias, Span::call_site());
-
-        quote!(pub type #alias = #name;)
-    });
-    let ref_alias = location.ref_name.alias.map(|alias| {
-        let alias = Ident::new(&alias, Span::call_site());
-
-        quote!(pub type #alias<'a> = #name<'a>;)
-    });
-
-    let property_type_references = entity.property_type_references();
-
-    let property_names = resolver.property_names(
-        property_type_references
-            .iter()
-            .map(|reference| reference.url()),
-    );
-
-    let locations = resolver.locations(
-        property_type_references
-            .iter()
-            .map(|reference| reference.url()),
-    );
-
-    let mut import_alloc = entity
-        .properties()
-        .values()
-        .any(|value| matches!(value, ValueOrArray::Array(_)))
-        .then(|| {
-            quote!(
-                use alloc::vec::Vec;
-            )
-        });
-
-    let imports = property_type_references.iter().map(|reference| {
-        let location = &locations[reference.url()];
+fn imports<'a>(
+    references: impl IntoIterator<Item = &'a &'a VersionedUrl> + 'a,
+    locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
+) -> impl Iterator<Item = TokenStream> + 'a {
+    references.into_iter().map(|reference| {
+        // explicit type not needed here, but CLion otherwise complains
+        let location: &Location = &locations[reference];
 
         let mut path: Vec<_> = location
             .path
             .directories()
             .iter()
-            .map(|directory| Ident::new(&directory.name(), Span::call_site()))
+            .map(|directory| Ident::new(directory.name(), Span::call_site()))
             .collect();
 
         // only add to path if we're not a mod.rs file, otherwise it will lead to import errors
         if !location.path.file().is_mod() {
-            path.push(Ident::new(&location.path.file().name(), Span::call_site()));
+            path.push(Ident::new(location.path.file().name(), Span::call_site()));
         }
 
         let name = Ident::new(
@@ -83,12 +47,18 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
             use crate #(:: #path)* :: #name;
             use crate #(:: #path)* :: #ref_name;
         }
-    });
+    })
+}
 
-    let (properties, properties_ref): (Vec<_>, Vec<_>) = entity
+fn properties(
+    entity: &EntityType,
+    property_names: &HashMap<&VersionedUrl, PropertyName>,
+    locations: &HashMap<&VersionedUrl, Location>,
+) -> (Vec<TokenStream>, Vec<TokenStream>) {
+    entity
         .properties()
         .iter()
-        .map(|(base, value)| {
+        .map(|(_, value)| {
             let url = match value {
                 ValueOrArray::Value(value) => value.url(),
                 ValueOrArray::Array(value) => value.items().url(),
@@ -107,7 +77,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
             );
             let mut owned = quote!(#owned);
 
-            let mut reference = Ident::new(
+            let reference = Ident::new(
                 location
                     .alias
                     .reference
@@ -124,20 +94,17 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
             (quote!(pub #name: #owned), quote!(pub #name: #reference))
         })
-        .unzip();
+        .unzip()
+}
 
-    // TODO: is_link!
-
-    let version = entity.id().version;
-    let base_url = entity.id().base_url.as_str();
-
-    let versions = match location.kind {
+fn versions(kind: LocationKind, resolver: &NameResolver) -> Vec<TokenStream> {
+    match kind {
         LocationKind::Latest { other } => {
             other
                 .iter()
                 .map(|url| {
                     let location = resolver.location(url);
-                    let file = Ident::new(&location.path.file().name(), Span::call_site());
+                    let file = Ident::new(location.path.file().name(), Span::call_site());
 
                     let name = Ident::new(&location.name.value, Span::call_site());
                     let ref_name = Ident::new(&location.ref_name.value, Span::call_site());
@@ -163,7 +130,58 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
                 .collect::<Vec<_>>()
         }
         LocationKind::Version => vec![],
-    };
+    }
+}
+
+pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStream {
+    let url = entity.id();
+
+    let location = resolver.location(url);
+
+    let name = Ident::new(&location.name.value, Span::call_site());
+    let ref_name = Ident::new(&location.ref_name.value, Span::call_site());
+
+    let alias = location.name.alias.map(|alias| {
+        let alias = Ident::new(&alias, Span::call_site());
+
+        quote!(pub type #alias = #name;)
+    });
+    let ref_alias = location.ref_name.alias.map(|alias| {
+        let alias = Ident::new(&alias, Span::call_site());
+
+        quote!(pub type #alias<'a> = #name<'a>;)
+    });
+
+    let property_type_references = entity.property_type_references();
+
+    let references: Vec<_> = property_type_references
+        .iter()
+        .map(|reference| reference.url())
+        .collect();
+
+    let property_names = resolver.property_names(references.iter().map(Deref::deref));
+    let locations = resolver.locations(references.iter().map(Deref::deref));
+
+    let import_alloc = entity
+        .properties()
+        .values()
+        .any(|value| matches!(value, ValueOrArray::Array(_)))
+        .then(|| {
+            quote!(
+                use alloc::vec::Vec;
+            )
+        });
+
+    let imports = imports(&references, &locations);
+
+    let (properties, properties_ref) = properties(entity, &property_names, &locations);
+
+    // TODO: is_link!
+
+    let version = entity.id().version;
+    let base_url = entity.id().base_url.as_str();
+
+    let versions = versions(location.kind, resolver);
 
     // TODO: required vs. not required (`Option`) vs no `Option`
 
