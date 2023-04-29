@@ -64,7 +64,7 @@ fn snapshots() {
                 let output = String::from_utf8(output.stdout).unwrap();
                 let path = file.path;
 
-                format!("{path:?} \n\n {output}")
+                format!("{}\n\n{output}", path.to_string_lossy())
             })
             .reduce(|mut acc, next| {
                 acc.push_str("\n\n---\n\n");
@@ -73,7 +73,7 @@ fn snapshots() {
             })
             .expect("no files");
 
-        let expected = path.with_extension(".stdout");
+        let expected = path.with_extension("stdout");
         if overwrite {
             fs::write(expected, output).unwrap();
         } else {

@@ -1,0 +1,43 @@
+localhost_3000/alice/entity/country.rs
+
+use blockprotocol::{
+    entity::Entity, url, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef,
+    VersionedUrlRef,
+};
+#[derive(Debug, Clone)]
+pub struct Country {}
+impl Type for Country {
+    type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl EntityType for Country {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+#[derive(Debug, Clone)]
+pub struct CountryRef<'a> {}
+impl TypeRef for CountryRef<'_> {
+    type Owned = Country;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type CountryV1 = Country;
+pub type CountryV1Ref<'a> = Country<'a>;

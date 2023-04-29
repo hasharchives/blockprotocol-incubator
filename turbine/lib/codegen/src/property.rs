@@ -5,5 +5,5 @@ use type_system::PropertyType;
 use crate::name::NameResolver;
 
 pub(crate) fn generate(_: &PropertyType, _: &NameResolver) -> TokenStream {
-    quote!(unimplemented!())
+    quote!(unimplemented!();)
 }

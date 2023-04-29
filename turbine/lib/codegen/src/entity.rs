@@ -20,7 +20,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let ref_alias = location.ref_name.alias.map(|alias| {
         let alias = Ident::new(&alias, Span::call_site());
 
-        quote!(pub type #alias = #name;)
+        quote!(pub type #alias<'a> = #name<'a>;)
     });
 
     let property_type_references = entity.property_type_references();
@@ -115,11 +115,11 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
                     .unwrap_or(&location.ref_name.value),
                 Span::call_site(),
             );
-            let mut reference = quote!(#reference);
+            let mut reference = quote!(#reference<'a>);
 
             if matches!(value, ValueOrArray::Array(_)) {
                 owned = quote!(Vec<#owned>);
-                reference = quote!(Vec<#reference>);
+                reference = quote!(Vec<#reference);
             }
 
             (quote!(pub #name: #owned), quote!(pub #name: #reference))
@@ -172,7 +172,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
         #(#imports);*
 
-        use blockprotocol::{Type, EntityType, TypeRef, EntityTypeRef, GenericEntityError};
+        use blockprotocol::{Type, EntityType, TypeRef, EntityTypeRef, GenericEntityError, VersionedUrlRef};
         use blockprotocol::entity::Entity;
         use blockprotocol::url;
 
@@ -184,9 +184,9 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         // TODO: accessors?
 
         impl Type for #name {
-            type Ref<'a> = #ref_name where Self: 'a;
+            type Ref<'a> = #ref_name<'a> where Self: 'a;
 
-            const ID = url!(#base_url / v / #version);
+            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
             fn as_ref(&self) -> Self::Ref<'_> {
                 // TODO!
