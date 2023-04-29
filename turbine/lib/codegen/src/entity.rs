@@ -55,10 +55,12 @@ fn properties(
     property_names: &HashMap<&VersionedUrl, PropertyName>,
     locations: &HashMap<&VersionedUrl, Location>,
 ) -> (Vec<TokenStream>, Vec<TokenStream>) {
+    let required = entity.required();
+
     entity
         .properties()
         .iter()
-        .map(|(_, value)| {
+        .map(|(base, value)| {
             let url = match value {
                 ValueOrArray::Value(value) => value.url(),
                 ValueOrArray::Array(value) => value.items().url(),
@@ -90,6 +92,11 @@ fn properties(
             if matches!(value, ValueOrArray::Array(_)) {
                 owned = quote!(Vec<#owned>);
                 reference = quote!(Vec<#reference);
+            }
+
+            if !required.contains(base) {
+                owned = quote!(Option<#owned>);
+                reference = quote!(Option<#reference>);
             }
 
             (quote!(pub #name: #owned), quote!(pub #name: #reference))
@@ -188,7 +195,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     quote! {
         #import_alloc
 
-        #(#imports);*
+        #(#imports)*
 
         use blockprotocol::{Type, EntityType, TypeRef, EntityTypeRef, GenericEntityError, VersionedUrlRef};
         use blockprotocol::entity::Entity;

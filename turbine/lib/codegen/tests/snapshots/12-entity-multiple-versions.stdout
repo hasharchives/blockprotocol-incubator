@@ -1,0 +1,128 @@
+blockprotocol/blockprotocol/data/text.rs
+
+unimplemented!();
+
+
+---
+
+localhost_3000/alice/entity/country/mod.rs
+
+use blockprotocol::{
+    entity::Entity, url, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef,
+    VersionedUrlRef,
+};
+
+use crate::localhost_3000::alice::property::{
+    country_code::{CountryCode, CountryCodeRef},
+    name::{Name, NameRef},
+};
+#[derive(Debug, Clone)]
+pub struct Country {
+    pub name: Name,
+    pub country_code: CountryCode,
+}
+impl Type for Country {
+    type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 2u32);
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl EntityType for Country {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+#[derive(Debug, Clone)]
+pub struct CountryRef<'a> {
+    pub name: NameRef<'a>,
+    pub country_code: CountryCodeRef<'a>,
+}
+impl TypeRef for CountryRef<'_> {
+    type Owned = Country;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type CountryV2 = Country;
+pub type CountryV2Ref<'a> = Country<'a>;
+pub mod v1;
+pub use v1::{CountryV1, CountryV1Ref};
+
+
+---
+
+localhost_3000/alice/entity/country/v1.rs
+
+use blockprotocol::{
+    entity::Entity, url, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef,
+    VersionedUrlRef,
+};
+
+use crate::localhost_3000::alice::property::name::{Name, NameRef};
+#[derive(Debug, Clone)]
+pub struct CountryV1 {
+    pub name: Name,
+}
+impl Type for CountryV1 {
+    type Ref < 'a > = CountryV1Ref < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl EntityType for CountryV1 {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+#[derive(Debug, Clone)]
+pub struct CountryV1Ref<'a> {
+    pub name: NameRef<'a>,
+}
+impl TypeRef for CountryV1Ref<'_> {
+    type Owned = CountryV1;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> EntityTypeRef<'a> for CountryV1Ref<'a> {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
+
+---
+
+localhost_3000/alice/property/country_code.rs
+
+unimplemented!();
+
+
+---
+
+localhost_3000/alice/property/name.rs
+
+unimplemented!();
