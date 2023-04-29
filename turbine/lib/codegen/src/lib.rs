@@ -7,7 +7,10 @@ mod graph;
 mod name;
 mod property;
 
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::PathBuf,
+};
 
 use error_stack::{IntoReport, Result, ResultExt};
 use quote::__private::TokenStream;
@@ -59,7 +62,7 @@ fn fetch() {}
 
 #[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub struct File {
-    pub path: String,
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -135,5 +138,22 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, 
 
     let names = NameResolver::new(&lookup, &analyzer);
 
-    todo!()
+    let mut output = BTreeMap::new();
+
+    for value in lookup.values() {
+        let location = names.location(value.id());
+        let file = File {
+            path: location.path.into(),
+        };
+
+        let contents = match value {
+            AnyType::Data(data) => data::generate(data, &names),
+            AnyType::Property(property) => property::generate(property, &names),
+            AnyType::Entity(entity) => entity::generate(entity, &names),
+        };
+
+        output.insert(file, contents);
+    }
+
+    Ok(output)
 }

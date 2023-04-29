@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     fs,
     io::Write,
     path::Path,
@@ -22,12 +23,18 @@ fn snapshots() {
             continue;
         }
 
-        if entry.path().ends_with(".json") {
+        if entry
+            .path()
+            .extension()
+            .map(std::ffi::OsStr::to_string_lossy)
+            == Some(Cow::Borrowed("json"))
+        {
             snapshots.push(entry.path());
         }
     }
 
-    let overwrite = env!("SNAPSHOT_MODE").to_ascii_lowercase() == "overwrite";
+    let overwrite = std::env::var("SNAPSHOT_MODE")
+        .map_or(false, |mode| mode.to_ascii_lowercase() == "overwrite");
 
     for path in snapshots {
         let snapshot = fs::read_to_string(&path).expect("unable to read snapshot");
@@ -50,14 +57,14 @@ fn snapshots() {
                     .stdin
                     .take()
                     .expect("stdio piped")
-                    .write(stream.to_string().as_bytes())
+                    .write_all(stream.to_string().as_bytes())
                     .expect("should be able to write to stdin");
                 let output = command.wait_with_output().unwrap();
 
                 let output = String::from_utf8(output.stdout).unwrap();
                 let path = file.path;
 
-                format!("{path} \n\n {output}")
+                format!("{path:?} \n\n {output}")
             })
             .reduce(|mut acc, next| {
                 acc.push_str("\n\n---\n\n");
