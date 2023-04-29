@@ -1,4 +1,7 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{
+    collections::{BTreeMap, HashMap},
+    ops::Deref,
+};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -59,9 +62,11 @@ fn properties(
 ) -> (Vec<TokenStream>, Vec<TokenStream>) {
     let required = entity.required();
 
-    entity
-        .properties()
-        .iter()
+    // we need consistent ordering, otherwise output is going to differ _every_ time
+    let properties: BTreeMap<_, _> = entity.properties().iter().collect();
+
+    properties
+        .into_iter()
         .map(|(base, value)| {
             let url = match value {
                 ValueOrArray::Value(value) => value.url(),
@@ -204,6 +209,8 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
     let version = entity.id().version;
     let base_url = entity.id().base_url.as_str();
+    // TODO: don't know if that is correct :shrug:
+    let base_url = base_url.strip_suffix('/').unwrap_or(base_url);
 
     let versions = versions(location.kind, resolver);
 

@@ -19,16 +19,16 @@ use crate::localhost_3000::{
 };
 #[derive(Debug, Clone, Serialize)]
 pub struct Country {
-    #[serde(rename = "http://localhost:3000/@bob/types/property-type/name/")]
-    pub name_1: Name1,
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name_0: Name0,
+    #[serde(rename = "http://localhost:3000/@bob/types/property-type/name/")]
+    pub name_1: Name1,
 }
 impl Type for Country {
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
 
     const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
+        url!("http://localhost:3000/@alice/types/entity-type/country" / v / 1u32);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
@@ -43,10 +43,10 @@ impl EntityType for Country {
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryRef<'a> {
-    #[serde(rename = "http://localhost:3000/@bob/types/property-type/name/")]
-    pub name_1: NameRef1<'a>,
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name_0: NameRef0<'a>,
+    #[serde(rename = "http://localhost:3000/@bob/types/property-type/name/")]
+    pub name_1: NameRef1<'a>,
 }
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;
