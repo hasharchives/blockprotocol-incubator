@@ -218,21 +218,30 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let versions = versions(location.kind, resolver);
 
     quote! {
+        use serde::Serialize;
+        use blockprotocol::{Type, TypeRef, EntityType, EntityTypeRef, VersionedUrlRef, GenericEntityError};
+        use blockprotocol::entity::Entity;
+
         #import_alloc
 
         #(#imports)*
 
-        #[derive(Debug, Clone, serde::Serialize)]
-        pub struct #name {
+        #[derive(Debug, Clone, Serialize)]
+        pub struct Properties {
             #(#properties),*
+        }
+
+        #[derive(Debug, Clone, Serialize)]
+        pub struct #name {
+            properties: Properties
         }
 
         // TODO: accessors?
 
-        impl blockprotocol::Type for #name {
+        impl Type for #name {
             type Ref<'a> = #ref_name<'a> where Self: 'a;
 
-            const ID: blockprotocol::VersionedUrlRef<'static>  = blockprotocol::url!(#base_url / v / #version);
+            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
             fn as_ref(&self) -> Self::Ref<'_> {
                 // TODO!
@@ -241,22 +250,26 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         }
 
         impl blockprotocol::EntityType for #name {
-            type Error = blockprotocol::GenericEntityError;
+            type Error = GenericEntityError;
 
-            fn try_from_entity(value: blockprotocol::entity::Entity) -> Result<Self, Self::Error> {
+            fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
                 // TODO!
                 todo!()
             }
         }
 
-        #[derive(Debug, Clone, serde::Serialize)]
-        pub struct #ref_name<'a> {
+        pub struct PropertiesRef<'a> {
             #(#properties_ref),*
+        }
+
+        #[derive(Debug, Clone, Serialize)]
+        pub struct #ref_name<'a> {
+            properties: PropertiesRef<'a>
         }
 
         // TODO: accessors?
 
-        impl blockprotocol::TypeRef for #ref_name<'_> {
+        impl TypeRef for #ref_name<'_> {
             type Owned = #name;
 
             fn into_owned(self) -> Self::Owned {
@@ -265,10 +278,10 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
             }
         }
 
-        impl<'a> blockprotocol::EntityTypeRef<'a> for #ref_name<'a> {
-            type Error = blockprotocol::GenericEntityError;
+        impl<'a> EntityTypeRef<'a> for #ref_name<'a> {
+            type Error = GenericEntityError;
 
-            fn try_from_entity(value: &'a blockprotocol::entity::Entity) -> Result<Self, Self::Error> {
+            fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
                 // TODO!
                 todo!()
             }

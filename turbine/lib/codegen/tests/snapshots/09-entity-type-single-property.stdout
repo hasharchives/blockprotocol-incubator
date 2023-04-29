@@ -8,16 +8,19 @@ unimplemented!();
 localhost_3000/alice/entity/country.rs
 
 use blockprotocol::{
-    entity::Entity, url, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef,
-    VersionedUrlRef,
+    entity::Entity, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef, VersionedUrlRef,
 };
 use serde::Serialize;
 
 use crate::localhost_3000::alice::property::name::{Name, NameRef};
 #[derive(Debug, Clone, Serialize)]
-pub struct Country {
+pub struct Properties {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct Country {
+    properties: Properties,
 }
 impl Type for Country {
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
@@ -29,17 +32,20 @@ impl Type for Country {
         todo!()
     }
 }
-impl EntityType for Country {
+impl blockprotocol::EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
         todo!()
     }
 }
-#[derive(Debug, Clone, Serialize)]
-pub struct CountryRef<'a> {
+pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: NameRef<'a>,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct CountryRef<'a> {
+    properties: PropertiesRef<'a>,
 }
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;
