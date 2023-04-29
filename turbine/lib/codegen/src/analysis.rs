@@ -44,7 +44,7 @@ pub(crate) enum EdgeKind {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct Edge {
-    kind: EdgeKind,
+    pub(crate) kind: EdgeKind,
 }
 
 type Graph<'a> = DiGraph<Node<'a>, Edge>;

@@ -12,14 +12,14 @@ use blockprotocol::{
     VersionedUrlRef,
 };
 
-use crate::localhost_3000::alice::property::{
-    country_code::{CountryCode, CountryCodeRef},
-    name::{Name, NameRef},
+use crate::localhost_3000::{
+    alice::property::name::{Name as Name0, NameRef as NameRef0},
+    bob::property::name::{Name as Name1, NameRef as NameRef1},
 };
 #[derive(Debug, Clone)]
 pub struct Country {
-    pub name: Name,
-    pub country_code: CountryCode,
+    pub name_0: Name0,
+    pub name_1: Name1,
 }
 impl Type for Country {
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
@@ -40,8 +40,8 @@ impl EntityType for Country {
 }
 #[derive(Debug, Clone)]
 pub struct CountryRef<'a> {
-    pub name: NameRef<'a>,
-    pub country_code: CountryCodeRef<'a>,
+    pub name_0: NameRef0<'a>,
+    pub name_1: NameRef1<'a>,
 }
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;
@@ -63,13 +63,13 @@ pub type CountryV1Ref<'a> = Country<'a>;
 
 ---
 
-localhost_3000/alice/property/country_code.rs
+localhost_3000/alice/property/name.rs
 
 unimplemented!();
 
 
 ---
 
-localhost_3000/alice/property/name.rs
+localhost_3000/bob/property/name.rs
 
 unimplemented!();

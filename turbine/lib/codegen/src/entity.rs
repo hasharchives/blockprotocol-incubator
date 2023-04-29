@@ -1,10 +1,13 @@
 use std::{collections::HashMap, ops::Deref};
 
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::quote;
+use quote::{quote, ToTokens};
 use type_system::{url::VersionedUrl, EntityType, ValueOrArray};
 
-use crate::name::{Location, LocationKind, NameResolver, PropertyName};
+use crate::{
+    analysis::EdgeKind,
+    name::{Location, LocationKind, NameResolver, PropertyName},
+};
 
 fn imports<'a>(
     references: impl IntoIterator<Item = &'a &'a VersionedUrl> + 'a,
@@ -26,22 +29,20 @@ fn imports<'a>(
             path.push(Ident::new(location.path.file().name(), Span::call_site()));
         }
 
-        let name = Ident::new(
-            location
-                .alias
-                .owned
-                .as_ref()
-                .unwrap_or(&location.name.value),
-            Span::call_site(),
-        );
-        let ref_name = Ident::new(
-            location
-                .alias
-                .reference
-                .as_ref()
-                .unwrap_or(&location.ref_name.value),
-            Span::call_site(),
-        );
+        let mut name = Ident::new(&location.name.value, Span::call_site()).to_token_stream();
+
+        if let Some(alias) = &location.alias.owned {
+            let alias = Ident::new(alias, Span::call_site());
+            name = quote!(#name as #alias);
+        }
+
+        let mut ref_name =
+            Ident::new(&location.ref_name.value, Span::call_site()).to_token_stream();
+
+        if let Some(alias) = &location.alias.reference {
+            let alias = Ident::new(alias, Span::call_site());
+            ref_name = quote!(#ref_name as #alias);
+        }
 
         quote! {
             use crate #(:: #path)* :: #name;
@@ -52,6 +53,7 @@ fn imports<'a>(
 
 fn properties(
     entity: &EntityType,
+    resolver: &NameResolver,
     property_names: &HashMap<&VersionedUrl, PropertyName>,
     locations: &HashMap<&VersionedUrl, Location>,
 ) -> (Vec<TokenStream>, Vec<TokenStream>) {
@@ -92,6 +94,9 @@ fn properties(
             if matches!(value, ValueOrArray::Array(_)) {
                 owned = quote!(Vec<#owned>);
                 reference = quote!(Vec<#reference);
+            } else if resolver.analyzer().edge(entity.id(), url).kind == EdgeKind::Boxed {
+                owned = quote!(Box<#owned>);
+                reference = quote!(Box<#reference);
             }
 
             if !required.contains(base) {
@@ -181,7 +186,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
     let imports = imports(&references, &locations);
 
-    let (properties, properties_ref) = properties(entity, &property_names, &locations);
+    let (properties, properties_ref) = properties(entity, resolver, &property_names, &locations);
 
     // TODO: is_link!
 
