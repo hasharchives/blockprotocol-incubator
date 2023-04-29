@@ -2,6 +2,8 @@ use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap, HashSet},
     fmt::{Display, Formatter},
+    iter::once,
+    path::PathBuf,
 };
 
 use heck::{ToPascalCase, ToSnekCase};
@@ -19,19 +21,57 @@ pub(crate) enum ModuleFlavor {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Directory(pub(crate) String);
+pub(crate) struct Directory(String);
+
+impl Directory {
+    pub(crate) fn name(&self) -> &str {
+        &self.0
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct File(pub(crate) String);
+pub(crate) struct File(String);
 
 impl File {
+    pub(crate) fn name(&self) -> &str {
+        &self.0
+    }
+
+    pub(crate) fn fs_name(&self) -> String {
+        format!("{}.rs", self.0)
+    }
+
     pub(crate) fn is_mod(&self) -> bool {
         self.0 == "mod"
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Path(pub(crate) Vec<Directory>, pub(crate) File);
+pub(crate) struct Path(Vec<Directory>, File);
+
+impl Path {
+    pub(crate) fn directories(&self) -> &[Directory] {
+        &self.0
+    }
+
+    pub(crate) fn file(&self) -> &File {
+        &self.1
+    }
+}
+
+impl From<Path> for PathBuf {
+    fn from(value: Path) -> Self {
+        let Path(directories, file) = value;
+
+        let path: Vec<_> = directories
+            .into_iter()
+            .map(|directory| directory.name().to_owned())
+            .chain(once(file.fs_name()))
+            .collect();
+
+        PathBuf::from(path.join("/"))
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Name {
@@ -49,6 +89,7 @@ pub(crate) enum LocationKind<'a> {
     Version,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Alias {
     pub(crate) owned: Option<String>,
     pub(crate) reference: Option<String>,

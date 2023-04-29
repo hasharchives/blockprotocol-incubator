@@ -52,14 +52,14 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
         let mut path: Vec<_> = location
             .path
-            .0
+            .directories()
             .iter()
-            .map(|directory| Ident::new(&directory.0, Span::call_site()))
+            .map(|directory| Ident::new(&directory.name(), Span::call_site()))
             .collect();
 
         // only add to path if we're not a mod.rs file, otherwise it will lead to import errors
-        if !location.path.1.is_mod() {
-            path.push(Ident::new(&location.path.1.0, Span::call_site()));
+        if !location.path.file().is_mod() {
+            path.push(Ident::new(&location.path.file().name(), Span::call_site()));
         }
 
         let name = Ident::new(
@@ -137,7 +137,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
                 .iter()
                 .map(|url| {
                     let location = resolver.location(url);
-                    let file = Ident::new(&location.path.1.0, Span::call_site());
+                    let file = Ident::new(&location.path.file().name(), Span::call_site());
 
                     let name = Ident::new(&location.name.value, Span::call_site());
                     let ref_name = Ident::new(&location.ref_name.value, Span::call_site());
