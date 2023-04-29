@@ -24,6 +24,7 @@ pub struct Properties {
     pub name_1: Name1,
 }
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Country {
     properties: Properties,
 }
@@ -51,6 +52,7 @@ pub struct PropertiesRef<'a> {
     pub name_1: NameRef1<'a>,
 }
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     properties: PropertiesRef<'a>,
 }

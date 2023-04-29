@@ -12,8 +12,19 @@ use crate::{
     name::{Location, LocationKind, NameResolver, PropertyName},
 };
 
-// TODO: potential clash with link_data if link, we should blacklist that name when we query for
-// link_data TODO: only do absolute imports for blockprotocol stuff
+const RESERVED: &[&str] = &[
+    "Type",
+    "TypeRef",
+    "EntityType",
+    "EntityTypeRef",
+    "VersionedUrlRef",
+    "GenericEntityError",
+    "Entity",
+    "LinkData",
+    "Serialize",
+    "Properties",
+    "PropertiesRef",
+];
 
 fn imports<'a>(
     references: impl IntoIterator<Item = &'a &'a VersionedUrl> + 'a,
@@ -192,7 +203,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     references.sort();
 
     let property_names = resolver.property_names(references.iter().map(Deref::deref));
-    let locations = resolver.locations(references.iter().map(Deref::deref));
+    let locations = resolver.locations(references.iter().map(Deref::deref), RESERVED);
 
     let import_alloc = entity
         .properties()
@@ -232,6 +243,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         }
 
         #[derive(Debug, Clone, Serialize)]
+        #[serde(rename_all = "camelCase")]
         pub struct #name {
             properties: Properties
         }
@@ -263,6 +275,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         }
 
         #[derive(Debug, Clone, Serialize)]
+        #[serde(rename_all = "camelCase")]
         pub struct #ref_name<'a> {
             properties: PropertiesRef<'a>
         }

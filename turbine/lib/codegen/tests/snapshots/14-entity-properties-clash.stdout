@@ -12,11 +12,13 @@ use blockprotocol::{
 };
 use serde::Serialize;
 
-use crate::localhost_3000::alice::property::name::{Name, NameRef};
+use crate::localhost_3000::alice::property::properties::{
+    Properties as Properties0, PropertiesRef as PropertiesRef0,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {
-    #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
-    pub name: Option<Name>,
+    #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
+    pub properties: Properties0,
 }
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,8 +43,8 @@ impl blockprotocol::EntityType for Country {
     }
 }
 pub struct PropertiesRef<'a> {
-    #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
-    pub name: Option<NameRef<'a>>,
+    #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
+    pub properties: PropertiesRef0<'a>,
 }
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +71,6 @@ pub type CountryV1Ref<'a> = Country<'a>;
 
 ---
 
-localhost_3000/alice/property/name.rs
+localhost_3000/alice/property/properties.rs
 
 unimplemented!();

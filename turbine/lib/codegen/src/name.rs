@@ -518,6 +518,7 @@ impl<'a> NameResolver<'a> {
     pub(crate) fn locations<'b>(
         &self,
         urls: impl IntoIterator<Item = &'b VersionedUrl>,
+        reserved: &[&str],
     ) -> HashMap<&'b VersionedUrl, Location> {
         let mut locations_by_base: HashMap<String, Vec<_>> = HashMap::new();
 
@@ -534,7 +535,9 @@ impl<'a> NameResolver<'a> {
         let mut output = HashMap::new();
 
         for mut locations in locations_by_base.into_values() {
-            if locations.len() > 1 {
+            let name = &locations[0].1.name.value;
+
+            if locations.len() > 1 || reserved.contains(&&**name) {
                 // suffix names with their position
                 for (index, (_, location)) in locations.iter_mut().enumerate() {
                     // TODO: should we prefer the alias here for import? ~> method on Name?

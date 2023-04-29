@@ -7,6 +7,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {}
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Country {
     properties: Properties,
 }
@@ -29,6 +30,7 @@ impl blockprotocol::EntityType for Country {
 }
 pub struct PropertiesRef<'a> {}
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     properties: PropertiesRef<'a>,
 }
