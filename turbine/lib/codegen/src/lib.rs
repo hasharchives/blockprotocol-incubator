@@ -1,6 +1,7 @@
 #![feature(result_option_inspect)]
 
 mod analysis;
+mod entity;
 mod graph;
 mod name;
 

@@ -270,6 +270,21 @@ impl<'a> DependencyAnalyzer<'a> {
 
         Ok(Self { lookup, graph })
     }
+
+    /// ## Panics
+    ///
+    /// if no edge exists between them
+    pub(crate) fn edge(&self, from: &VersionedUrl, to: &VersionedUrl) -> Edge {
+        let from = self.lookup[from];
+        let to = self.lookup[to];
+
+        let edge = self
+            .graph
+            .find_edge(from, to)
+            .expect("edge between points does not exist");
+
+        self.graph[edge]
+    }
 }
 
 #[cfg(test)]

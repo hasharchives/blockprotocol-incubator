@@ -24,13 +24,19 @@ pub(crate) struct Directory(String);
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct File(String);
 
+impl File {
+    pub(crate) fn is_mod(&self) -> bool {
+        self.0 == "mod"
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Path(Vec<Directory>, File);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Name {
-    value: String,
-    alias: Option<String>,
+    pub(crate) value: String,
+    pub(crate) alias: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -45,21 +51,19 @@ pub(crate) enum LocationKind<'a> {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Location<'a> {
-    path: Path,
-    name: Name,
+    pub(crate) path: Path,
 
-    alias: Option<String>,
-    kind: LocationKind<'a>,
+    pub(crate) name: Name,
+    pub(crate) ref_name: Name,
+
+    pub(crate) alias: Option<String>,
+    pub(crate) kind: LocationKind<'a>,
 }
-
-// TODO: what if we create regex masks for this sort of thing with replacements in overrides?
-//  like a blockprotocol mask, hash mask, custom mask, to extract the type, with a default mask that
-//  simply calls heck
-//  custom simply chooses a flat name with heck
 
 // BP: https://blockprotocol.org/@blockprotocol/types/data-type/text/v/1
 // HASH: http://localhost:3000/@alice/types/property-type/cbrsUuid/v/1
 // I'VE LIVED A LIE FOR MONTHS
+// TODO: rename blockprotocol/blockprotocol to just blockprotocol?
 
 /// Pattern matching mode
 ///
@@ -226,8 +230,9 @@ impl Override {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct PropertyName(String);
+pub(crate) struct PropertyName(pub(crate) String);
 
+// TODO: caching?!
 pub(crate) struct NameResolver<'a> {
     lookup: &'a HashMap<VersionedUrl, AnyType>,
     analyzer: &'a DependencyAnalyzer<'a>,
@@ -444,9 +449,15 @@ impl<'a> NameResolver<'a> {
             }
         }
 
+        let ref_name = Name {
+            value: format!("{}Ref", name.value),
+            alias: name.alias.as_ref().map(|alias| format!("{alias}Ref")),
+        };
+
         Location {
             path,
             name,
+            ref_name,
             alias: None,
             kind,
         }
@@ -457,7 +468,7 @@ impl<'a> NameResolver<'a> {
     /// Same as [`Self::location`], but is aware of name clashes and will resolve those properly
     pub(crate) fn locations<'b>(
         &self,
-        urls: &[&'b VersionedUrl],
+        urls: impl IntoIterator<Item = &'b VersionedUrl>,
     ) -> HashMap<&'b VersionedUrl, Location> {
         let mut locations_by_base: HashMap<String, Vec<_>> = HashMap::new();
 
@@ -528,7 +539,7 @@ impl<'a> NameResolver<'a> {
     /// using a suffix for each
     pub(crate) fn property_names<'b>(
         &self,
-        urls: &[&'b VersionedUrl],
+        urls: impl IntoIterator<Item = &'b VersionedUrl>,
     ) -> HashMap<&'b VersionedUrl, PropertyName> {
         let mut names: HashMap<String, Vec<_>> = HashMap::new();
 
@@ -537,7 +548,7 @@ impl<'a> NameResolver<'a> {
 
             let urls = names.entry(name.0.clone()).or_default();
 
-            urls.push((*url, name));
+            urls.push((url, name));
         }
 
         let mut output = HashMap::new();
@@ -556,6 +567,10 @@ impl<'a> NameResolver<'a> {
         }
 
         output
+    }
+
+    pub(crate) const fn analyzer(&self) -> &'a DependencyAnalyzer<'a> {
+        self.analyzer
     }
 }
 
