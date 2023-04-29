@@ -29,7 +29,7 @@ impl Type for Text {
     type Ref<'a> = TextRef<'a> where Self: 'a;
 
     const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/text" / v / 1);
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/text/" / v / 1);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         TextRef(&self.0)
@@ -99,7 +99,7 @@ impl Type for Number {
     type Ref<'a> = NumberRef<'a> where Self: 'a;
 
     const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/number" / v / 1);
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         NumberRef(&self.0)
@@ -170,7 +170,7 @@ impl Type for Boolean {
     type Ref<'a> = Self where Self: 'a;
 
     const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean" / v / 1);
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         *self
@@ -221,7 +221,7 @@ impl Type for Null {
     type Ref<'a> = Self where Self: 'a;
 
     const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/null" / v / 1);
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/null/" / v / 1);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         *self
@@ -276,7 +276,7 @@ impl Type for EmptyList {
     type Ref<'a> = Self where Self: 'a;
 
     const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/emptyList" / v / 1);
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/emptyList/" / v / 1);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         *self
@@ -337,7 +337,7 @@ impl Type for Object {
     type Ref<'a> = ObjectRef<'a> where Self: 'a;
 
     const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/object" / v / 1);
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         ObjectRef(&self.0)

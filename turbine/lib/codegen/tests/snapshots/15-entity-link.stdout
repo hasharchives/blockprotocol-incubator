@@ -1,27 +1,29 @@
-localhost_3000/alice/entity/country.rs
+localhost_3000/alice/entity/part_of.rs
 
 use blockprotocol::{
-    entity::Entity, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef, VersionedUrlRef,
+    entity::{Entity, LinkData},
+    EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef, VersionedUrlRef,
 };
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Country {
+pub struct PartOf {
     pub properties: Properties,
+    pub link_data: LinkData,
 }
-impl Type for Country {
-    type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
+impl Type for PartOf {
+    type Ref < 'a > = PartOfRef < 'a > where Self : 'a ;
 
     const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
+        url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
     }
 }
-impl blockprotocol::EntityType for Country {
+impl blockprotocol::EntityType for PartOf {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
@@ -31,22 +33,23 @@ impl blockprotocol::EntityType for Country {
 pub struct PropertiesRef<'a> {}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CountryRef<'a> {
+pub struct PartOfRef<'a> {
     pub properties: PropertiesRef<'a>,
+    pub link_data: &'a LinkData,
 }
-impl TypeRef for CountryRef<'_> {
-    type Owned = Country;
+impl TypeRef for PartOfRef<'_> {
+    type Owned = PartOf;
 
     fn into_owned(self) -> Self::Owned {
         todo!();
     }
 }
-impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
+impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
         todo!()
     }
 }
-pub type CountryV1 = Country;
-pub type CountryV1Ref<'a> = Country<'a>;
+pub type PartOfV1 = PartOf;
+pub type PartOfV1Ref<'a> = PartOf<'a>;

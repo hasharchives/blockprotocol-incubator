@@ -1,11 +1,13 @@
 use std::{
     collections::{BTreeMap, HashMap},
     ops::Deref,
+    str::FromStr,
 };
 
+use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
-use type_system::{url::VersionedUrl, EntityType, ValueOrArray};
+use type_system::{url::VersionedUrl, EntityType, EntityTypeReference, ValueOrArray};
 
 use crate::{
     analysis::EdgeKind,
@@ -25,6 +27,15 @@ const RESERVED: &[&str] = &[
     "Properties",
     "PropertiesRef",
 ];
+
+static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
+    EntityTypeReference::new(
+        VersionedUrl::from_str(
+            "https://blockprotocol.org/@blockprotocol/types/entity-type/link/v/1",
+        )
+        .expect("should be valid url"),
+    )
+});
 
 fn imports<'a>(
     references: impl IntoIterator<Item = &'a &'a VersionedUrl> + 'a,
@@ -68,6 +79,8 @@ fn imports<'a>(
     })
 }
 
+// TODO: most of this code can likely be shared with object properties! ~> need to think about
+//  hoisting
 fn properties(
     entity: &EntityType,
     resolver: &NameResolver,
@@ -174,6 +187,9 @@ fn versions(kind: LocationKind, resolver: &NameResolver) -> Vec<TokenStream> {
     }
 }
 
+// Reason: most of the lines are just generation code (TODO: we might want to break up in the
+// future?)
+#[allow(clippy::too_many_lines)]
 pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStream {
     let url = entity.id();
 
@@ -215,16 +231,29 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
             )
         });
 
-    let imports = imports(&references, &locations);
+    let mut imports: Vec<_> = imports(&references, &locations).collect();
 
     let (properties, properties_ref) = properties(entity, resolver, &property_names, &locations);
 
-    // TODO: is_link!
+    let is_link = entity
+        .inherits_from()
+        .all_of()
+        .iter()
+        .any(|reference| reference == &*LINK_REF);
+
+    let mut fields = vec![quote!(pub properties: Properties)];
+    let mut fields_ref = vec![quote!(pub properties: PropertiesRef<'a>)];
+
+    if is_link {
+        imports.push(quote! {
+            use blockprotocol::entity::LinkData;
+        });
+        fields.push(quote!(pub link_data: LinkData));
+        fields_ref.push(quote!(pub link_data: &'a LinkData));
+    }
 
     let version = entity.id().version;
     let base_url = entity.id().base_url.as_str();
-    // TODO: don't know if that is correct :shrug:
-    let base_url = base_url.strip_suffix('/').unwrap_or(base_url);
 
     let versions = versions(location.kind, resolver);
 
@@ -232,6 +261,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         use serde::Serialize;
         use blockprotocol::{Type, TypeRef, EntityType, EntityTypeRef, VersionedUrlRef, GenericEntityError};
         use blockprotocol::entity::Entity;
+        use error_stack::Result;
 
         #import_alloc
 
@@ -245,7 +275,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         #[derive(Debug, Clone, Serialize)]
         #[serde(rename_all = "camelCase")]
         pub struct #name {
-            properties: Properties
+            #(#fields),*
         }
 
         // TODO: accessors?
@@ -264,7 +294,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         impl blockprotocol::EntityType for #name {
             type Error = GenericEntityError;
 
-            fn try_from_entity(value: Entity) -> Result<Self, Self::Error> {
+            fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
                 // TODO!
                 todo!()
             }
@@ -277,7 +307,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         #[derive(Debug, Clone, Serialize)]
         #[serde(rename_all = "camelCase")]
         pub struct #ref_name<'a> {
-            properties: PropertiesRef<'a>
+            #(#fields_ref),*
         }
 
         // TODO: accessors?
@@ -294,7 +324,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         impl<'a> EntityTypeRef<'a> for #ref_name<'a> {
             type Error = GenericEntityError;
 
-            fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error> {
+            fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
                 // TODO!
                 todo!()
             }

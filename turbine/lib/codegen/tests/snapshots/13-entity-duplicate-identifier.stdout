@@ -26,13 +26,13 @@ pub struct Properties {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Country {
-    properties: Properties,
+    pub properties: Properties,
 }
 impl Type for Country {
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
 
     const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/entity-type/country" / v / 1u32);
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 
     fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
@@ -54,7 +54,7 @@ pub struct PropertiesRef<'a> {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
-    properties: PropertiesRef<'a>,
+    pub properties: PropertiesRef<'a>,
 }
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;

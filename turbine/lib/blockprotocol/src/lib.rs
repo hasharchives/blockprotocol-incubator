@@ -118,13 +118,13 @@ where
 {
     type Error: Context;
 
-    fn try_from_entity(value: Entity) -> Result<Self, Self::Error>;
+    fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>>;
 }
 
 pub trait EntityTypeRef<'a>: Serialize + TypeRef {
     type Error: Context;
 
-    fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error>;
+    fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>>;
 }
 
 pub trait LinkEntityType: EntityType
