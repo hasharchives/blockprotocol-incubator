@@ -4,7 +4,8 @@ use blockprotocol::{
     entity::Entity, url, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef,
     VersionedUrlRef,
 };
-#[derive(Debug, Clone)]
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct Country {}
 impl Type for Country {
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
@@ -23,7 +24,7 @@ impl EntityType for Country {
         todo!()
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CountryRef<'a> {}
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;

@@ -104,7 +104,17 @@ fn properties(
                 reference = quote!(Option<#reference>);
             }
 
-            (quote!(pub #name: #owned), quote!(pub #name: #reference))
+            let base = base.as_str();
+            (
+                quote! {
+                    #[serde(rename = #base)]
+                    pub #name: #owned
+                },
+                quote! {
+                    #[serde(rename = #base)]
+                    pub #name: #reference
+                },
+            )
         })
         .unzip()
 }
@@ -198,6 +208,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let versions = versions(location.kind, resolver);
 
     quote! {
+        use serde::Serialize;
         #import_alloc
 
         #(#imports)*
@@ -206,7 +217,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         use blockprotocol::entity::Entity;
         use blockprotocol::url;
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Serialize)]
         pub struct #name {
             #(#properties),*
         }
@@ -233,7 +244,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
             }
         }
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Serialize)]
         pub struct #ref_name<'a> {
             #(#properties_ref),*
         }

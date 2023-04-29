@@ -111,7 +111,8 @@ pub trait PropertyTypeRef<'a>: Serialize + TypeRef {
 
 // TODO: this is a bit more complicated <3
 // TODO: add additional information like inherits_from and links?!
-pub trait EntityType: Type
+// TODO: figure out how to serialize?!?! just object that bad boy? with serde rename?!
+pub trait EntityType: Serialize + Type
 where
     for<'a> Self::Ref<'a>: EntityTypeRef<'a>,
 {
@@ -120,7 +121,7 @@ where
     fn try_from_entity(value: Entity) -> Result<Self, Self::Error>;
 }
 
-pub trait EntityTypeRef<'a>: TypeRef {
+pub trait EntityTypeRef<'a>: Serialize + TypeRef {
     type Error: Context;
 
     fn try_from_entity(value: &'a Entity) -> Result<Self, Self::Error>;

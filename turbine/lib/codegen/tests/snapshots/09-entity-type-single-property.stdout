@@ -11,10 +11,12 @@ use blockprotocol::{
     entity::Entity, url, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef,
     VersionedUrlRef,
 };
+use serde::Serialize;
 
 use crate::localhost_3000::alice::property::name::{Name, NameRef};
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Country {
+    #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name,
 }
 impl Type for Country {
@@ -34,8 +36,9 @@ impl EntityType for Country {
         todo!()
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CountryRef<'a> {
+    #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: NameRef<'a>,
 }
 impl TypeRef for CountryRef<'_> {
