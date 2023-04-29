@@ -1,9 +1,11 @@
 #![feature(result_option_inspect)]
 
 mod analysis;
+mod data;
 mod entity;
 mod graph;
 mod name;
+mod property;
 
 use std::collections::{BTreeMap, HashMap};
 
