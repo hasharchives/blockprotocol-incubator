@@ -166,10 +166,12 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
     let property_type_references = entity.property_type_references();
 
-    let references: Vec<_> = property_type_references
+    let mut references: Vec<_> = property_type_references
         .iter()
         .map(|reference| reference.url())
         .collect();
+    // need to sort, as otherwise results might vary between invocations
+    references.sort();
 
     let property_names = resolver.property_names(references.iter().map(Deref::deref));
     let locations = resolver.locations(references.iter().map(Deref::deref));
@@ -194,8 +196,6 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let base_url = entity.id().base_url.as_str();
 
     let versions = versions(location.kind, resolver);
-
-    // TODO: required vs. not required (`Option`) vs no `Option`
 
     quote! {
         #import_alloc

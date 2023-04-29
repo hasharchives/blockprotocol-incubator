@@ -18,8 +18,8 @@ use crate::localhost_3000::{
 };
 #[derive(Debug, Clone)]
 pub struct Country {
-    pub name_0: Name0,
     pub name_1: Name1,
+    pub name_0: Name0,
 }
 impl Type for Country {
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
@@ -40,8 +40,8 @@ impl EntityType for Country {
 }
 #[derive(Debug, Clone)]
 pub struct CountryRef<'a> {
-    pub name_0: NameRef0<'a>,
     pub name_1: NameRef1<'a>,
+    pub name_0: NameRef0<'a>,
 }
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;

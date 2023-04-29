@@ -110,6 +110,7 @@ pub trait PropertyTypeRef<'a>: Serialize + TypeRef {
 }
 
 // TODO: this is a bit more complicated <3
+// TODO: add additional information like inherits_from and links?!
 pub trait EntityType: Type
 where
     for<'a> Self::Ref<'a>: EntityTypeRef<'a>,

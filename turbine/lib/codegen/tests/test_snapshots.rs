@@ -4,6 +4,7 @@ use std::{
     io::Write,
     path::Path,
     process::{Command, Stdio},
+    time::SystemTime,
 };
 
 use similar_asserts::assert_eq;
@@ -40,7 +41,9 @@ fn snapshots() {
         let snapshot = fs::read_to_string(&path).expect("unable to read snapshot");
         let contents = serde_json::from_str(&snapshot).expect("snapshot is invalid JSON");
 
+        let now = SystemTime::now();
         let output = codegen::process(contents).expect("able to generate valid rust");
+        println!("Elapsed: {:?}", now.elapsed().unwrap());
 
         let output = output
             .into_iter()

@@ -18,8 +18,8 @@ use crate::localhost_3000::alice::property::{
 };
 #[derive(Debug, Clone)]
 pub struct Country {
-    pub name: Name,
     pub country_code: CountryCode,
+    pub name: Name,
 }
 impl Type for Country {
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
@@ -40,8 +40,8 @@ impl EntityType for Country {
 }
 #[derive(Debug, Clone)]
 pub struct CountryRef<'a> {
-    pub name: NameRef<'a>,
     pub country_code: CountryCodeRef<'a>,
+    pub name: NameRef<'a>,
 }
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;
