@@ -11,6 +11,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
     let name = Ident::new(&location.name.value, Span::call_site());
     let ref_name = Ident::new(&location.ref_name.value, Span::call_site());
+
     let alias = location.name.alias.map(|alias| {
         let alias = Ident::new(&alias, Span::call_site());
 
@@ -121,7 +122,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
                 reference = quote!(Vec<#reference>);
             }
 
-            (quote!(#name: #owned), quote!(#name: #reference))
+            (quote!(pub #name: #owned), quote!(pub #name: #reference))
         })
         .unzip();
 
@@ -144,17 +145,17 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
                     // optional aliases
                     let name_alias = location.name.alias.as_ref().map(|alias| {
                         let alias = Ident::new(alias, Span::call_site());
-                        quote!(use #file::#alias;)
+                        quote!(pub use #file::#alias;)
                     });
                     let ref_name_alias = location.ref_name.alias.as_ref().map(|alias| {
                         let alias = Ident::new(alias, Span::call_site());
-                        quote!(use #file::#alias;)
+                        quote!(pub use #file::#alias;)
                     });
 
                     quote! {
-                        mod #file;
-                        use #file::#name;
-                        use #file::#ref_name;
+                        pub mod #file;
+                        pub use #file::#name;
+                        pub use #file::#ref_name;
                         #name_alias
                         #ref_name_alias
                     }
@@ -163,6 +164,8 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         }
         LocationKind::Version => vec![],
     };
+
+    // TODO: required vs. not required (`Option`) vs no `Option`
 
     quote! {
         #import_alloc
@@ -173,15 +176,12 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         use blockprotocol::entity::Entity;
         use blockprotocol::url;
 
-        #[derive(Debug, Copy, Clone)]
-        struct Error;
-
         #[derive(Debug, Clone)]
         pub struct #name {
             #(#properties),*
         }
 
-        // TODO: accessors
+        // TODO: accessors?
 
         impl Type for #name {
             type Ref<'a> = #ref_name where Self: 'a;
@@ -208,7 +208,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
             #(#properties_ref),*
         }
 
-        // TODO: accessors
+        // TODO: accessors?
 
         impl TypeRef for #ref_name<'_> {
             type Owned = #name;
