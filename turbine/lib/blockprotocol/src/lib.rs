@@ -69,14 +69,26 @@ pub trait TypeRef: Sized {
     fn into_owned(self) -> Self::Owned;
 }
 
+pub trait TypeMut: Sized {
+    type Owned;
+
+    fn into_owned(self) -> Self::Owned;
+}
+
 pub trait Type: Sized {
     type Ref<'a>: TypeRef<Owned = Self>
+    where
+        Self: 'a;
+
+    type Mut<'a>: TypeMut<Owned = Self>
     where
         Self: 'a;
 
     const ID: VersionedUrlRef<'static>;
 
     fn as_ref(&self) -> Self::Ref<'_>;
+
+    fn as_mut(&mut self) -> Self::Mut<'_>;
 }
 
 pub trait DataTypeRef<'a>: Serialize + TypeRef {
@@ -85,18 +97,16 @@ pub trait DataTypeRef<'a>: Serialize + TypeRef {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
+pub trait DataTypeMut<'a>: Serialize + TypeRef {
+    type Error: Context;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error>;
+}
+
 pub trait DataType: Serialize + Type
 where
     for<'a> Self::Ref<'a>: DataTypeRef<'a>,
-{
-    type Error: Context;
-
-    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
-}
-
-pub trait PropertyType: Serialize + Type
-where
-    for<'a> Self::Ref<'a>: PropertyTypeRef<'a>,
+    for<'a> Self::Mut<'a>: DataTypeMut<'a>,
 {
     type Error: Context;
 
@@ -109,16 +119,20 @@ pub trait PropertyTypeRef<'a>: Serialize + TypeRef {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
-// TODO: this is a bit more complicated <3
-// TODO: add additional information like inherits_from and links?!
-// TODO: figure out how to serialize?!?! just object that bad boy? with serde rename?!
-pub trait EntityType: Serialize + Type
+pub trait PropertyTypeMut<'a>: Serialize + TypeMut {
+    type Error: Context;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error>;
+}
+
+pub trait PropertyType: Serialize + Type
 where
-    for<'a> Self::Ref<'a>: EntityTypeRef<'a>,
+    for<'a> Self::Ref<'a>: PropertyTypeRef<'a>,
+    for<'a> Self::Mut<'a>: PropertyTypeMut<'a>,
 {
     type Error: Context;
 
-    fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>>;
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
 }
 
 pub trait EntityTypeRef<'a>: Serialize + TypeRef {
@@ -127,15 +141,35 @@ pub trait EntityTypeRef<'a>: Serialize + TypeRef {
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>>;
 }
 
-pub trait LinkEntityType: EntityType
-where
-    for<'a> Self::Ref<'a>: LinkEntityTypeRef<'a>,
-{
-    fn left_entity_id(&self) -> EntityId;
-    fn right_entity_id(&self) -> EntityId;
+pub trait EntityTypeMut<'a>: Serialize + TypeMut {
+    type Error: Context;
+
+    fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>>;
 }
 
-pub trait LinkEntityTypeRef<'a>: EntityTypeRef<'a> {
-    fn left_entity_id(&self) -> EntityId;
-    fn right_entity_id(&self) -> EntityId;
+// TODO: this is a bit more complicated <3
+// TODO: add additional information like inherits_from and links?!
+// TODO: figure out how to serialize?!?! just object that bad boy? with serde rename?!
+pub trait EntityType: Serialize + Type
+where
+    for<'a> Self::Ref<'a>: EntityTypeRef<'a>,
+    for<'a> Self::Mut<'a>: EntityTypeMut<'a>,
+{
+    type Error: Context;
+
+    fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>>;
 }
+
+// Might be included in future version?!
+// pub trait LinkEntityType: EntityType
+// where
+//     for<'a> Self::Ref<'a>: LinkEntityTypeRef<'a>,
+// {
+//     fn left_entity_id(&self) -> EntityId;
+//     fn right_entity_id(&self) -> EntityId;
+// }
+//
+// pub trait LinkEntityTypeRef<'a>: EntityTypeRef<'a> {
+//     fn left_entity_id(&self) -> EntityId;
+//     fn right_entity_id(&self) -> EntityId;
+// }
