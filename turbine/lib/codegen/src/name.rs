@@ -502,8 +502,8 @@ impl<'a> NameResolver<'a> {
         };
 
         let name_mut = Name {
-            value: format!("{}RefMut", name.value),
-            alias: name.alias.as_ref().map(|alias| format!("{alias}RefMut")),
+            value: format!("{}Mut", name.value),
+            alias: name.alias.as_ref().map(|alias| format!("{alias}Mut")),
         };
 
         Location {

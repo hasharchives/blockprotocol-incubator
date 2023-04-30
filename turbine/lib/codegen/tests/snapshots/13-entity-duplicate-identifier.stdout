@@ -8,7 +8,8 @@ unimplemented!();
 localhost_3000/alice/entity/country.rs
 
 use blockprotocol::{
-    entity::Entity, EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef, VersionedUrlRef,
+    entity::Entity, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
+    PropertyType as _, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
 use error_stack::Result;
 use serde::Serialize;
@@ -30,6 +31,7 @@ pub struct Country {
     pub properties: Properties,
 }
 impl Type for Country {
+    type Mut < 'a > = CountryMut < 'a > where Self : 'a ;
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
 
     const ID: VersionedUrlRef<'static> =
@@ -38,19 +40,24 @@ impl Type for Country {
     fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
     }
+
+    fn as_mut(&self) -> Self::Mut<'_> {
+        todo!()
+    }
 }
-impl blockprotocol::EntityType for Country {
+impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
         todo!()
     }
 }
+pub type CountryV1 = Country;
 pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
-    pub name_0: NameRef0<'a>,
+    pub name_0: Name0::Ref<'a>,
     #[serde(rename = "http://localhost:3000/@bob/types/property-type/name/")]
-    pub name_1: NameRef1<'a>,
+    pub name_1: Name1::Ref<'a>,
 }
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -71,8 +78,33 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
         todo!()
     }
 }
-pub type CountryV1 = Country;
-pub type CountryV1Ref<'a> = Country<'a>;
+pub type CountryV1Ref<'a> = CountryRef<'a>;
+pub struct PropertiesMut<'a> {
+    #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
+    pub name_0: Name0::Mut<'a>,
+    #[serde(rename = "http://localhost:3000/@bob/types/property-type/name/")]
+    pub name_1: Name1::Mut<'a>,
+}
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountryMut<'a> {
+    pub properties: PropertiesMut<'a>,
+}
+impl TypeMut for CountryMut<'_> {
+    type Owned = Country;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
+        todo!()
+    }
+}
+pub type CountryV1Mut<'a> = CountryMut<'a>;
 
 
 ---

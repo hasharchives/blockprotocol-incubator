@@ -29,6 +29,7 @@ const RESERVED: &[&str] = &[
     "Serialize",
     "Properties",
     "PropertiesRef",
+    "PropertiesMut",
 ];
 
 static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
@@ -196,12 +197,14 @@ fn generate_imports(
     let mut imports: Vec<_> = imports(references, locations).collect();
 
     if link {
-        imports.push(quote!(use blockprotocol::entity::LinkData));
+        imports.push(quote!(
+            use blockprotocol::entity::LinkData;
+        ));
     }
 
     quote! {
         use serde::Serialize;
-        use blockprotocol::{Type, TypeRef, TypeMut}
+        use blockprotocol::{Type, TypeRef, TypeMut};
         use blockprotocol::{EntityType, EntityTypeRef, EntityTypeMut};
         use blockprotocol::PropertyType as _;
         use blockprotocol::{VersionedUrlRef, GenericEntityError};
@@ -248,7 +251,7 @@ fn generate_owned(
     let mut fields = vec![quote!(pub properties: Properties)];
 
     if link {
-        fields.push(quote!(pub link_data: LinkData))
+        fields.push(quote!(pub link_data: LinkData));
     }
 
     let name = Ident::new(&location.name.value, Span::call_site());
@@ -341,7 +344,7 @@ fn generate_ref(
     let mut fields = vec![quote!(pub properties: PropertiesRef<'a>)];
 
     if link {
-        fields.push(quote!(pub link_data: &'a LinkData))
+        fields.push(quote!(pub link_data: &'a LinkData));
     }
 
     let name = Ident::new(&location.name.value, Span::call_site());
@@ -350,7 +353,7 @@ fn generate_ref(
     let alias = location.name_ref.alias.as_ref().map(|alias| {
         let alias = Ident::new(alias, Span::call_site());
 
-        quote!(pub type #alias = #name;)
+        quote!(pub type #alias<'a> = #name_ref<'a>;)
     });
 
     quote! {
@@ -421,7 +424,7 @@ fn generate_mut(
     let mut fields = vec![quote!(pub properties: PropertiesMut<'a>)];
 
     if link {
-        fields.push(quote!(pub link_data: &'a mut LinkData))
+        fields.push(quote!(pub link_data: &'a mut LinkData));
     }
 
     let name = Ident::new(&location.name.value, Span::call_site());
@@ -430,7 +433,7 @@ fn generate_mut(
     let alias = location.name_mut.alias.as_ref().map(|alias| {
         let alias = Ident::new(alias, Span::call_site());
 
-        quote!(pub type #alias = #name;)
+        quote!(pub type #alias<'a> = #name_mut<'a>;)
     });
 
     quote! {

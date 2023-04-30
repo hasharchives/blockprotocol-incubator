@@ -2,7 +2,8 @@ localhost_3000/alice/entity/part_of.rs
 
 use blockprotocol::{
     entity::{Entity, LinkData},
-    EntityType, EntityTypeRef, GenericEntityError, Type, TypeRef, VersionedUrlRef,
+    EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError, PropertyType as _, Type, TypeMut,
+    TypeRef, VersionedUrlRef,
 };
 use error_stack::Result;
 use serde::Serialize;
@@ -15,6 +16,7 @@ pub struct PartOf {
     pub link_data: LinkData,
 }
 impl Type for PartOf {
+    type Mut < 'a > = PartOfMut < 'a > where Self : 'a ;
     type Ref < 'a > = PartOfRef < 'a > where Self : 'a ;
 
     const ID: VersionedUrlRef<'static> =
@@ -23,14 +25,19 @@ impl Type for PartOf {
     fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
     }
+
+    fn as_mut(&self) -> Self::Mut<'_> {
+        todo!()
+    }
 }
-impl blockprotocol::EntityType for PartOf {
+impl EntityType for PartOf {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
         todo!()
     }
 }
+pub type PartOfV1 = PartOf;
 pub struct PropertiesRef<'a> {}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -52,5 +59,26 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
         todo!()
     }
 }
-pub type PartOfV1 = PartOf;
-pub type PartOfV1Ref<'a> = PartOf<'a>;
+pub type PartOfV1Ref<'a> = PartOfRef<'a>;
+pub struct PropertiesMut<'a> {}
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PartOfMut<'a> {
+    pub properties: PropertiesMut<'a>,
+    pub link_data: &'a mut LinkData,
+}
+impl TypeMut for PartOfMut<'_> {
+    type Owned = PartOf;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {
+    type Error = GenericEntityError;
+
+    fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
+        todo!()
+    }
+}
+pub type PartOfV1Mut<'a> = PartOfMut<'a>;
