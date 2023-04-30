@@ -68,10 +68,6 @@ fn imports<'a>(
             name = quote!(#name as #alias);
         }
 
-        if let Some(alias) = &location.alias.value_ref {
-            let alias = Ident::new(alias, Span::call_site());
-        }
-
         quote! {
             use crate #(:: #path)* :: #name;
         }
