@@ -38,6 +38,10 @@ impl Type for Object {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        ObjectMut(&mut self.0)
+    }
+
     fn as_ref(&self) -> Self::Ref<'_> {
         ObjectRef(&self.0)
     }

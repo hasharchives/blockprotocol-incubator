@@ -22,11 +22,11 @@ impl Type for Null {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/null/" / v / 1);
 
-    fn as_ref(&self) -> Self::Ref<'_> {
+    fn as_mut(&mut self) -> Self::Mut<'_> {
         *self
     }
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
+    fn as_ref(&self) -> Self::Ref<'_> {
         *self
     }
 }

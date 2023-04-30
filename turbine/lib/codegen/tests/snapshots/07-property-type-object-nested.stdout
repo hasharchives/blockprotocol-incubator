@@ -8,10 +8,60 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilm(pub Text);
+impl Type for FavoriteFilm {
+    type Mut < 'a > = FavoriteFilmMut < 'a > where Self : 'a ;
+    type Ref < 'a > = FavoriteFilmRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for FavoriteFilm {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type FavoriteFilmV1<'a> = FavoriteFilm<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilmRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for FavoriteFilmRef<'_> {
+    type Owned = FavoriteFilm;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for FavoriteFilmRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type FavoriteFilmV1Ref<'a> = FavoriteFilmRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct FavoriteFilmMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for FavoriteFilmMut<'_> {
+    type Owned = FavoriteFilm;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for FavoriteFilmMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type FavoriteFilmV1Mut<'a> = FavoriteFilmMut<'a>;
 
 
 ---
@@ -26,10 +76,60 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSong(pub Text);
+impl Type for FavoriteSong {
+    type Mut < 'a > = FavoriteSongMut < 'a > where Self : 'a ;
+    type Ref < 'a > = FavoriteSongRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for FavoriteSong {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type FavoriteSongV1<'a> = FavoriteSong<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSongRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for FavoriteSongRef<'_> {
+    type Owned = FavoriteSong;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for FavoriteSongRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type FavoriteSongV1Ref<'a> = FavoriteSongRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct FavoriteSongMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for FavoriteSongMut<'_> {
+    type Owned = FavoriteSong;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for FavoriteSongMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type FavoriteSongV1Mut<'a> = FavoriteSongMut<'a>;
 
 
 ---
@@ -44,10 +144,60 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Hobby(pub Text);
+impl Type for Hobby {
+    type Mut < 'a > = HobbyMut < 'a > where Self : 'a ;
+    type Ref < 'a > = HobbyRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for Hobby {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type HobbyV1<'a> = Hobby<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct HobbyRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for HobbyRef<'_> {
+    type Owned = Hobby;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for HobbyRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type HobbyV1Ref<'a> = HobbyRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct HobbyMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for HobbyMut<'_> {
+    type Owned = Hobby;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for HobbyMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type HobbyV1Mut<'a> = HobbyMut<'a>;
 
 
 ---
@@ -79,6 +229,26 @@ pub struct Interests {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Vec<Hobby>>,
 }
+impl Type for Interests {
+    type Mut < 'a > = InterestsMut < 'a > where Self : 'a ;
+    type Ref < 'a > = InterestsRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for Interests {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type InterestsV1<'a> = Interests<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct InterestsRef<'a> {
     #[serde(
@@ -92,6 +262,21 @@ pub struct InterestsRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Box<[Hobby::Ref<'a>]>>,
 }
+impl TypeRef for InterestsRef<'_> {
+    type Owned = Interests;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type InterestsV1Ref<'a> = InterestsRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct InterestsMut<'a> {
     #[serde(
@@ -105,3 +290,18 @@ pub struct InterestsMut<'a> {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Vec<Hobby::Mut<'a>>>,
 }
+impl TypeMut for InterestsMut<'_> {
+    type Owned = Interests;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type InterestsV1Mut<'a> = InterestsMut<'a>;

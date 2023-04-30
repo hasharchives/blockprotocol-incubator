@@ -105,7 +105,57 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties(pub Text);
+impl Type for Properties {
+    type Mut < 'a > = PropertiesMut < 'a > where Self : 'a ;
+    type Ref < 'a > = PropertiesRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for Properties {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type PropertiesV1<'a> = Properties<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for PropertiesRef<'_> {
+    type Owned = Properties;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for PropertiesRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type PropertiesV1Ref<'a> = PropertiesRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for PropertiesMut<'_> {
+    type Owned = Properties;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for PropertiesMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type PropertiesV1Mut<'a> = PropertiesMut<'a>;

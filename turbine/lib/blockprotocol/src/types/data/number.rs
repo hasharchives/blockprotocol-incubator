@@ -31,12 +31,12 @@ impl Type for Number {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        NumberRef(&self.0)
-    }
-
     fn as_mut(&mut self) -> Self::Mut<'_> {
         NumberMut(&mut self.0)
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        NumberRef(&self.0)
     }
 }
 

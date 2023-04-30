@@ -299,9 +299,16 @@ fn generate_owned(
     state: &mut State,
 ) -> TokenStream {
     let name = Ident::new(location.name.value.as_str(), Span::call_site());
+    let name_ref = Ident::new(location.name_ref.value.as_str(), Span::call_site());
+    let name_mut = Ident::new(location.name_mut.value.as_str(), Span::call_site());
 
-    // TODO: this is incomplete!
-    generate_type(
+    let alias = location.name.alias.as_ref().map(|alias| {
+        let alias = Ident::new(alias, Span::call_site());
+
+        quote!(pub type #alias<'a> = #name<'a>;)
+    });
+
+    let type_ = generate_type(
         property.id(),
         &name,
         Variant::Owned,
@@ -309,7 +316,37 @@ fn generate_owned(
         resolver,
         locations,
         state,
-    )
+    );
+
+    quote! {
+        #type_
+
+        impl Type for #name {
+            type Mut<'a> = #name_mut<'a> where Self: 'a;
+            type Ref<'a> = #name_ref<'a> where Self: 'a;
+
+            fn as_mut(&mut self) -> Self::Mut<'_> {
+                // TODO!
+                todo!()
+            }
+
+            fn as_ref(&self) -> Self::Ref<'_> {
+                // TODO!
+                todo!()
+            }
+        }
+
+        impl PropertyType for #name {
+            type Error = GenericPropertyError;
+
+            fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+                // TODO
+                todo!()
+            }
+        }
+
+        #alias
+    }
 }
 
 fn generate_ref(
@@ -319,17 +356,48 @@ fn generate_ref(
     locations: &HashMap<&VersionedUrl, Location>,
     state: &mut State,
 ) -> TokenStream {
-    let name = Ident::new(location.name_ref.value.as_str(), Span::call_site());
+    let name = Ident::new(location.name.value.as_str(), Span::call_site());
+    let name_ref = Ident::new(location.name_ref.value.as_str(), Span::call_site());
 
-    generate_type(
+    let alias = location.name_ref.alias.as_ref().map(|alias| {
+        let alias = Ident::new(alias, Span::call_site());
+
+        quote!(pub type #alias<'a> = #name_ref<'a>;)
+    });
+
+    let type_ = generate_type(
         property.id(),
-        &name,
+        &name_ref,
         Variant::Ref,
         property.one_of(),
         resolver,
         locations,
         state,
-    )
+    );
+
+    quote! {
+        #type_
+
+        impl TypeRef for #name_ref<'_> {
+            type Owned = #name;
+
+            fn into_owned(self) -> Self::Owned {
+                // TODO
+                todo!();
+            }
+        }
+
+        impl<'a> PropertyTypeRef<'a> for #name_ref<'a> {
+            type Error = GenericPropertyError;
+
+            fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+                // TODO
+                todo!()
+            }
+        }
+
+        #alias
+    }
 }
 
 fn generate_mut(
@@ -339,17 +407,48 @@ fn generate_mut(
     locations: &HashMap<&VersionedUrl, Location>,
     state: &mut State,
 ) -> TokenStream {
-    let name = Ident::new(location.name_mut.value.as_str(), Span::call_site());
+    let name = Ident::new(location.name.value.as_str(), Span::call_site());
+    let name_mut = Ident::new(location.name_mut.value.as_str(), Span::call_site());
 
-    generate_type(
+    let alias = location.name_mut.alias.as_ref().map(|alias| {
+        let alias = Ident::new(alias, Span::call_site());
+
+        quote!(pub type #alias<'a> = #name_mut<'a>;)
+    });
+
+    let type_ = generate_type(
         property.id(),
-        &name,
+        &name_mut,
         Variant::Mut,
         property.one_of(),
         resolver,
         locations,
         state,
-    )
+    );
+
+    quote! {
+        #type_
+
+        impl TypeMut for #name_mut<'_> {
+            type Owned = #name;
+
+            fn into_owned(self) -> Self::Owned {
+                // TODO
+                todo!();
+            }
+        }
+
+        impl<'a> PropertyTypeMut<'a> for #name_mut<'a> {
+            type Error = GenericPropertyError;
+
+            fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+                // TODO
+                todo!()
+            }
+        }
+
+        #alias
+    }
 }
 
 // Generate the code for all oneOf, depending (with the () vs. {}) and extra types required,

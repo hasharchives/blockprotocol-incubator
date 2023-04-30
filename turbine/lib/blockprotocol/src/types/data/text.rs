@@ -38,12 +38,12 @@ impl Type for Text {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/text/" / v / 1);
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        TextRef(&self.0)
-    }
-
     fn as_mut(&mut self) -> Self::Mut<'_> {
         TextMut(&mut self.0)
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        TextRef(&self.0)
     }
 }
 

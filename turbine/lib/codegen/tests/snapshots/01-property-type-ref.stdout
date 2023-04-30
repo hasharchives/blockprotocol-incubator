@@ -8,7 +8,57 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
+impl Type for CountryCode {
+    type Mut < 'a > = CountryCodeMut < 'a > where Self : 'a ;
+    type Ref < 'a > = CountryCodeRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for CountryCode {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type CountryCodeV1<'a> = CountryCode<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for CountryCodeRef<'_> {
+    type Owned = CountryCode;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for CountryCodeRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type CountryCodeV1Ref<'a> = CountryCodeRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct CountryCodeMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for CountryCodeMut<'_> {
+    type Owned = CountryCode;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for CountryCodeMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type CountryCodeV1Mut<'a> = CountryCodeMut<'a>;

@@ -37,12 +37,12 @@ impl Type for Boolean {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        *self
-    }
-
     fn as_mut(&mut self) -> Self::Mut<'_> {
         BooleanMut(&mut self.0)
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        *self
     }
 }
 

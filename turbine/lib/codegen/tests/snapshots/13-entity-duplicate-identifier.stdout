@@ -113,10 +113,60 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Name(pub Text);
+impl Type for Name {
+    type Mut < 'a > = NameMut < 'a > where Self : 'a ;
+    type Ref < 'a > = NameRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for Name {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type NameV1<'a> = Name<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct NameRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for NameRef<'_> {
+    type Owned = Name;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type NameV1Ref<'a> = NameRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct NameMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for NameMut<'_> {
+    type Owned = Name;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for NameMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type NameV1Mut<'a> = NameMut<'a>;
 
 
 ---
@@ -131,7 +181,57 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Name(pub Text);
+impl Type for Name {
+    type Mut < 'a > = NameMut < 'a > where Self : 'a ;
+    type Ref < 'a > = NameRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for Name {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type NameV1<'a> = Name<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct NameRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for NameRef<'_> {
+    type Owned = Name;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type NameV1Ref<'a> = NameRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct NameMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for NameMut<'_> {
+    type Owned = Name;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for NameMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type NameV1Mut<'a> = NameMut<'a>;

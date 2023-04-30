@@ -86,9 +86,9 @@ pub trait Type: Sized {
 
     const ID: VersionedUrlRef<'static>;
 
-    fn as_ref(&self) -> Self::Ref<'_>;
-
     fn as_mut(&mut self) -> Self::Mut<'_>;
+
+    fn as_ref(&self) -> Self::Ref<'_>;
 }
 
 pub trait DataTypeRef<'a>: Serialize + TypeRef {

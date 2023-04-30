@@ -8,10 +8,60 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Email(pub Text);
+impl Type for Email {
+    type Mut < 'a > = EmailMut < 'a > where Self : 'a ;
+    type Ref < 'a > = EmailRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for Email {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type EmailV1<'a> = Email<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct EmailRef<'a>(pub Text::Ref<'a>);
+impl TypeRef for EmailRef<'_> {
+    type Owned = Email;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for EmailRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type EmailV1Ref<'a> = EmailRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct EmailMut<'a>(pub Text::Mut<'a>);
+impl TypeMut for EmailMut<'_> {
+    type Owned = Email;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for EmailMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type EmailV1Mut<'a> = EmailMut<'a>;
 
 
 ---
@@ -38,6 +88,26 @@ pub struct ContactInformation {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email,
 }
+impl Type for ContactInformation {
+    type Mut < 'a > = ContactInformationMut < 'a > where Self : 'a ;
+    type Ref < 'a > = ContactInformationRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for ContactInformation {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type ContactInformationV1<'a> = ContactInformation<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct ContactInformationRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
@@ -45,6 +115,21 @@ pub struct ContactInformationRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email::Ref<'a>,
 }
+impl TypeRef for ContactInformationRef<'_> {
+    type Owned = ContactInformation;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for ContactInformationRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type ContactInformationV1Ref<'a> = ContactInformationRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct ContactInformationMut<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
@@ -52,3 +137,18 @@ pub struct ContactInformationMut<'a> {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email::Mut<'a>,
 }
+impl TypeMut for ContactInformationMut<'_> {
+    type Owned = ContactInformation;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for ContactInformationMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type ContactInformationV1Mut<'a> = ContactInformationMut<'a>;

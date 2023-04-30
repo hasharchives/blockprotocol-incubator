@@ -13,15 +13,65 @@ pub enum UserId {
     Variant0(Text),
     Variant1(Number),
 }
+impl Type for UserId {
+    type Mut < 'a > = UserIdMut < 'a > where Self : 'a ;
+    type Ref < 'a > = UserIdRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for UserId {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type UserIdV1<'a> = UserId<'a>;
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
     Variant0(Text::Ref<'a>),
     Variant1(Number::Ref<'a>),
 }
+impl TypeRef for UserIdRef<'_> {
+    type Owned = UserId;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type UserIdV1Ref<'a> = UserIdRef<'a>;
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum UserIdMut<'a> {
     Variant0(Text::Mut<'a>),
     Variant1(Number::Mut<'a>),
 }
+impl TypeMut for UserIdMut<'_> {
+    type Owned = UserId;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type UserIdV1Mut<'a> = UserIdMut<'a>;
