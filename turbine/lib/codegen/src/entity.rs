@@ -398,8 +398,23 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     // need to sort, as otherwise results might vary between invocations
     references.sort();
 
+    let mut reserved = RESERVED.to_vec();
+    reserved.push(&location.name.value);
+    reserved.push(&location.name_ref.value);
+    reserved.push(&location.name_mut.value);
+
+    if let Some(name) = &location.name.alias {
+        reserved.push(name);
+    }
+    if let Some(name) = &location.name_ref.alias {
+        reserved.push(name);
+    }
+    if let Some(name) = &location.name_mut.alias {
+        reserved.push(name);
+    }
+
     let property_names = resolver.property_names(references.iter().map(Deref::deref));
-    let locations = resolver.locations(references.iter().map(Deref::deref), RESERVED);
+    let locations = resolver.locations(references.iter().map(Deref::deref), &reserved);
 
     let properties = properties(entity, resolver, &property_names, &locations);
 

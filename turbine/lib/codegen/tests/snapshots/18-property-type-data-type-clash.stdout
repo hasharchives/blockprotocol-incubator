@@ -1,0 +1,155 @@
+blockprotocol/alice/property/text.rs
+
+use blockprotocol::{
+    types::data::Text as Text0, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
+pub struct Text(pub Text0);
+impl Type for Text {
+    type Mut < 'a > = TextMut < 'a > where Self : 'a ;
+    type Ref < 'a > = TextRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for Text {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type TextV1<'a> = Text<'a>;
+#[derive(Debug, Clone, Serialize)]
+pub struct TextRef<'a>(pub Text0::Ref<'a>);
+impl TypeRef for TextRef<'_> {
+    type Owned = Text;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for TextRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type TextV1Ref<'a> = TextRef<'a>;
+#[derive(Debug, Serialize)]
+pub struct TextMut<'a>(pub Text0::Mut<'a>);
+impl TypeMut for TextMut<'_> {
+    type Owned = Text;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for TextMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type TextV1Mut<'a> = TextMut<'a>;
+
+
+---
+
+https_blockprotocol_org_alice_property_type_user_id.rs
+
+use blockprotocol::{
+    types::data::Text as Text1, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+
+use crate::blockprotocol::alice::property::text::Text as Text0;
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum UserId {
+    Variant0(Text1),
+    Variant1 {
+        #[serde(rename = "https://blockprotocol.org/@alice/types/property-type/text/")]
+        text: Option<Text0>,
+    },
+}
+impl Type for UserId {
+    type Mut < 'a > = UserIdMut < 'a > where Self : 'a ;
+    type Ref < 'a > = UserIdRef < 'a > where Self : 'a ;
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        todo!()
+    }
+
+    fn as_ref(&self) -> Self::Ref<'_> {
+        todo!()
+    }
+}
+impl PropertyType for UserId {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type UserIdV1<'a> = UserId<'a>;
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum UserIdRef<'a> {
+    Variant0(Text1::Ref<'a>),
+    Variant1 {
+        #[serde(rename = "https://blockprotocol.org/@alice/types/property-type/text/")]
+        text: Option<Text0::Ref<'a>>,
+    },
+}
+impl TypeRef for UserIdRef<'_> {
+    type Owned = UserId;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type UserIdV1Ref<'a> = UserIdRef<'a>;
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum UserIdMut<'a> {
+    Variant0(Text1::Mut<'a>),
+    Variant1 {
+        #[serde(rename = "https://blockprotocol.org/@alice/types/property-type/text/")]
+        text: Option<Text0::Mut<'a>>,
+    },
+}
+impl TypeMut for UserIdMut<'_> {
+    type Owned = UserId;
+
+    fn into_owned(self) -> Self::Owned {
+        todo!();
+    }
+}
+impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
+    type Error = GenericPropertyError;
+
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+pub type UserIdV1Mut<'a> = UserIdMut<'a>;

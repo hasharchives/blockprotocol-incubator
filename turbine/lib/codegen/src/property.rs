@@ -471,7 +471,22 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
     // need to sort, as otherwise results might vary between invocations
     references.sort();
 
-    let locations = resolver.locations(references.iter().map(Deref::deref), RESERVED);
+    let mut reserved = RESERVED.to_vec();
+    reserved.push(&location.name.value);
+    reserved.push(&location.name_ref.value);
+    reserved.push(&location.name_mut.value);
+
+    if let Some(name) = &location.name.alias {
+        reserved.push(name);
+    }
+    if let Some(name) = &location.name_ref.alias {
+        reserved.push(name);
+    }
+    if let Some(name) = &location.name_mut.alias {
+        reserved.push(name);
+    }
+
+    let locations = resolver.locations(references.iter().map(Deref::deref), &reserved);
     let mut state = State {
         inner: vec![],
         import: Import {
@@ -502,8 +517,8 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
     }
 }
 
-// TODO: mod handling, use handling (data-type), `Inner` DENY_LIST ~> counter, alias
-// TODO: test multiple versions, data-type clash, Inner type name
+// TODO: `Inner` DENY_LIST ~> counter
+// TODO: data-type clash, Inner type name
 // in the enum we could in theory name the variant by the name of the struct, problem here is ofc
 // that we would still need to name the other variants and then we have potential name conflicts...
 // Do we need to box on Ref and Mut self-referential?

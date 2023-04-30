@@ -79,12 +79,12 @@ use serde::Serialize;
 
 use crate::{
     blockprotocol::blockprotocol::property::email::Email,
-    https_blockprotocol_org_alice_property_type_contact_information::ContactInformation,
+    https_blockprotocol_org_alice_property_type_contact_information::ContactInformation as ContactInformation0,
 };
 #[derive(Debug, Clone, Serialize)]
 pub struct ContactInformation {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
-    pub contact_information: Option<Box<ContactInformation>>,
+    pub contact_information: Option<Box<ContactInformation0>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email,
 }
@@ -111,7 +111,7 @@ pub type ContactInformationV1<'a> = ContactInformation<'a>;
 #[derive(Debug, Clone, Serialize)]
 pub struct ContactInformationRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
-    pub contact_information: Option<Box<ContactInformation::Ref<'a>>>,
+    pub contact_information: Option<Box<ContactInformation0::Ref<'a>>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email::Ref<'a>,
 }
@@ -133,7 +133,7 @@ pub type ContactInformationV1Ref<'a> = ContactInformationRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct ContactInformationMut<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
-    pub contact_information: Option<Box<ContactInformation::Mut<'a>>>,
+    pub contact_information: Option<Box<ContactInformation0::Mut<'a>>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email::Mut<'a>,
 }
