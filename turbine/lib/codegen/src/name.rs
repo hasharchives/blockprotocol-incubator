@@ -91,8 +91,9 @@ pub(crate) enum LocationKind<'a> {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Alias {
-    pub(crate) owned: Option<String>,
-    pub(crate) reference: Option<String>,
+    pub(crate) value: Option<String>,
+    pub(crate) value_ref: Option<String>,
+    pub(crate) value_ref_mut: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -100,7 +101,8 @@ pub(crate) struct Location<'a> {
     pub(crate) path: Path,
 
     pub(crate) name: Name,
-    pub(crate) ref_name: Name,
+    pub(crate) name_ref: Name,
+    pub(crate) name_ref_mut: Name,
 
     pub(crate) alias: Alias,
     pub(crate) kind: LocationKind<'a>,
@@ -399,7 +401,6 @@ impl<'a> NameResolver<'a> {
             Some(UrlParts { id, .. }) => id.to_pascal_case(),
         };
 
-        // TODO: import vX version mod and import in codegen
         // Default handling, if we're the newest version (very often the case), then we also export
         // a versioned identifier to the "default" one.
         let mut alias = Some(format!("{name}V{}", url.version));
@@ -495,24 +496,29 @@ impl<'a> NameResolver<'a> {
             }
         }
 
-        let ref_name = Name {
+        let name_ref = Name {
             value: format!("{}Ref", name.value),
             alias: name.alias.as_ref().map(|alias| format!("{alias}Ref")),
+        };
+
+        let name_ref_mut = Name {
+            value: format!("{}RefMut", name.value),
+            alias: name.alias.as_ref().map(|alias| format!("{alias}RefMut")),
         };
 
         Location {
             path,
             name,
-            ref_name,
+            name_ref,
+            name_ref_mut,
             alias: Alias {
-                owned: None,
-                reference: None,
+                value: None,
+                value_ref: None,
+                value_ref_mut: None,
             },
             kind,
         }
     }
-
-    // TODO: pub use previous versions in mod.rs if multiple files
 
     /// Same as [`Self::location`], but is aware of name clashes and will resolve those properly
     pub(crate) fn locations<'b>(
@@ -540,10 +546,10 @@ impl<'a> NameResolver<'a> {
             if locations.len() > 1 || reserved.contains(&&**name) {
                 // suffix names with their position
                 for (index, (_, location)) in locations.iter_mut().enumerate() {
-                    // TODO: should we prefer the alias here for import? ~> method on Name?
                     location.alias = Alias {
-                        owned: Some(format!("{}{index}", location.name.value)),
-                        reference: Some(format!("{}{index}", location.ref_name.value)),
+                        value: Some(format!("{}{index}", location.name.value)),
+                        value_ref: Some(format!("{}{index}", location.name_ref.value)),
+                        value_ref_mut: Some(format!("{}{index}", location.name_ref_mut.value)),
                     };
                 }
             }
@@ -566,8 +572,6 @@ impl<'a> NameResolver<'a> {
         self.determine_name(url, parts.as_ref(), &versions)
     }
 
-    // TODO: we need to generate the code for `mod` also!
-
     // TODO: inner (cannot by done by the name resolver)
 
     /// Returns the name for the accessor or property for the specified URL
@@ -585,10 +589,6 @@ impl<'a> NameResolver<'a> {
 
         PropertyName(name)
     }
-
-    // TODO: we need a HashMap of `base_url`: <children>, which we can use in the main one?
-    // TODO: we need a way to determine the "main" one and if it requires has children
-    //  (and which they are)
 
     /// Same as [`Self::property_name`], but is aware of name clashes and will resolve those by
     /// using a suffix for each

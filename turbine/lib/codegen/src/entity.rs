@@ -59,15 +59,15 @@ fn imports<'a>(
 
         let mut name = Ident::new(&location.name.value, Span::call_site()).to_token_stream();
 
-        if let Some(alias) = &location.alias.owned {
+        if let Some(alias) = &location.alias.value {
             let alias = Ident::new(alias, Span::call_site());
             name = quote!(#name as #alias);
         }
 
         let mut ref_name =
-            Ident::new(&location.ref_name.value, Span::call_site()).to_token_stream();
+            Ident::new(&location.name_ref.value, Span::call_site()).to_token_stream();
 
-        if let Some(alias) = &location.alias.reference {
+        if let Some(alias) = &location.alias.value_ref {
             let alias = Ident::new(alias, Span::call_site());
             ref_name = quote!(#ref_name as #alias);
         }
@@ -106,7 +106,7 @@ fn properties(
             let owned = Ident::new(
                 location
                     .alias
-                    .owned
+                    .value
                     .as_ref()
                     .unwrap_or(&location.name.value),
                 Span::call_site(),
@@ -116,9 +116,9 @@ fn properties(
             let reference = Ident::new(
                 location
                     .alias
-                    .reference
+                    .value_ref
                     .as_ref()
-                    .unwrap_or(&location.ref_name.value),
+                    .unwrap_or(&location.name_ref.value),
                 Span::call_site(),
             );
             let mut reference = quote!(#reference<'a>);
@@ -161,14 +161,14 @@ fn versions(kind: LocationKind, resolver: &NameResolver) -> Vec<TokenStream> {
                     let file = Ident::new(location.path.file().name(), Span::call_site());
 
                     let name = Ident::new(&location.name.value, Span::call_site());
-                    let ref_name = Ident::new(&location.ref_name.value, Span::call_site());
+                    let ref_name = Ident::new(&location.name_ref.value, Span::call_site());
 
                     // optional aliases
                     let name_alias = location.name.alias.as_ref().map(|alias| {
                         let alias = Ident::new(alias, Span::call_site());
                         quote!(pub use #file::#alias;)
                     });
-                    let ref_name_alias = location.ref_name.alias.as_ref().map(|alias| {
+                    let ref_name_alias = location.name_ref.alias.as_ref().map(|alias| {
                         let alias = Ident::new(alias, Span::call_site());
                         quote!(pub use #file::#alias;)
                     });
@@ -196,14 +196,14 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let location = resolver.location(url);
 
     let name = Ident::new(&location.name.value, Span::call_site());
-    let ref_name = Ident::new(&location.ref_name.value, Span::call_site());
+    let ref_name = Ident::new(&location.name_ref.value, Span::call_site());
 
     let alias = location.name.alias.map(|alias| {
         let alias = Ident::new(&alias, Span::call_site());
 
         quote!(pub type #alias = #name;)
     });
-    let ref_alias = location.ref_name.alias.map(|alias| {
+    let ref_alias = location.name_ref.alias.map(|alias| {
         let alias = Ident::new(&alias, Span::call_site());
 
         quote!(pub type #alias<'a> = #name<'a>;)
