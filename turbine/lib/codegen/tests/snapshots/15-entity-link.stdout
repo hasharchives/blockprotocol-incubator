@@ -38,6 +38,7 @@ impl EntityType for PartOf {
     }
 }
 pub type PartOfV1 = PartOf;
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,8 +61,9 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
     }
 }
 pub type PartOfV1Ref<'a> = PartOfRef<'a>;
+#[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {}
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfMut<'a> {
     pub properties: PropertiesMut<'a>,

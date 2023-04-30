@@ -13,8 +13,19 @@ use type_system::{
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
-    shared::{Property, PropertyKind},
+    shared::{generate_mod, imports, Property, PropertyKind},
 };
+
+#[derive(Debug, Copy, Clone)]
+struct Import {
+    vec: bool,
+    box_: bool,
+}
+
+struct State {
+    inner: Vec<Inner>,
+    import: Import,
+}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Variant {
@@ -63,6 +74,37 @@ fn properties<'a>(
     )
 }
 
+fn generate_use(
+    references: &[&VersionedUrl],
+    locations: &HashMap<&VersionedUrl, Location>,
+    import: Import,
+) -> TokenStream {
+    let mut imports: Vec<_> = imports(references, locations).collect();
+
+    if import.box_ {
+        imports.push(quote!(
+            use alloc::boxed::Box;
+        ));
+    }
+
+    if import.vec {
+        imports.push(quote!(
+            use alloc::vec::Vec;
+        ));
+    }
+
+    quote! {
+        use serde::Serialize;
+        use blockprotocol::{Type, TypeRef, TypeMut};
+        use blockprotocol::{PropertyType, PropertyTypeRef, PropertyTypeMut};
+        use blockprotocol::DataType as _;
+        use blockprotocol::{VersionedUrlRef, GenericEntityError};
+        use error_stack::Result;
+
+        #(#imports)*
+    }
+}
+
 fn generate_type(
     id: &VersionedUrl,
     name: &Ident,
@@ -70,8 +112,13 @@ fn generate_type(
     values: &[PropertyValues],
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    inner: &mut Vec<Inner>,
+    state: &mut State,
 ) -> TokenStream {
+    let derive = match variant {
+        Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
+        Variant::Mut => quote!(#[derive(Debug, Serialize)]),
+    };
+
     let lifetime = match variant {
         Variant::Ref | Variant::Mut => Some(quote!(<'a>)),
         Variant::Owned => None,
@@ -84,18 +131,19 @@ fn generate_type(
         };
 
         // we can hoist!
-        let body = generate_contents(id, variant, value, resolver, locations, true, inner);
+        let body = generate_contents(id, variant, value, resolver, locations, true, state);
         let semicolon = semicolon.then_some(quote!(;));
 
         return quote! {
             // TODO: try_from_value (depending on variant)
+            #derive
             pub struct #name #lifetime #body #semicolon
         };
     }
 
     // we cannot hoist and therefore need to create an enum
     let body = values.iter().enumerate().map(|(index, value)| {
-        let body = generate_contents(id, variant, value, resolver, locations, false, inner);
+        let body = generate_contents(id, variant, value, resolver, locations, false, state);
         let name = format_ident!("Variant{index}");
 
         // TODO: try_from_value
@@ -106,6 +154,8 @@ fn generate_type(
 
     // TODO: try_from_value
     quote! {
+        #derive
+        #[serde(untagged)]
         pub enum #name #lifetime {
             #(#body),*
         }
@@ -118,14 +168,14 @@ fn generate_inner(
     values: &[PropertyValues],
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    inner: &mut Vec<Inner>,
+    state: &mut State,
 ) -> Ident {
-    let n = inner.len();
+    let n = state.inner.len();
     let name = format_ident!("Inner{n}");
 
-    let type_ = generate_type(id, &name, variant, values, resolver, locations, inner);
+    let type_ = generate_type(id, &name, variant, values, resolver, locations, state);
 
-    inner.push(Inner {
+    state.inner.push(Inner {
         name: name.clone(),
         stream: type_,
     });
@@ -140,7 +190,7 @@ fn generate_contents(
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
     hoist: bool,
-    inner: &mut Vec<Inner>,
+    state: &mut State,
 ) -> TokenStream {
     match value {
         PropertyValues::DataTypeReference(reference) => {
@@ -187,11 +237,18 @@ fn generate_contents(
 
                 let mut type_ = match kind {
                     PropertyKind::Array if variant == Variant::Owned || variant == Variant::Mut => {
+                        state.import.vec = true;
                         quote!(Vec<#type_>)
                     }
-                    PropertyKind::Array => quote!(Box<[#type_]>),
+                    PropertyKind::Array => {
+                        state.import.box_ = true;
+                        quote!(Box<[#type_]>)
+                    }
                     PropertyKind::Plain => type_,
-                    PropertyKind::Boxed => quote!(Box<#type_>),
+                    PropertyKind::Boxed => {
+                        state.import.box_ = true;
+                        quote!(Box<#type_>)
+                    }
                 };
 
                 if !required {
@@ -217,7 +274,7 @@ fn generate_contents(
         // TODO: needs a `generate_object` in that case ~> not really tho
         PropertyValues::ArrayOfPropertyValues(array) => {
             let items = array.items();
-            let inner = generate_inner(id, variant, items.one_of(), resolver, locations, inner);
+            let inner = generate_inner(id, variant, items.one_of(), resolver, locations, state);
 
             let vis = hoist.then_some(quote!(pub));
 
@@ -228,25 +285,18 @@ fn generate_contents(
 
             // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
             // Array
+            state.import.vec = true;
             quote!((#vis Vec<#inner #lifetime>))
         }
     }
 }
 
-// id: &VersionedUrl,
-//     name: &Ident,
-//     variant: Variant,
-//     values: &[PropertyValues],
-//     resolver: &NameResolver,
-//     locations: &HashMap<&VersionedUrl, Location>,
-//     inner: &mut Vec<Inner>,
-// TODO: locations should be generated from union of all types!
 fn generate_owned(
     property: &PropertyType,
     location: &Location,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    inner: &mut Vec<Inner>,
+    state: &mut State,
 ) -> TokenStream {
     let name = Ident::new(location.name.value.as_str(), Span::call_site());
 
@@ -258,7 +308,7 @@ fn generate_owned(
         property.one_of(),
         resolver,
         locations,
-        inner,
+        state,
     )
 }
 
@@ -267,7 +317,7 @@ fn generate_ref(
     location: &Location,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    inner: &mut Vec<Inner>,
+    state: &mut State,
 ) -> TokenStream {
     let name = Ident::new(location.name_ref.value.as_str(), Span::call_site());
 
@@ -278,7 +328,7 @@ fn generate_ref(
         property.one_of(),
         resolver,
         locations,
-        inner,
+        state,
     )
 }
 
@@ -287,7 +337,7 @@ fn generate_mut(
     location: &Location,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    inner: &mut Vec<Inner>,
+    state: &mut State,
 ) -> TokenStream {
     let name = Ident::new(location.name_mut.value.as_str(), Span::call_site());
 
@@ -298,7 +348,7 @@ fn generate_mut(
         property.one_of(),
         resolver,
         locations,
-        inner,
+        state,
     )
 }
 
@@ -307,7 +357,6 @@ fn generate_mut(
 // generated via a mutable vec
 pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> TokenStream {
     let location = resolver.location(property.id());
-    let name = Ident::new(location.name.value.as_str(), Span::call_site());
 
     let mut references: Vec<_> = property
         .property_type_references()
@@ -324,21 +373,38 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
     references.sort();
 
     let locations = resolver.locations(references.iter().map(Deref::deref), RESERVED);
+    let mut state = State {
+        inner: vec![],
+        import: Import {
+            vec: false,
+            box_: false,
+        },
+    };
 
-    let mut inner = vec![];
+    let owned = generate_owned(property, &location, resolver, &locations, &mut state);
+    let ref_ = generate_ref(property, &location, resolver, &locations, &mut state);
+    let mut_ = generate_mut(property, &location, resolver, &locations, &mut state);
 
-    let owned = generate_owned(property, &location, resolver, &locations, &mut inner);
-    let ref_ = generate_ref(property, &location, resolver, &locations, &mut inner);
-    let mut_ = generate_mut(property, &location, resolver, &locations, &mut inner);
+    let inner = state.inner;
+
+    let use_ = generate_use(&references, &locations, state.import);
+    let mod_ = generate_mod(&location.kind, resolver);
 
     quote! {
+        #use_
+
         #(#inner)*
 
         #owned
         #ref_
         #mut_
+
+        #mod_
     }
 }
 
-// TODO: mod handling, use handling (data-type), `Inner` DENY_LIST, alias
-// TODO: test multiple versions
+// TODO: mod handling, use handling (data-type), `Inner` DENY_LIST ~> counter, alias
+// TODO: test multiple versions, data-type clash, Inner type name
+// in the enum we could in theory name the variant by the name of the struct, problem here is ofc
+// that we would still need to name the other variants and then we have potential name conflicts...
+// Do we need to box on Ref and Mut self-referential?

@@ -1,7 +1,16 @@
 blockprotocol/blockprotocol/property/favorite_film.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilm(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilmRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct FavoriteFilmMut<'a>(pub Text::Mut<'a>);
 
 
@@ -9,8 +18,17 @@ pub struct FavoriteFilmMut<'a>(pub Text::Mut<'a>);
 
 blockprotocol/blockprotocol/property/favorite_song.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSong(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSongRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct FavoriteSongMut<'a>(pub Text::Mut<'a>);
 
 
@@ -18,8 +36,17 @@ pub struct FavoriteSongMut<'a>(pub Text::Mut<'a>);
 
 blockprotocol/blockprotocol/property/hobby.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct Hobby(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct HobbyRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct HobbyMut<'a>(pub Text::Mut<'a>);
 
 
@@ -27,6 +54,19 @@ pub struct HobbyMut<'a>(pub Text::Mut<'a>);
 
 https_blockprotocol_org_alice_property_type_interests.rs
 
+use alloc::{boxed::Box, vec::Vec};
+
+use blockprotocol::{
+    DataType as _, GenericEntityError, PropertyType, PropertyTypeMut, PropertyTypeRef, Type,
+    TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+
+use crate::blockprotocol::blockprotocol::property::{
+    favorite_film::FavoriteFilm, favorite_song::FavoriteSong, hobby::Hobby,
+};
+#[derive(Debug, Clone, Serialize)]
 pub struct Interests {
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
@@ -39,6 +79,7 @@ pub struct Interests {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Vec<Hobby>>,
 }
+#[derive(Debug, Clone, Serialize)]
 pub struct InterestsRef<'a> {
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
@@ -51,6 +92,7 @@ pub struct InterestsRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Box<[Hobby::Ref<'a>]>>,
 }
+#[derive(Debug, Serialize)]
 pub struct InterestsMut<'a> {
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"

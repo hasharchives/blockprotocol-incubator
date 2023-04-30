@@ -43,6 +43,7 @@ impl EntityType for Country {
     }
 }
 pub type CountryV2 = Country;
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/countryCode/")]
     pub country_code: CountryCode::Ref<'a>,
@@ -69,13 +70,14 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     }
 }
 pub type CountryV2Ref<'a> = CountryRef<'a>;
+#[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/countryCode/")]
     pub country_code: CountryCode::Mut<'a>,
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name::Mut<'a>,
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -143,6 +145,7 @@ impl EntityType for CountryV1 {
         todo!()
     }
 }
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name::Ref<'a>,
@@ -166,11 +169,12 @@ impl<'a> EntityTypeRef<'a> for CountryV1Ref<'a> {
         todo!()
     }
 }
+#[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name::Mut<'a>,
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryV1Mut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -195,8 +199,17 @@ impl<'a> EntityTypeMut<'a> for CountryV1Mut<'a> {
 
 localhost_3000/alice/property/country_code.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct CountryCodeMut<'a>(pub Text::Mut<'a>);
 
 
@@ -204,6 +217,15 @@ pub struct CountryCodeMut<'a>(pub Text::Mut<'a>);
 
 localhost_3000/alice/property/name.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct Name(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct NameRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct NameMut<'a>(pub Text::Mut<'a>);

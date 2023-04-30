@@ -1,7 +1,16 @@
 blockprotocol/blockprotocol/property/email.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct Email(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct EmailRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct EmailMut<'a>(pub Text::Mut<'a>);
 
 
@@ -9,18 +18,34 @@ pub struct EmailMut<'a>(pub Text::Mut<'a>);
 
 https_blockprotocol_org_alice_property_type_contact_information.rs
 
+use alloc::boxed::Box;
+
+use blockprotocol::{
+    DataType as _, GenericEntityError, PropertyType, PropertyTypeMut, PropertyTypeRef, Type,
+    TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+
+use crate::{
+    blockprotocol::blockprotocol::property::email::Email,
+    https_blockprotocol_org_alice_property_type_contact_information::ContactInformation,
+};
+#[derive(Debug, Clone, Serialize)]
 pub struct ContactInformation {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
     pub contact_information: Option<Box<ContactInformation>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email,
 }
+#[derive(Debug, Clone, Serialize)]
 pub struct ContactInformationRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
     pub contact_information: Option<Box<ContactInformation::Ref<'a>>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
     pub email: Email::Ref<'a>,
 }
+#[derive(Debug, Serialize)]
 pub struct ContactInformationMut<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
     pub contact_information: Option<Box<ContactInformation::Mut<'a>>>,

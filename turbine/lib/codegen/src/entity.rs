@@ -16,7 +16,7 @@ use crate::{
     analysis::EdgeKind,
     name::{Location, LocationKind, NameResolver, PropertyName},
     shared,
-    shared::{Property, PropertyKind},
+    shared::{generate_mod, imports, Property, PropertyKind},
 };
 
 const RESERVED: &[&str] = &[
@@ -43,37 +43,15 @@ static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
     )
 });
 
-fn imports<'a>(
-    references: impl IntoIterator<Item = &'a &'a VersionedUrl> + 'a,
-    locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
-) -> impl Iterator<Item = TokenStream> + 'a {
-    references.into_iter().map(|reference| {
-        // explicit type not needed here, but CLion otherwise complains
-        let location: &Location = &locations[reference];
+#[derive(Debug, Copy, Clone)]
+struct Import {
+    vec: bool,
+    box_: bool,
+}
 
-        let mut path: Vec<_> = location
-            .path
-            .directories()
-            .iter()
-            .map(|directory| Ident::new(directory.name(), Span::call_site()))
-            .collect();
-
-        // only add to path if we're not a mod.rs file, otherwise it will lead to import errors
-        if !location.path.file().is_mod() {
-            path.push(Ident::new(location.path.file().name(), Span::call_site()));
-        }
-
-        let mut name = Ident::new(&location.name.value, Span::call_site()).to_token_stream();
-
-        if let Some(alias) = &location.alias.value {
-            let alias = Ident::new(alias, Span::call_site());
-            name = quote!(#name as #alias);
-        }
-
-        quote! {
-            use crate #(:: #path)* :: #name;
-        }
-    })
+struct State {
+    is_link: bool,
+    import: Import,
 }
 
 fn properties<'a>(
@@ -92,58 +70,29 @@ fn properties<'a>(
     )
 }
 
-fn generate_mod(kind: &LocationKind, resolver: &NameResolver) -> Option<TokenStream> {
-    let LocationKind::Latest {other} = kind else {
-        return None;
-    };
-
-    let statements = other.iter().map(|url| {
-        let location = resolver.location(url);
-        let file = Ident::new(location.path.file().name(), Span::call_site());
-
-        let name = Ident::new(&location.name.value, Span::call_site());
-
-        // we do not surface the ref or mut variants, this is intentional, as they
-        // should be accessed through `::Ref` and `::Mut` instead!
-        // TODO: rethink this strategy!
-
-        // optional aliases
-        let name_alias = location.name.alias.as_ref().map(|alias| {
-            let alias = Ident::new(alias, Span::call_site());
-            quote!(pub use #file::#alias;)
-        });
-
-        quote! {
-            pub mod #file;
-            pub use #file::#name;
-            #name_alias
-        }
-    });
-
-    Some(quote!(#(#statements)*))
-}
-
+// TODO: adapt code from properties
 fn generate_use(
-    entity: &EntityType,
     references: &[&VersionedUrl],
     locations: &HashMap<&VersionedUrl, Location>,
-    link: bool,
+    state: State,
 ) -> TokenStream {
-    let import_alloc = entity
-        .properties()
-        .values()
-        .any(|value| matches!(value, ValueOrArray::Array(_)))
-        .then(|| {
-            quote!(
-                use alloc::vec::Vec;
-            )
-        });
-
     let mut imports: Vec<_> = imports(references, locations).collect();
 
-    if link {
+    if state.is_link {
         imports.push(quote!(
             use blockprotocol::entity::LinkData;
+        ));
+    }
+
+    if state.import.box_ {
+        imports.push(quote!(
+            use alloc::boxed::Box;
+        ));
+    }
+
+    if state.import.vec {
+        imports.push(quote!(
+            use alloc::vec::Vec;
         ));
     }
 
@@ -156,8 +105,6 @@ fn generate_use(
         use blockprotocol::entity::Entity;
         use error_stack::Result;
 
-        #import_alloc
-
         #(#imports)*
     }
 }
@@ -166,7 +113,7 @@ fn generate_owned(
     entity: &EntityType,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
-    link: bool,
+    state: &mut State,
 ) -> TokenStream {
     let properties = properties.iter().map(|(base, property)| {
         let url = base.as_str();
@@ -178,9 +125,15 @@ fn generate_owned(
         } = property;
 
         let mut type_ = match kind {
-            PropertyKind::Array => quote!(Vec<#type_>),
+            PropertyKind::Array => {
+                state.import.vec = true;
+                quote!(Vec<#type_>)
+            }
             PropertyKind::Plain => type_.to_token_stream(),
-            PropertyKind::Boxed => quote!(Box<#type_>),
+            PropertyKind::Boxed => {
+                state.import.box_ = true;
+                quote!(Box<#type_>)
+            }
         };
 
         if !required {
@@ -195,7 +148,7 @@ fn generate_owned(
 
     let mut fields = vec![quote!(pub properties: Properties)];
 
-    if link {
+    if state.is_link {
         fields.push(quote!(pub link_data: LinkData));
     }
 
@@ -257,7 +210,7 @@ fn generate_owned(
 fn generate_ref(
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
-    link: bool,
+    state: &mut State,
 ) -> TokenStream {
     let properties = properties.iter().map(|(base, property)| {
         let url = base.as_str();
@@ -271,9 +224,15 @@ fn generate_ref(
         let type_ = quote!(#type_::Ref<'a>);
 
         let mut type_ = match kind {
-            PropertyKind::Array => quote!(Box<[#type_]>),
+            PropertyKind::Array => {
+                state.import.box_ = true;
+                quote!(Box<[#type_]>)
+            }
             PropertyKind::Plain => type_,
-            PropertyKind::Boxed => quote!(Box<#type_>),
+            PropertyKind::Boxed => {
+                state.import.box_ = true;
+                quote!(Box<#type_>)
+            }
         };
 
         if !required {
@@ -288,7 +247,7 @@ fn generate_ref(
 
     let mut fields = vec![quote!(pub properties: PropertiesRef<'a>)];
 
-    if link {
+    if state.is_link {
         fields.push(quote!(pub link_data: &'a LinkData));
     }
 
@@ -302,6 +261,7 @@ fn generate_ref(
     });
 
     quote! {
+        #[derive(Debug, Clone, Serialize)]
         pub struct PropertiesRef<'a> {
             #(#properties),*
         }
@@ -337,7 +297,7 @@ fn generate_ref(
 fn generate_mut(
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
-    link: bool,
+    state: &mut State,
 ) -> TokenStream {
     let properties = properties.iter().map(|(base, property)| {
         let url = base.as_str();
@@ -351,9 +311,15 @@ fn generate_mut(
         let type_ = quote!(#type_::Mut<'a>);
 
         let mut type_ = match kind {
-            PropertyKind::Array => quote!(Vec<#type_>),
+            PropertyKind::Array => {
+                state.import.vec = true;
+                quote!(Vec<#type_>)
+            }
             PropertyKind::Plain => type_,
-            PropertyKind::Boxed => quote!(Box<#type_>),
+            PropertyKind::Boxed => {
+                state.import.box_ = true;
+                quote!(Box<#type_>)
+            }
         };
 
         if !required {
@@ -368,7 +334,7 @@ fn generate_mut(
 
     let mut fields = vec![quote!(pub properties: PropertiesMut<'a>)];
 
-    if link {
+    if state.is_link {
         fields.push(quote!(pub link_data: &'a mut LinkData));
     }
 
@@ -382,11 +348,12 @@ fn generate_mut(
     });
 
     quote! {
+        #[derive(Debug, Serialize)]
         pub struct PropertiesMut<'a> {
             #(#properties),*
         }
 
-        #[derive(Debug, Clone, Serialize)]
+        #[derive(Debug, Serialize)]
         #[serde(rename_all = "camelCase")]
         pub struct #name_mut<'a> {
             #(#fields),*
@@ -442,13 +409,20 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         .iter()
         .any(|reference| reference == &*LINK_REF);
 
-    let use_ = generate_use(entity, &references, &locations, is_link);
+    let mut state = State {
+        is_link,
+        import: Import {
+            vec: false,
+            box_: false,
+        },
+    };
 
-    let owned = generate_owned(entity, &location, &properties, is_link);
-    let ref_ = generate_ref(&location, &properties, is_link);
-    let mut_ = generate_mut(&location, &properties, is_link);
+    let owned = generate_owned(entity, &location, &properties, &mut state);
+    let ref_ = generate_ref(&location, &properties, &mut state);
+    let mut_ = generate_mut(&location, &properties, &mut state);
 
     let mod_ = generate_mod(&location.kind, resolver);
+    let use_ = generate_use(&references, &locations, state);
 
     quote! {
         #use_

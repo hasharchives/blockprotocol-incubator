@@ -1,17 +1,30 @@
 localhost_3000/alice/property/full_email.rs
 
+use blockprotocol::{
+    DataType as _, GenericEntityError, PropertyType, PropertyTypeMut, PropertyTypeRef, Type,
+    TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+
+use crate::localhost_3000::alice::property::{
+    primary_email::PrimaryEmail, secondary_email::SecondaryEmail,
+};
+#[derive(Debug, Clone, Serialize)]
 pub struct FullEmail {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
     pub primary_email: PrimaryEmail,
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/secondaryEmail/")]
     pub secondary_email: Option<SecondaryEmail>,
 }
+#[derive(Debug, Clone, Serialize)]
 pub struct FullEmailRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
     pub primary_email: PrimaryEmail::Ref<'a>,
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/secondaryEmail/")]
     pub secondary_email: Option<SecondaryEmail::Ref<'a>>,
 }
+#[derive(Debug, Serialize)]
 pub struct FullEmailMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
     pub primary_email: PrimaryEmail::Mut<'a>,
@@ -24,8 +37,17 @@ pub struct FullEmailMut<'a> {
 
 localhost_3000/alice/property/primary_email.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmail(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmailRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct PrimaryEmailMut<'a>(pub Text::Mut<'a>);
 
 
@@ -33,6 +55,15 @@ pub struct PrimaryEmailMut<'a>(pub Text::Mut<'a>);
 
 localhost_3000/alice/property/secondary_email.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmail(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmailRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct SecondaryEmailMut<'a>(pub Text::Mut<'a>);

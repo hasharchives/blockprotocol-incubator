@@ -1,16 +1,33 @@
 https_blockprotocol_org_alice_property_type_contrived_property.rs
 
+use alloc::vec::Vec;
+
+use blockprotocol::{
+    types::data::Number, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct Inner0(pub Number);
+#[derive(Debug, Clone, Serialize)]
 pub struct Inner1<'a>(pub Number::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct Inner2<'a>(pub Number::Mut<'a>);
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
 pub enum ContrivedProperty {
     Variant0(Number),
     Variant1(Vec<Inner0>),
 }
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
 pub enum ContrivedPropertyRef<'a> {
     Variant0(Number::Ref<'a>),
     Variant1(Vec<Inner1<'a>>),
 }
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
 pub enum ContrivedPropertyMut<'a> {
     Variant0(Number::Mut<'a>),
     Variant1(Vec<Inner2<'a>>),

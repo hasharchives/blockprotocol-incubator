@@ -1,5 +1,14 @@
 localhost_3000/alice/property/country_code.rs
 
+use blockprotocol::{
+    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
+#[derive(Debug, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub Text::Ref<'a>);
+#[derive(Debug, Serialize)]
 pub struct CountryCodeMut<'a>(pub Text::Mut<'a>);

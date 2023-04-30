@@ -1,13 +1,26 @@
 https_blockprotocol_org_alice_property_type_user_id.rs
 
+use blockprotocol::{
+    types::data::{Number, Text},
+    DataType as _, GenericEntityError, PropertyType, PropertyTypeMut, PropertyTypeRef, Type,
+    TypeMut, TypeRef, VersionedUrlRef,
+};
+use error_stack::Result;
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
 pub enum UserId {
     Variant0(Text),
     Variant1(Number),
 }
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
 pub enum UserIdRef<'a> {
     Variant0(Text::Ref<'a>),
     Variant1(Number::Ref<'a>),
 }
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
 pub enum UserIdMut<'a> {
     Variant0(Text::Mut<'a>),
     Variant1(Number::Mut<'a>),

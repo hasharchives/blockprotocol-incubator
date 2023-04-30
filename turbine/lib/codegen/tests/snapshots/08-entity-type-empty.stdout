@@ -36,6 +36,7 @@ impl EntityType for Country {
     }
 }
 pub type CountryV1 = Country;
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -57,8 +58,9 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     }
 }
 pub type CountryV1Ref<'a> = CountryRef<'a>;
+#[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {}
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
     pub properties: PropertiesMut<'a>,
