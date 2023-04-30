@@ -76,11 +76,11 @@ pub trait TypeMut: Sized {
 }
 
 pub trait Type: Sized {
-    type Ref<'a>: TypeRef<Owned = Self>
+    type Mut<'a>: TypeMut<Owned = Self>
     where
         Self: 'a;
 
-    type Mut<'a>: TypeMut<Owned = Self>
+    type Ref<'a>: TypeRef<Owned = Self>
     where
         Self: 'a;
 
@@ -97,7 +97,7 @@ pub trait DataTypeRef<'a>: Serialize + TypeRef {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
-pub trait DataTypeMut<'a>: Serialize + TypeRef {
+pub trait DataTypeMut<'a>: Serialize + TypeMut {
     type Error: Context;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error>;
