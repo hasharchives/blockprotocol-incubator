@@ -1,5 +1,3 @@
-use core::ops::{Deref, DerefMut};
-
 use error_stack::{Report, Result};
 use onlyerror::Error;
 use serde::Serialize;
@@ -20,6 +18,8 @@ pub enum EmptyListError {
 pub struct EmptyList;
 
 impl Type for EmptyList {
+    // `EmptyList` is `EmptyList`, you cannot change the value of it
+    type Mut<'a> = Self where Self: 'a;
     type Ref<'a> = Self where Self: 'a;
 
     const ID: VersionedUrlRef<'static> =
@@ -28,12 +28,16 @@ impl Type for EmptyList {
     fn as_ref(&self) -> Self::Ref<'_> {
         *self
     }
+
+    fn as_mut(&mut self) -> Self::Mut<'_> {
+        *self
+    }
 }
 
 impl DataType for EmptyList {
     type Error = EmptyListError;
 
-    fn try_from_value(value: Value) -> error_stack::Result<Self, Self::Error> {
+    fn try_from_value(value: Value) -> Result<Self, Self::Error> {
         if let Value::Array(value) = value {
             if value.is_empty() {
                 Ok(Self)
@@ -46,10 +50,18 @@ impl DataType for EmptyList {
     }
 }
 
+impl TypeRef for EmptyList {
+    type Owned = Self;
+
+    fn into_owned(self) -> Self::Owned {
+        self
+    }
+}
+
 impl<'a> DataTypeRef<'a> for EmptyList {
     type Error = EmptyListError;
 
-    fn try_from_value(value: &'a Value) -> error_stack::Result<Self, Self::Error> {
+    fn try_from_value(value: &'a Value) -> Result<Self, Self::Error> {
         value.as_array().map_or_else(
             || Err(Report::new(EmptyListError::NotAnArray(value.clone()))),
             |value| {
@@ -63,10 +75,18 @@ impl<'a> DataTypeRef<'a> for EmptyList {
     }
 }
 
-impl TypeRef for EmptyList {
+impl TypeMut for EmptyList {
     type Owned = Self;
 
     fn into_owned(self) -> Self::Owned {
         self
+    }
+}
+
+impl<'a> DataTypeMut<'a> for EmptyList {
+    type Error = EmptyListError;
+
+    fn try_from_value(value: &'a mut Value) -> Result<Self, Self::Error> {
+        <Self as DataTypeRef<'a>>::try_from_value(value)
     }
 }
