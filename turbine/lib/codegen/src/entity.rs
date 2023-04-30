@@ -15,6 +15,8 @@ use type_system::{
 use crate::{
     analysis::EdgeKind,
     name::{Location, LocationKind, NameResolver, PropertyName},
+    shared,
+    shared::{Property, PropertyKind},
 };
 
 const RESERVED: &[&str] = &[
@@ -74,68 +76,20 @@ fn imports<'a>(
     })
 }
 
-enum PropertyKind {
-    Array,
-    Plain,
-    Boxed,
-}
-
-struct Property {
-    name: Ident,
-    type_: Ident,
-
-    kind: PropertyKind,
-
-    required: bool,
-}
-
-// TODO: most of this code can likely be shared with object properties! ~> need to think about
-//  hoisting
 fn properties<'a>(
     entity: &'a EntityType,
     resolver: &NameResolver,
     property_names: &HashMap<&VersionedUrl, PropertyName>,
     locations: &HashMap<&VersionedUrl, Location>,
 ) -> BTreeMap<&'a BaseUrl, Property> {
-    let required = entity.required();
-
-    entity
-        .properties()
-        .iter()
-        .map(|(base, value)| {
-            let url = match value {
-                ValueOrArray::Value(value) => value.url(),
-                ValueOrArray::Array(value) => value.items().url(),
-            };
-
-            let name = Ident::new(&property_names[url].0, Span::call_site());
-            let location = &locations[url];
-
-            let type_ = location
-                .alias
-                .value
-                .as_ref()
-                .unwrap_or(&location.name.value);
-            let type_ = Ident::new(type_, Span::call_site());
-
-            let required = required.contains(base);
-
-            let kind = if matches!(value, ValueOrArray::Array(_)) {
-                PropertyKind::Array
-            } else if resolver.analyzer().edge(entity.id(), url).kind == EdgeKind::Boxed {
-                PropertyKind::Boxed
-            } else {
-                PropertyKind::Plain
-            };
-
-            (base, Property {
-                name,
-                type_,
-                kind,
-                required,
-            })
-        })
-        .collect()
+    shared::properties(
+        entity.id(),
+        entity.properties(),
+        entity.required(),
+        resolver,
+        property_names,
+        locations,
+    )
 }
 
 fn generate_mod(kind: &LocationKind, resolver: &NameResolver) -> Option<TokenStream> {
@@ -506,3 +460,5 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         #mod_
     }
 }
+
+// TODO: test builtin import name clash resolve!

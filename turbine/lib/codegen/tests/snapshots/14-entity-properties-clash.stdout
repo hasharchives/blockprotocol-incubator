@@ -95,4 +95,6 @@ pub type CountryV1Mut<'a> = CountryMut<'a>;
 
 localhost_3000/alice/property/properties.rs
 
-unimplemented!();
+pub struct Properties(pub Text);
+pub struct PropertiesRef<'a>(pub Text::Ref<'a>);
+pub struct PropertiesMut<'a>(pub Text::Mut<'a>);

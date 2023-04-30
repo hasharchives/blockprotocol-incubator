@@ -103,11 +103,15 @@ pub type CountryV1Mut<'a> = CountryMut<'a>;
 
 localhost_3000/alice/property/name.rs
 
-unimplemented!();
+pub struct Name(pub Text);
+pub struct NameRef<'a>(pub Text::Ref<'a>);
+pub struct NameMut<'a>(pub Text::Mut<'a>);
 
 
 ---
 
 localhost_3000/bob/property/name.rs
 
-unimplemented!();
+pub struct Name(pub Text);
+pub struct NameRef<'a>(pub Text::Ref<'a>);
+pub struct NameMut<'a>(pub Text::Mut<'a>);

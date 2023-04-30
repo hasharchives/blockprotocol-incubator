@@ -6,6 +6,7 @@ mod entity;
 mod graph;
 mod name;
 mod property;
+mod shared;
 
 use std::{
     collections::{BTreeMap, HashMap},
