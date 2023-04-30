@@ -16,7 +16,7 @@ use blockprotocol::{
 use error_stack::Result;
 use serde::Serialize;
 
-use crate::blockprotocol::blockprotocol::data::inner::Inner as Inner0;
+use crate::blockprotocol::blockprotocol::data::inner::Inner;
 #[derive(Debug, Clone, Serialize)]
 pub struct _Inner0(pub Number);
 #[derive(Debug, Clone, Serialize)]
@@ -26,7 +26,7 @@ pub struct _Inner2<'a>(pub Number::Mut<'a>);
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserId {
-    Variant0(Inner0),
+    Variant0(Inner),
     Variant1(Vec<_Inner0>),
 }
 impl Type for UserId {
@@ -52,7 +52,7 @@ pub type UserIdV1<'a> = UserId<'a>;
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
-    Variant0(Inner0::Ref<'a>),
+    Variant0(Inner::Ref<'a>),
     Variant1(Vec<_Inner1<'a>>),
 }
 impl TypeRef for UserIdRef<'_> {
@@ -73,7 +73,7 @@ pub type UserIdV1Ref<'a> = UserIdRef<'a>;
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum UserIdMut<'a> {
-    Variant0(Inner0::Mut<'a>),
+    Variant0(Inner::Mut<'a>),
     Variant1(Vec<_Inner2<'a>>),
 }
 impl TypeMut for UserIdMut<'_> {
