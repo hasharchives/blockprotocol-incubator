@@ -25,6 +25,7 @@ struct Import {
 struct State {
     inner: Vec<Inner>,
     import: Import,
+    inner_name: String,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -171,7 +172,7 @@ fn generate_inner(
     state: &mut State,
 ) -> Ident {
     let n = state.inner.len();
-    let name = format_ident!("Inner{n}");
+    let name = format_ident!("{}{n}", state.inner_name);
 
     let type_ = generate_type(id, &name, variant, values, resolver, locations, state);
 
@@ -486,13 +487,46 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
         reserved.push(name);
     }
 
+    let mut inner = "Inner".to_owned();
     let locations = resolver.locations(references.iter().map(Deref::deref), &reserved);
+
+    for location in locations.values() {
+        let name = location
+            .alias
+            .value
+            .as_ref()
+            .unwrap_or(&location.name.value);
+        let name_ref = location
+            .alias
+            .value_ref
+            .as_ref()
+            .unwrap_or(&location.name_ref.value);
+        let name_mut = location
+            .alias
+            .value_mut
+            .as_ref()
+            .unwrap_or(&location.name_mut.value);
+
+        // ensures that we test if the new identifier is also a collision
+        loop {
+            if name.starts_with(inner.as_str())
+                || name_ref.starts_with(inner.as_str())
+                || name_mut.starts_with(inner.as_str())
+            {
+                inner = format!("_{inner}");
+            } else {
+                break;
+            }
+        }
+    }
+
     let mut state = State {
         inner: vec![],
         import: Import {
             vec: false,
             box_: false,
         },
+        inner_name: inner,
     };
 
     let owned = generate_owned(property, &location, resolver, &locations, &mut state);
@@ -517,8 +551,11 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
     }
 }
 
-// TODO: `Inner` DENY_LIST ~> counter
-// TODO: data-type clash, Inner type name
+// N.B.:
 // in the enum we could in theory name the variant by the name of the struct, problem here is ofc
 // that we would still need to name the other variants and then we have potential name conflicts...
 // Do we need to box on Ref and Mut self-referential?
+
+// TODO: intermediate mod.rs (/module.rs) generation
+// TODO: try_from_*
+// TODO: project scaffolding

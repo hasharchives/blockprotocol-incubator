@@ -449,5 +449,3 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         #mod_
     }
 }
-
-// TODO: test builtin import name clash resolve!
