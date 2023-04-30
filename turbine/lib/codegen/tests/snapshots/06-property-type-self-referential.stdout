@@ -1,0 +1,29 @@
+blockprotocol/blockprotocol/property/email.rs
+
+pub struct Email(pub Text);
+pub struct EmailRef<'a>(pub Text::Ref<'a>);
+pub struct EmailMut<'a>(pub Text::Mut<'a>);
+
+
+---
+
+https_blockprotocol_org_alice_property_type_contact_information.rs
+
+pub struct ContactInformation {
+    #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
+    pub contact_information: Option<Box<ContactInformation>>,
+    #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
+    pub email: Email,
+}
+pub struct ContactInformationRef<'a> {
+    #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
+    pub contact_information: Option<Box<ContactInformation::Ref<'a>>>,
+    #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
+    pub email: Email::Ref<'a>,
+}
+pub struct ContactInformationMut<'a> {
+    #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
+    pub contact_information: Option<Box<ContactInformation::Mut<'a>>>,
+    #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/email/")]
+    pub email: Email::Mut<'a>,
+}

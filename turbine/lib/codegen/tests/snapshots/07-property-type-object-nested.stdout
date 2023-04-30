@@ -1,0 +1,65 @@
+blockprotocol/blockprotocol/property/favorite_film.rs
+
+pub struct FavoriteFilm(pub Text);
+pub struct FavoriteFilmRef<'a>(pub Text::Ref<'a>);
+pub struct FavoriteFilmMut<'a>(pub Text::Mut<'a>);
+
+
+---
+
+blockprotocol/blockprotocol/property/favorite_song.rs
+
+pub struct FavoriteSong(pub Text);
+pub struct FavoriteSongRef<'a>(pub Text::Ref<'a>);
+pub struct FavoriteSongMut<'a>(pub Text::Mut<'a>);
+
+
+---
+
+blockprotocol/blockprotocol/property/hobby.rs
+
+pub struct Hobby(pub Text);
+pub struct HobbyRef<'a>(pub Text::Ref<'a>);
+pub struct HobbyMut<'a>(pub Text::Mut<'a>);
+
+
+---
+
+https_blockprotocol_org_alice_property_type_interests.rs
+
+pub struct Interests {
+    #[serde(
+        rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
+    )]
+    pub favorite_film: Option<FavoriteFilm>,
+    #[serde(
+        rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/"
+    )]
+    pub favorite_song: Option<FavoriteSong>,
+    #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
+    pub hobby: Option<Vec<Hobby>>,
+}
+pub struct InterestsRef<'a> {
+    #[serde(
+        rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
+    )]
+    pub favorite_film: Option<FavoriteFilm::Ref<'a>>,
+    #[serde(
+        rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/"
+    )]
+    pub favorite_song: Option<FavoriteSong::Ref<'a>>,
+    #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
+    pub hobby: Option<Box<[Hobby::Ref<'a>]>>,
+}
+pub struct InterestsMut<'a> {
+    #[serde(
+        rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
+    )]
+    pub favorite_film: Option<FavoriteFilm::Mut<'a>>,
+    #[serde(
+        rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/"
+    )]
+    pub favorite_song: Option<FavoriteSong::Mut<'a>>,
+    #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
+    pub hobby: Option<Vec<Hobby::Mut<'a>>>,
+}
