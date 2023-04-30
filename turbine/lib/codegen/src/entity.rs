@@ -7,7 +7,10 @@ use std::{
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
-use type_system::{url::VersionedUrl, EntityType, EntityTypeReference, ValueOrArray};
+use type_system::{
+    url::{BaseUrl, VersionedUrl},
+    EntityType, EntityTypeReference, ValueOrArray,
+};
 
 use crate::{
     analysis::EdgeKind,
@@ -79,21 +82,34 @@ fn imports<'a>(
     })
 }
 
+enum PropertyKind {
+    Array,
+    Plain,
+    Boxed,
+}
+
+struct Property {
+    name: Ident,
+    type_: Ident,
+
+    kind: PropertyKind,
+
+    required: bool,
+}
+
 // TODO: most of this code can likely be shared with object properties! ~> need to think about
 //  hoisting
-fn properties(
-    entity: &EntityType,
+fn properties<'a>(
+    entity: &'a EntityType,
     resolver: &NameResolver,
     property_names: &HashMap<&VersionedUrl, PropertyName>,
     locations: &HashMap<&VersionedUrl, Location>,
-) -> (Vec<TokenStream>, Vec<TokenStream>) {
+) -> BTreeMap<&'a BaseUrl, Property> {
     let required = entity.required();
 
-    // we need consistent ordering, otherwise output is going to differ _every_ time
-    let properties: BTreeMap<_, _> = entity.properties().iter().collect();
-
-    properties
-        .into_iter()
+    entity
+        .properties()
+        .iter()
         .map(|(base, value)| {
             let url = match value {
                 ValueOrArray::Value(value) => value.url(),
@@ -103,87 +119,350 @@ fn properties(
             let name = Ident::new(&property_names[url].0, Span::call_site());
             let location = &locations[url];
 
-            let owned = Ident::new(
-                location
-                    .alias
-                    .value
-                    .as_ref()
-                    .unwrap_or(&location.name.value),
-                Span::call_site(),
-            );
-            let mut owned = quote!(#owned);
+            let type_ = location
+                .alias
+                .value
+                .as_ref()
+                .unwrap_or(&location.name.value);
+            let type_ = Ident::new(type_, Span::call_site());
 
-            let reference = Ident::new(
-                location
-                    .alias
-                    .value_ref
-                    .as_ref()
-                    .unwrap_or(&location.name_ref.value),
-                Span::call_site(),
-            );
-            let mut reference = quote!(#reference<'a>);
+            let required = required.contains(base);
 
-            if matches!(value, ValueOrArray::Array(_)) {
-                owned = quote!(Vec<#owned>);
-                reference = quote!(Vec<#reference);
+            let kind = if matches!(value, ValueOrArray::Array(_)) {
+                PropertyKind::Array
             } else if resolver.analyzer().edge(entity.id(), url).kind == EdgeKind::Boxed {
-                owned = quote!(Box<#owned>);
-                reference = quote!(Box<#reference);
-            }
+                PropertyKind::Boxed
+            } else {
+                PropertyKind::Plain
+            };
 
-            if !required.contains(base) {
-                owned = quote!(Option<#owned>);
-                reference = quote!(Option<#reference>);
-            }
-
-            let base = base.as_str();
-            (
-                quote! {
-                    #[serde(rename = #base)]
-                    pub #name: #owned
-                },
-                quote! {
-                    #[serde(rename = #base)]
-                    pub #name: #reference
-                },
-            )
+            (base, Property {
+                name,
+                type_,
+                kind,
+                required,
+            })
         })
-        .unzip()
+        .collect()
 }
 
-fn versions(kind: LocationKind, resolver: &NameResolver) -> Vec<TokenStream> {
-    match kind {
-        LocationKind::Latest { other } => {
-            other
-                .iter()
-                .map(|url| {
-                    let location = resolver.location(url);
-                    let file = Ident::new(location.path.file().name(), Span::call_site());
+fn generate_mod(kind: &LocationKind, resolver: &NameResolver) -> Option<TokenStream> {
+    let LocationKind::Latest {other} = kind else {
+        return None;
+    };
 
-                    let name = Ident::new(&location.name.value, Span::call_site());
-                    let ref_name = Ident::new(&location.name_ref.value, Span::call_site());
+    let statements = other.iter().map(|url| {
+        let location = resolver.location(url);
+        let file = Ident::new(location.path.file().name(), Span::call_site());
 
-                    // optional aliases
-                    let name_alias = location.name.alias.as_ref().map(|alias| {
-                        let alias = Ident::new(alias, Span::call_site());
-                        quote!(pub use #file::#alias;)
-                    });
-                    let ref_name_alias = location.name_ref.alias.as_ref().map(|alias| {
-                        let alias = Ident::new(alias, Span::call_site());
-                        quote!(pub use #file::#alias;)
-                    });
+        let name = Ident::new(&location.name.value, Span::call_site());
 
-                    quote! {
-                        pub mod #file;
-                        pub use #file::#name;
-                        pub use #file::#ref_name;
-                        #name_alias
-                        #ref_name_alias
-                    }
-                })
-                .collect::<Vec<_>>()
+        // we do not surface the ref or mut variants, this is intentional, as they
+        // should be accessed through `::Ref` and `::Mut` instead!
+        // TODO: rethink this strategy!
+
+        // optional aliases
+        let name_alias = location.name.alias.as_ref().map(|alias| {
+            let alias = Ident::new(alias, Span::call_site());
+            quote!(pub use #file::#alias;)
+        });
+
+        quote! {
+            pub mod #file;
+            pub use #file::#name;
+            #name_alias
         }
-        LocationKind::Version => vec![],
+    });
+
+    Some(quote!(#(#statements)*))
+}
+
+fn generate_imports(
+    entity: &EntityType,
+    references: &[&VersionedUrl],
+    locations: &HashMap<&VersionedUrl, Location>,
+    link: bool,
+) -> TokenStream {
+    let import_alloc = entity
+        .properties()
+        .values()
+        .any(|value| matches!(value, ValueOrArray::Array(_)))
+        .then(|| {
+            quote!(
+                use alloc::vec::Vec;
+            )
+        });
+
+    let mut imports: Vec<_> = imports(references, locations).collect();
+
+    if link {
+        imports.push(quote!(use blockprotocol::entity::LinkData));
+    }
+
+    quote! {
+        use serde::Serialize;
+        use blockprotocol::{Type, TypeRef, TypeMut}
+        use blockprotocol::{EntityType, EntityTypeRef, EntityTypeMut};
+        use blockprotocol::PropertyType as _;
+        use blockprotocol::{VersionedUrlRef, GenericEntityError};
+        use blockprotocol::entity::Entity;
+        use error_stack::Result;
+
+        #import_alloc
+
+        #(#imports)*
+    }
+}
+
+fn generate_owned(
+    entity: &EntityType,
+    location: &Location,
+    properties: &BTreeMap<&BaseUrl, Property>,
+    link: bool,
+) -> TokenStream {
+    let properties = properties.iter().map(|(base, property)| {
+        let url = base.as_str();
+        let Property {
+            name,
+            type_,
+            kind,
+            required,
+        } = property;
+
+        let mut type_ = match kind {
+            PropertyKind::Array => quote!(Vec<#type_>),
+            PropertyKind::Plain => type_.to_token_stream(),
+            PropertyKind::Boxed => quote!(Box<#type_>),
+        };
+
+        if !required {
+            type_ = quote!(Option<#type_>);
+        }
+
+        quote! {
+            #[serde(rename = #url)]
+            pub #name: #type_
+        }
+    });
+
+    let mut fields = vec![quote!(pub properties: Properties)];
+
+    if link {
+        fields.push(quote!(pub link_data: LinkData))
+    }
+
+    let name = Ident::new(&location.name.value, Span::call_site());
+    let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
+    let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
+
+    let base_url = entity.id().base_url.as_str();
+    let version = entity.id().version;
+
+    let alias = location.name.alias.as_ref().map(|alias| {
+        let alias = Ident::new(alias, Span::call_site());
+
+        quote!(pub type #alias = #name;)
+    });
+
+    quote! {
+        #[derive(Debug, Clone, Serialize)]
+        pub struct Properties {
+            #(#properties),*
+        }
+
+        #[derive(Debug, Clone, Serialize)]
+        #[serde(rename_all = "camelCase")]
+        pub struct #name {
+            #(#fields),*
+        }
+
+        impl Type for #name {
+            type Mut<'a> = #name_mut<'a> where Self: 'a;
+            type Ref<'a> = #name_ref<'a> where Self: 'a;
+
+            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
+
+            fn as_ref(&self) -> Self::Ref<'_> {
+                // TODO!
+                todo!()
+            }
+
+            fn as_mut(&self) -> Self::Mut<'_> {
+                // TODO!
+                todo!()
+            }
+        }
+
+        impl EntityType for #name {
+            type Error = GenericEntityError;
+
+            fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
+                // TODO!
+                todo!()
+            }
+        }
+
+        #alias
+    }
+}
+
+fn generate_ref(
+    location: &Location,
+    properties: &BTreeMap<&BaseUrl, Property>,
+    link: bool,
+) -> TokenStream {
+    let properties = properties.iter().map(|(base, property)| {
+        let url = base.as_str();
+        let Property {
+            name,
+            type_,
+            kind,
+            required,
+        } = property;
+
+        let type_ = quote!(#type_::Ref<'a>);
+
+        let mut type_ = match kind {
+            PropertyKind::Array => quote!(Box<[#type_]>),
+            PropertyKind::Plain => type_,
+            PropertyKind::Boxed => quote!(Box<#type_>),
+        };
+
+        if !required {
+            type_ = quote!(Option<#type_>);
+        }
+
+        quote! {
+            #[serde(rename = #url)]
+            pub #name: #type_
+        }
+    });
+
+    let mut fields = vec![quote!(pub properties: PropertiesRef<'a>)];
+
+    if link {
+        fields.push(quote!(pub link_data: &'a LinkData))
+    }
+
+    let name = Ident::new(&location.name.value, Span::call_site());
+    let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
+
+    let alias = location.name_ref.alias.as_ref().map(|alias| {
+        let alias = Ident::new(alias, Span::call_site());
+
+        quote!(pub type #alias = #name;)
+    });
+
+    quote! {
+        pub struct PropertiesRef<'a> {
+            #(#properties),*
+        }
+
+        #[derive(Debug, Clone, Serialize)]
+        #[serde(rename_all = "camelCase")]
+        pub struct #name_ref<'a> {
+            #(#fields),*
+        }
+
+        impl TypeRef for #name_ref<'_> {
+            type Owned = #name;
+
+            fn into_owned(self) -> Self::Owned {
+                // TODO!
+                todo!();
+            }
+        }
+
+        impl<'a> EntityTypeRef<'a> for #name_ref<'a> {
+            type Error = GenericEntityError;
+
+            fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
+                // TODO!
+                todo!()
+            }
+        }
+
+        #alias
+    }
+}
+
+fn generate_mut(
+    location: &Location,
+    properties: &BTreeMap<&BaseUrl, Property>,
+    link: bool,
+) -> TokenStream {
+    let properties = properties.iter().map(|(base, property)| {
+        let url = base.as_str();
+        let Property {
+            name,
+            type_,
+            kind,
+            required,
+        } = property;
+
+        let type_ = quote!(#type_::Mut<'a>);
+
+        let mut type_ = match kind {
+            PropertyKind::Array => quote!(Vec<#type_>),
+            PropertyKind::Plain => type_,
+            PropertyKind::Boxed => quote!(Box<#type_>),
+        };
+
+        if !required {
+            type_ = quote!(Option<#type_>);
+        }
+
+        quote! {
+            #[serde(rename = #url)]
+            pub #name: #type_
+        }
+    });
+
+    let mut fields = vec![quote!(pub properties: PropertiesMut<'a>)];
+
+    if link {
+        fields.push(quote!(pub link_data: &'a mut LinkData))
+    }
+
+    let name = Ident::new(&location.name.value, Span::call_site());
+    let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
+
+    let alias = location.name_mut.alias.as_ref().map(|alias| {
+        let alias = Ident::new(alias, Span::call_site());
+
+        quote!(pub type #alias = #name;)
+    });
+
+    quote! {
+        pub struct PropertiesMut<'a> {
+            #(#properties),*
+        }
+
+        #[derive(Debug, Clone, Serialize)]
+        #[serde(rename_all = "camelCase")]
+        pub struct #name_mut<'a> {
+            #(#fields),*
+        }
+
+        impl TypeMut for #name_mut<'_> {
+            type Owned = #name;
+
+            fn into_owned(self) -> Self::Owned {
+                // TODO!
+                todo!();
+            }
+        }
+
+        impl<'a> EntityTypeMut<'a> for #name_mut<'a> {
+            type Error = GenericEntityError;
+
+            fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
+                // TODO!
+                todo!()
+            }
+        }
+
+        #alias
     }
 }
 
@@ -194,20 +473,6 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let url = entity.id();
 
     let location = resolver.location(url);
-
-    let name = Ident::new(&location.name.value, Span::call_site());
-    let ref_name = Ident::new(&location.name_ref.value, Span::call_site());
-
-    let alias = location.name.alias.map(|alias| {
-        let alias = Ident::new(&alias, Span::call_site());
-
-        quote!(pub type #alias = #name;)
-    });
-    let ref_alias = location.name_ref.alias.map(|alias| {
-        let alias = Ident::new(&alias, Span::call_site());
-
-        quote!(pub type #alias<'a> = #name<'a>;)
-    });
 
     let property_type_references = entity.property_type_references();
 
@@ -221,19 +486,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let property_names = resolver.property_names(references.iter().map(Deref::deref));
     let locations = resolver.locations(references.iter().map(Deref::deref), RESERVED);
 
-    let import_alloc = entity
-        .properties()
-        .values()
-        .any(|value| matches!(value, ValueOrArray::Array(_)))
-        .then(|| {
-            quote!(
-                use alloc::vec::Vec;
-            )
-        });
-
-    let mut imports: Vec<_> = imports(&references, &locations).collect();
-
-    let (properties, properties_ref) = properties(entity, resolver, &property_names, &locations);
+    let properties = properties(entity, resolver, &property_names, &locations);
 
     let is_link = entity
         .inherits_from()
@@ -241,98 +494,21 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         .iter()
         .any(|reference| reference == &*LINK_REF);
 
-    let mut fields = vec![quote!(pub properties: Properties)];
-    let mut fields_ref = vec![quote!(pub properties: PropertiesRef<'a>)];
+    let imports = generate_imports(entity, &references, &locations, is_link);
 
-    if is_link {
-        imports.push(quote! {
-            use blockprotocol::entity::LinkData;
-        });
-        fields.push(quote!(pub link_data: LinkData));
-        fields_ref.push(quote!(pub link_data: &'a LinkData));
-    }
+    let owned = generate_owned(entity, &location, &properties, is_link);
+    let ref_ = generate_ref(&location, &properties, is_link);
+    let mut_ = generate_mut(&location, &properties, is_link);
 
-    let version = entity.id().version;
-    let base_url = entity.id().base_url.as_str();
-
-    let versions = versions(location.kind, resolver);
+    let mod_ = generate_mod(&location.kind, resolver);
 
     quote! {
-        use serde::Serialize;
-        use blockprotocol::{Type, TypeRef, EntityType, EntityTypeRef, VersionedUrlRef, GenericEntityError};
-        use blockprotocol::entity::Entity;
-        use error_stack::Result;
+        #imports
 
-        #import_alloc
+        #owned
+        #ref_
+        #mut_
 
-        #(#imports)*
-
-        #[derive(Debug, Clone, Serialize)]
-        pub struct Properties {
-            #(#properties),*
-        }
-
-        #[derive(Debug, Clone, Serialize)]
-        #[serde(rename_all = "camelCase")]
-        pub struct #name {
-            #(#fields),*
-        }
-
-        // TODO: accessors?
-
-        impl Type for #name {
-            type Ref<'a> = #ref_name<'a> where Self: 'a;
-
-            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
-
-            fn as_ref(&self) -> Self::Ref<'_> {
-                // TODO!
-                todo!()
-            }
-        }
-
-        impl blockprotocol::EntityType for #name {
-            type Error = GenericEntityError;
-
-            fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-                // TODO!
-                todo!()
-            }
-        }
-
-        pub struct PropertiesRef<'a> {
-            #(#properties_ref),*
-        }
-
-        #[derive(Debug, Clone, Serialize)]
-        #[serde(rename_all = "camelCase")]
-        pub struct #ref_name<'a> {
-            #(#fields_ref),*
-        }
-
-        // TODO: accessors?
-
-        impl TypeRef for #ref_name<'_> {
-            type Owned = #name;
-
-            fn into_owned(self) -> Self::Owned {
-                // TODO!
-                todo!();
-            }
-        }
-
-        impl<'a> EntityTypeRef<'a> for #ref_name<'a> {
-            type Error = GenericEntityError;
-
-            fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-                // TODO!
-                todo!()
-            }
-        }
-
-        #alias
-        #ref_alias
-
-        #(#versions)*
+        #mod_
     }
 }

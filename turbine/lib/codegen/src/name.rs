@@ -93,7 +93,7 @@ pub(crate) enum LocationKind<'a> {
 pub struct Alias {
     pub(crate) value: Option<String>,
     pub(crate) value_ref: Option<String>,
-    pub(crate) value_ref_mut: Option<String>,
+    pub(crate) value_mut: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -102,7 +102,7 @@ pub(crate) struct Location<'a> {
 
     pub(crate) name: Name,
     pub(crate) name_ref: Name,
-    pub(crate) name_ref_mut: Name,
+    pub(crate) name_mut: Name,
 
     pub(crate) alias: Alias,
     pub(crate) kind: LocationKind<'a>,
@@ -501,7 +501,7 @@ impl<'a> NameResolver<'a> {
             alias: name.alias.as_ref().map(|alias| format!("{alias}Ref")),
         };
 
-        let name_ref_mut = Name {
+        let name_mut = Name {
             value: format!("{}RefMut", name.value),
             alias: name.alias.as_ref().map(|alias| format!("{alias}RefMut")),
         };
@@ -510,11 +510,11 @@ impl<'a> NameResolver<'a> {
             path,
             name,
             name_ref,
-            name_ref_mut,
+            name_mut,
             alias: Alias {
                 value: None,
                 value_ref: None,
-                value_ref_mut: None,
+                value_mut: None,
             },
             kind,
         }
@@ -549,7 +549,7 @@ impl<'a> NameResolver<'a> {
                     location.alias = Alias {
                         value: Some(format!("{}{index}", location.name.value)),
                         value_ref: Some(format!("{}{index}", location.name_ref.value)),
-                        value_ref_mut: Some(format!("{}{index}", location.name_ref_mut.value)),
+                        value_mut: Some(format!("{}{index}", location.name_mut.value)),
                     };
                 }
             }
