@@ -169,7 +169,7 @@ fn generate_mod(kind: &LocationKind, resolver: &NameResolver) -> Option<TokenStr
     Some(quote!(#(#statements)*))
 }
 
-fn generate_imports(
+fn generate_use(
     entity: &EntityType,
     references: &[&VersionedUrl],
     locations: &HashMap<&VersionedUrl, Location>,
@@ -488,7 +488,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         .iter()
         .any(|reference| reference == &*LINK_REF);
 
-    let imports = generate_imports(entity, &references, &locations, is_link);
+    let use_ = generate_use(entity, &references, &locations, is_link);
 
     let owned = generate_owned(entity, &location, &properties, is_link);
     let ref_ = generate_ref(&location, &properties, is_link);
@@ -497,7 +497,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let mod_ = generate_mod(&location.kind, resolver);
 
     quote! {
-        #imports
+        #use_
 
         #owned
         #ref_

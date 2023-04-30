@@ -148,11 +148,13 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, 
 
         let contents = match value {
             AnyType::Data(data) => data::generate(data, &names),
-            AnyType::Property(property) => property::generate(property, &names),
-            AnyType::Entity(entity) => entity::generate(entity, &names),
+            AnyType::Property(property) => Some(property::generate(property, &names)),
+            AnyType::Entity(entity) => Some(entity::generate(entity, &names)),
         };
 
-        output.insert(file, contents);
+        if let Some(contents) = contents {
+            output.insert(file, contents);
+        }
     }
 
     Ok(output)
