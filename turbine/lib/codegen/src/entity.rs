@@ -68,17 +68,12 @@ fn imports<'a>(
             name = quote!(#name as #alias);
         }
 
-        let mut ref_name =
-            Ident::new(&location.name_ref.value, Span::call_site()).to_token_stream();
-
         if let Some(alias) = &location.alias.value_ref {
             let alias = Ident::new(alias, Span::call_site());
-            ref_name = quote!(#ref_name as #alias);
         }
 
         quote! {
             use crate #(:: #path)* :: #name;
-            use crate #(:: #path)* :: #ref_name;
         }
     })
 }

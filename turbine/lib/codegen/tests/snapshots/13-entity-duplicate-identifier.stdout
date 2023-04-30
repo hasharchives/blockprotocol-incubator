@@ -15,8 +15,7 @@ use error_stack::Result;
 use serde::Serialize;
 
 use crate::localhost_3000::{
-    alice::property::name::{Name as Name0, NameRef as NameRef0},
-    bob::property::name::{Name as Name1, NameRef as NameRef1},
+    alice::property::name::Name as Name0, bob::property::name::Name as Name1,
 };
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {

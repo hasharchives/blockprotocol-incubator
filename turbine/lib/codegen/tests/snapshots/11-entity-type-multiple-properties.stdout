@@ -14,10 +14,7 @@ use blockprotocol::{
 use error_stack::Result;
 use serde::Serialize;
 
-use crate::localhost_3000::alice::property::{
-    country_code::{CountryCode, CountryCodeRef},
-    name::{Name, NameRef},
-};
+use crate::localhost_3000::alice::property::{country_code::CountryCode, name::Name};
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/countryCode/")]

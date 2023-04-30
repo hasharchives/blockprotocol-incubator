@@ -14,9 +14,7 @@ use blockprotocol::{
 use error_stack::Result;
 use serde::Serialize;
 
-use crate::localhost_3000::alice::property::properties::{
-    Properties as Properties0, PropertiesRef as PropertiesRef0,
-};
+use crate::localhost_3000::alice::property::properties::Properties as Properties0;
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
