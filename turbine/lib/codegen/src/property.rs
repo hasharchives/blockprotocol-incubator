@@ -43,8 +43,6 @@ const RESERVED: &[&str] = &[
     "VersionedUrlRef",
     "GenericPropertyError",
     "Serialize",
-    // TODO: clashes here need to be handled specifically ~> problem we increment them ourselves
-    "Inner",
 ];
 
 struct Inner {
