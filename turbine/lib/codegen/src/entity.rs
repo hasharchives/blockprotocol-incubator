@@ -117,6 +117,132 @@ fn generate_use(
     }
 }
 
+fn generate_properties_try_from_value(
+    variant: Variant,
+    location: &Location,
+    properties: &BTreeMap<&BaseUrl, Property>,
+) -> TokenStream {
+    // fundamentally we have 3 phases:
+    // 1) get all values (as Result)
+    // 2) merge them together using `blockprotocol::fold_tuple_reports`
+    // 3) merge all values together
+
+    // makes use of labelled breaks in blocks (introduced in 1.65)
+    let values = properties.iter().map(
+        |(
+            base,
+            Property {
+                name,
+                type_,
+                kind,
+                required,
+            },
+        )| {
+            let index = base.as_str();
+
+            // TODO: keep mutable reference on entity as safeguard
+            let access = match variant {
+                Variant::Owned => quote!(let value = properties.remove(#index)),
+                Variant::Ref => quote!(let value = properties.get(#index)),
+                Variant::Mut => quote! {
+                    // Note: This is super sketch
+                    // SAFETY: We already have &mut access, meaning that no one else has mut access
+                    //  the urls are unique and are not colliding, meaning that there's no overlap
+                    //  and we always have a single mutable reference to each value.
+                    //  In theory whenever a new value is added or removed the reference could get
+                    //  invalidated, to circumvent this `EntityMut` variant is holding a mutable
+                    //  reference.
+                    //  Heavy inspiration has been taken from https://stackoverflow.com/a/53146512/9077988
+                    //  THIS IS CURRENTLY UNTESTED (god I am scared)
+                    //  This is very similar to `get_mut_many`, but we need to know if a value
+                    //  does not exist and if it doesn't exist which, we would also need to convert
+                    //  serde_json HashMap into a hashbrown::HashMap for it to work.
+                    let value = unsafe {
+                        let value = properties.get_mut(#index);
+                        let value = value.map(|value| value as *mut _);
+
+                        &mut *value
+                    };
+                },
+            };
+
+            let unwrap = if *required {
+                quote! {
+                    let Some(value) = value else {
+                        break 'property Err(Report::new(GenericEntityError::ExpectedProperty(#index)));
+                    };
+                }
+
+            } else {
+                // the value is wrapped in `Option<>` and can be missing!
+                quote! {
+                    let Some(value) = value else {
+                        break 'property Ok(None);
+                    };
+
+                    if value.is_null() {
+                        break 'property Ok(None)
+                    };
+                }
+            };
+
+            let apply = match kind {
+                PropertyKind::Array => quote! {
+                    let value = if let serde_json::Value::Array(value) = value {
+                        blockprotocol::fold_iter_reports(
+                            value.into_iter().map(|value| <$type_>::try_from_value(value))
+                        ).change_context(GenericEntityError::Property(#index))
+                    } else {
+                        Err(Report::new(GenericEntityError::ExpectedArray(#index)))
+                    };
+                },
+                PropertyKind::Plain => quote! {
+                    let value = <#type_>::try_from_value(value)
+                        .change_context(Report::new(GenericEntityError::Property(#index)))
+                },
+                PropertyKind::Boxed => quote! {
+                    let value = <#type_>::try_from_value(value)
+                        .map(Box::new)
+                        .change_context(Report::new(GenericEntityError::Property(#index)))
+                }
+            };
+
+            let ret = if *required {
+                quote!(value)
+            } else {
+                quote!(value.map(Some))
+            };
+
+            quote! {
+                let #name = {
+                    #access
+
+                    #unwrap
+
+                    #apply
+
+                    #ret
+                };
+            }
+        },
+    );
+
+    let fields = properties
+        .values()
+        .map(|Property { name, .. }| name.to_token_stream());
+
+    quote! {
+        #(#values)*
+
+        // merge all values together, once we're here all errors have been cleared
+        let this = Self {
+            #(#fields),*
+        };
+
+        Ok(this)
+    }
+}
+
 fn generate_type(
     variant: Variant,
     location: &Location,
@@ -268,7 +394,7 @@ fn generate_owned(
                 todo!()
             }
 
-            fn as_mut(&self) -> Self::Mut<'_> {
+            fn as_mut(&mut self) -> Self::Mut<'_> {
                 // TODO!
                 todo!()
             }
