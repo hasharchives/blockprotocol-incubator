@@ -78,7 +78,7 @@ impl PropertiesRef<'a> {
             let value =
                 properties.get("http://localhost:3000/@alice/types/property-type/properties/");
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/properties/"))) ; } ;
-            let value = <Properties0>::try_from_value(value).change_context(Report::new(
+            let value = <Properties0::Ref<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/properties/",
                 ),
@@ -134,7 +134,7 @@ impl PropertiesMut<'a> {
                 &mut *value
             };
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/properties/"))) ; } ;
-            let value = <Properties0>::try_from_value(value).change_context(Report::new(
+            let value = <Properties0::Mut<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/properties/",
                 ),

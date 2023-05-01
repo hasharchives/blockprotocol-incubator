@@ -104,6 +104,47 @@ fn generate_use(
     }
 }
 
+fn generate_try_from_value_variant(
+    variant: Variant,
+    type_: &Ident,
+    value: &PropertyValues,
+    locations: &HashMap<&VersionedUrl, Location>,
+) -> TokenStream {
+    match value {
+        PropertyValues::DataTypeReference(value) => {
+            let location = &locations[value.url()];
+            let name = Ident::new(
+                location
+                    .alias
+                    .value
+                    .as_ref()
+                    .unwrap_or(&location.name.value),
+                Span::call_site(),
+            );
+
+            let suffix = match variant {
+                Variant::Owned => {}
+                Variant::Ref => {}
+                Variant::Mut => {}
+            };
+        }
+        PropertyValues::PropertyTypeObject(_) => {}
+        PropertyValues::ArrayOfPropertyValues(_) => {
+            // delegate to the inner type `try_from_value`
+        }
+    }
+
+    todo!()
+}
+
+fn generate_try_from_value(one_of: &[PropertyValues]) -> TokenStream {
+    if let [value] = one_of {
+        // we're in hoist mode!
+    }
+
+    todo!()
+}
+
 fn generate_type(
     id: &VersionedUrl,
     name: &Ident,

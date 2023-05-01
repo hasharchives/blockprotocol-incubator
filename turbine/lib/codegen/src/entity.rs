@@ -177,6 +177,12 @@ fn generate_properties_try_from_value(
         )| {
             let index = base.as_str();
 
+            let type_ = match variant {
+                Variant::Owned => type_.to_token_stream(),
+                Variant::Ref => quote!(#type_::Ref<'a>),
+                Variant::Mut => quote!(#type_::Mut<'a>)
+            };
+
             // TODO: keep mutable reference on entity as safeguard
             let access = match variant {
                 Variant::Owned => quote!(let value = properties.remove(#index);),
@@ -227,7 +233,7 @@ fn generate_properties_try_from_value(
                 PropertyKind::Array => quote! {
                     let value = if let serde_json::Value::Array(value) = value {
                         blockprotocol::fold_iter_reports(
-                            value.into_iter().map(|value| <$type_>::try_from_value(value))
+                            value.into_iter().map(|value| <#type_>::try_from_value(value))
                         ).change_context(GenericEntityError::Property(#index))
                     } else {
                         Err(Report::new(GenericEntityError::ExpectedArray(#index)))

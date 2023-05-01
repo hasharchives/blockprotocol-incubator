@@ -92,7 +92,7 @@ impl PropertiesRef<'a> {
             let value =
                 properties.get("http://localhost:3000/@alice/types/property-type/countryCode/");
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/countryCode/"))) ; } ;
-            let value = <CountryCode>::try_from_value(value).change_context(Report::new(
+            let value = <CountryCode::Ref<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/countryCode/",
                 ),
@@ -102,7 +102,7 @@ impl PropertiesRef<'a> {
         let name = 'property: {
             let value = properties.get("http://localhost:3000/@alice/types/property-type/name/");
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/name/"))) ; } ;
-            let value = <Name>::try_from_value(value).change_context(Report::new(
+            let value = <Name::Ref<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),
@@ -160,7 +160,7 @@ impl PropertiesMut<'a> {
                 &mut *value
             };
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/countryCode/"))) ; } ;
-            let value = <CountryCode>::try_from_value(value).change_context(Report::new(
+            let value = <CountryCode::Mut<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/countryCode/",
                 ),
@@ -175,7 +175,7 @@ impl PropertiesMut<'a> {
                 &mut *value
             };
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/name/"))) ; } ;
-            let value = <Name>::try_from_value(value).change_context(Report::new(
+            let value = <Name::Mut<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),
@@ -297,7 +297,7 @@ impl PropertiesRef<'a> {
         let name = 'property: {
             let value = properties.get("http://localhost:3000/@alice/types/property-type/name/");
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/name/"))) ; } ;
-            let value = <Name>::try_from_value(value).change_context(Report::new(
+            let value = <Name::Ref<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),
@@ -352,7 +352,7 @@ impl PropertiesMut<'a> {
                 &mut *value
             };
             let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/name/"))) ; } ;
-            let value = <Name>::try_from_value(value).change_context(Report::new(
+            let value = <Name::Mut<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),

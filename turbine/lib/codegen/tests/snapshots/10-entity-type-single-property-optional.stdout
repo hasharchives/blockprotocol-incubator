@@ -82,7 +82,7 @@ impl PropertiesRef<'a> {
             if value.is_null() {
                 break 'property Ok(None);
             };
-            let value = <Name>::try_from_value(value).change_context(Report::new(
+            let value = <Name::Ref<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),
@@ -141,7 +141,7 @@ impl PropertiesMut<'a> {
             if value.is_null() {
                 break 'property Ok(None);
             };
-            let value = <Name>::try_from_value(value).change_context(Report::new(
+            let value = <Name::Mut<'a>>::try_from_value(value).change_context(Report::new(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),
