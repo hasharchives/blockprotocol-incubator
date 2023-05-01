@@ -87,7 +87,20 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID == *value.id() {
+            return None;
+        }
+        let properties = Properties::try_from_value(&value.properties.0);
+        let link_data = value
+            .link_data
+            .as_ref()
+            .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
+        let (properties, link_data) = blockprotocol::fold_tuple_reports((properties, link_data))?;
+        let this = Self {
+            properties,
+            link_data,
+        };
+        Ok(this)
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -120,6 +133,19 @@ impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID == *value.id() {
+            return None;
+        }
+        let properties = Properties::try_from_value(&mut value.properties.0);
+        let link_data = value
+            .link_data
+            .as_mut()
+            .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
+        let (properties, link_data) = blockprotocol::fold_tuple_reports((properties, link_data))?;
+        let this = Self {
+            properties,
+            link_data,
+        };
+        Ok(this)
     }
 }

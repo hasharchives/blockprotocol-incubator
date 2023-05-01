@@ -469,6 +469,13 @@ fn generate_ref(
 
     let def = generate_type(Variant::Ref, location, properties, state);
 
+    // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
+    let link_data: Vec<_> = state
+        .is_link
+        .then(|| Ident::new("link_data", Span::call_site()))
+        .into_iter()
+        .collect();
+
     quote! {
         #def
 
@@ -485,8 +492,24 @@ fn generate_ref(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-                // TODO!
-                todo!()
+                if Self::ID == *value.id() {
+                    return None;
+                }
+
+                let properties = Properties::try_from_value(&value.properties.0);
+                #(let #link_data = value.link_data
+                    .as_ref()
+                    .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
+                )*
+
+                let (properties, #(#link_data)*) = blockprotocol::fold_tuple_reports((properties, #(#link_data)*))?;
+
+                let this = Self {
+                    properties,
+                    #(#link_data,)*
+                };
+
+                Ok(this)
             }
         }
     }
@@ -501,6 +524,13 @@ fn generate_mut(
     let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
 
     let def = generate_type(Variant::Mut, location, properties, state);
+
+    // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
+    let link_data: Vec<_> = state
+        .is_link
+        .then(|| Ident::new("link_data", Span::call_site()))
+        .into_iter()
+        .collect();
 
     quote! {
         #def
@@ -518,8 +548,24 @@ fn generate_mut(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-                // TODO!
-                todo!()
+                if Self::ID == *value.id() {
+                    return None;
+                }
+
+                let properties = Properties::try_from_value(&mut value.properties.0);
+                #(let #link_data = value.link_data
+                    .as_mut()
+                    .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
+                )*
+
+                let (properties, #(#link_data)*) = blockprotocol::fold_tuple_reports((properties, #(#link_data)*))?;
+
+                let this = Self {
+                    properties,
+                    #(#link_data,)*
+                };
+
+                Ok(this)
             }
         }
     }

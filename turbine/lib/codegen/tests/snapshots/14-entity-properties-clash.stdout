@@ -108,7 +108,13 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID == *value.id() {
+            return None;
+        }
+        let properties = Properties::try_from_value(&value.properties.0);
+        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
+        let this = Self { properties };
+        Ok(this)
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -158,7 +164,13 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID == *value.id() {
+            return None;
+        }
+        let properties = Properties::try_from_value(&mut value.properties.0);
+        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
+        let this = Self { properties };
+        Ok(this)
     }
 }
 
