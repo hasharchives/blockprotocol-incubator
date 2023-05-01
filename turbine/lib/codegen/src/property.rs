@@ -106,10 +106,17 @@ fn generate_use(
 
 fn generate_try_from_value_variant(
     variant: Variant,
-    type_: &Ident,
+    type_: &TokenStream,
     value: &PropertyValues,
     locations: &HashMap<&VersionedUrl, Location>,
+    inner: Option<&Ident>,
 ) -> TokenStream {
+    let suffix = match variant {
+        Variant::Owned => None,
+        Variant::Ref => Some(quote!(::Ref<'a>)),
+        Variant::Mut => Some(quote!(::Mut<'a>)),
+    };
+
     match value {
         PropertyValues::DataTypeReference(value) => {
             let location = &locations[value.url()];
@@ -122,19 +129,36 @@ fn generate_try_from_value_variant(
                 Span::call_site(),
             );
 
-            let suffix = match variant {
-                Variant::Owned => {}
-                Variant::Ref => {}
-                Variant::Mut => {}
-            };
+            let index = value.url().base_url.as_str();
+
+            quote!({
+                let value = <#name #suffix>::try_from_value(value)
+                    .change_context(GenericPropertyError::Data(#index));
+
+                value.map(#type_)
+            })
         }
-        PropertyValues::PropertyTypeObject(_) => {}
+        PropertyValues::PropertyTypeObject(_) => {
+            // TODO: this is pretty much the same code as the one we have been using for
+            //  `Properties`! ~> only difference is the context
+
+            todo!()
+        }
         PropertyValues::ArrayOfPropertyValues(_) => {
             // delegate to the inner type `try_from_value`
+            // TODO: we need to know the name of `Inner`
+            let inner = inner.expect("can only construct array if `Inner` is known!");
+
+            quote!({
+                let value = match value {
+                    serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                        array.into_iter().map(|value| <#inner #suffix>::try_from_value(value))
+                    ).change_context(GenericPropertyError::Array),
+                    _ => Err(Report::new(GenericPropertyError::ExpectedArray))
+                }
+            })
         }
     }
-
-    todo!()
 }
 
 fn generate_try_from_value(one_of: &[PropertyValues]) -> TokenStream {
@@ -171,7 +195,7 @@ fn generate_type(
         };
 
         // we can hoist!
-        let body = generate_contents(id, variant, value, resolver, locations, true, state);
+        let (body, inner) = generate_contents(id, variant, value, resolver, locations, true, state);
         let semicolon = semicolon.then_some(quote!(;));
 
         return quote! {
@@ -183,7 +207,8 @@ fn generate_type(
 
     // we cannot hoist and therefore need to create an enum
     let body = values.iter().enumerate().map(|(index, value)| {
-        let body = generate_contents(id, variant, value, resolver, locations, false, state);
+        let (body, inner) =
+            generate_contents(id, variant, value, resolver, locations, false, state);
         let name = format_ident!("Variant{index}");
 
         // TODO: try_from_value
@@ -231,7 +256,7 @@ fn generate_contents(
     locations: &HashMap<&VersionedUrl, Location>,
     hoist: bool,
     state: &mut State,
-) -> TokenStream {
+) -> (TokenStream, Option<Ident>) {
     match value {
         PropertyValues::DataTypeReference(reference) => {
             let location = &locations[reference.url()];
@@ -244,11 +269,14 @@ fn generate_contents(
                 .unwrap_or(&location.name.value);
             let name = Ident::new(name, Span::call_site());
 
-            match variant {
-                Variant::Owned => quote!((#vis #name)),
-                Variant::Ref => quote!((#vis #name::Ref<'a>)),
-                Variant::Mut => quote!((#vis #name::Mut<'a>)),
-            }
+            (
+                match variant {
+                    Variant::Owned => quote!((#vis #name)),
+                    Variant::Ref => quote!((#vis #name::Ref<'a>)),
+                    Variant::Mut => quote!((#vis #name::Mut<'a>)),
+                },
+                None,
+            )
         }
         PropertyValues::PropertyTypeObject(object) => {
             let property_names = resolver.property_names(object.properties().values().map(
@@ -303,11 +331,14 @@ fn generate_contents(
                 }
             });
 
-            quote! {
-                {
-                    #(#properties),*
-                }
-            }
+            (
+                quote! {
+                    {
+                        #(#properties),*
+                    }
+                },
+                None,
+            )
         }
         // TODO: automatically flatten, different modes?, inner data-type reference should just be a
         //  newtype?
@@ -326,7 +357,7 @@ fn generate_contents(
             // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
             // Array
             state.import.vec = true;
-            quote!((#vis Vec<#inner #lifetime>))
+            (quote!((#vis Vec<#inner #lifetime>)), Some(inner))
         }
     }
 }
