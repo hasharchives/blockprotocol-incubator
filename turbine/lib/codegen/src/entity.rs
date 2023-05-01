@@ -142,8 +142,8 @@ fn generate_properties_try_from_value(
 
             // TODO: keep mutable reference on entity as safeguard
             let access = match variant {
-                Variant::Owned => quote!(let value = properties.remove(#index)),
-                Variant::Ref => quote!(let value = properties.get(#index)),
+                Variant::Owned => quote!(let value = properties.remove(#index);),
+                Variant::Ref => quote!(let value = properties.get(#index);),
                 Variant::Mut => quote! {
                     // Note: This is super sketch
                     // SAFETY: We already have &mut access, meaning that no one else has mut access
@@ -198,12 +198,12 @@ fn generate_properties_try_from_value(
                 },
                 PropertyKind::Plain => quote! {
                     let value = <#type_>::try_from_value(value)
-                        .change_context(Report::new(GenericEntityError::Property(#index)))
+                        .change_context(Report::new(GenericEntityError::Property(#index)));
                 },
                 PropertyKind::Boxed => quote! {
                     let value = <#type_>::try_from_value(value)
                         .map(Box::new)
-                        .change_context(Report::new(GenericEntityError::Property(#index)))
+                        .change_context(Report::new(GenericEntityError::Property(#index)));
                 }
             };
 
@@ -214,7 +214,7 @@ fn generate_properties_try_from_value(
             };
 
             quote! {
-                let #name = {
+                let #name = 'property: {
                     #access
 
                     #unwrap
@@ -265,6 +265,8 @@ fn generate_type(
     });
 
     let name = Ident::new(&name.value, Span::call_site());
+
+    let try_from_value = generate_properties_try_from_value(variant, location, properties);
 
     let properties_name = match variant {
         Variant::Owned => Ident::new("Properties", Span::call_site()),
@@ -333,15 +335,7 @@ fn generate_type(
 
         impl #properties_name #lifetime {
             fn try_from_value(properties: #reference HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-                // TODO: factor out
-                todo!()
-                // #(#property_try_from;)*
-                //
-                // #(#properties_fold;)*
-                //
-                // Ok(Self {
-                //     #(#properties_self),*
-                // })
+                #try_from_value
             }
         }
 
@@ -350,8 +344,6 @@ fn generate_type(
         pub struct #name #lifetime {
             #(#fields),*
         }
-
-        // TODO: factor out try_from_entity!
 
         #alias
     }

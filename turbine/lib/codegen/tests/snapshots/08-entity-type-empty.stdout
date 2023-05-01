@@ -11,7 +11,8 @@ use serde::Serialize;
 pub struct Properties {}
 impl Properties {
     fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-        todo!()
+        let this = Self {};
+        Ok(this)
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -31,7 +32,7 @@ impl Type for Country {
         todo!()
     }
 
-    fn as_mut(&self) -> Self::Mut<'_> {
+    fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
     }
 }
@@ -42,7 +43,7 @@ impl EntityType for Country {
         if Self::ID == *value.id() {
             return None;
         }
-        let properties = Properties::try_from_value(value.properties);
+        let properties = Properties::try_from_value(value.properties.0);
         let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
         let this = Self { properties };
         Ok(this)
@@ -52,7 +53,8 @@ impl EntityType for Country {
 pub struct PropertiesRef<'a> {}
 impl PropertiesRef<'a> {
     fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-        todo!()
+        let this = Self {};
+        Ok(this)
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -81,7 +83,8 @@ impl PropertiesMut<'a> {
     fn try_from_value(
         properties: &'a mut HashMap<BaseUrl, Value>,
     ) -> Result<Self, GenericEntityError> {
-        todo!()
+        let this = Self {};
+        Ok(this)
     }
 }
 #[derive(Debug, Clone, Serialize)]
