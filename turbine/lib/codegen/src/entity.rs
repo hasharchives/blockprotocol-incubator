@@ -78,7 +78,6 @@ fn properties<'a>(
     )
 }
 
-// TODO: adapt code from properties
 fn generate_use(
     references: &[&VersionedUrl],
     locations: &HashMap<&VersionedUrl, Location>,
@@ -248,6 +247,13 @@ fn generate_owned(
 
     let def = generate_type(Variant::Owned, location, properties, state);
 
+    // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
+    let link_data: Vec<_> = state
+        .is_link
+        .then(|| Ident::new("link_data", Span::call_site()))
+        .into_iter()
+        .collect();
+
     quote! {
         #def
 
@@ -272,8 +278,23 @@ fn generate_owned(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-                // TODO!
-                todo!()
+                if Self::ID == *value.id() {
+                    return None;
+                }
+
+                let properties = Properties::try_from_value(value.properties.0);
+                #(let #link_data = value.link_data
+                    .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
+                )*
+
+                let (properties, #(#link_data)*) = blockprotocol::fold_tuple_reports((properties, #(#link_data)*))?;
+
+                let this = Self {
+                    properties,
+                    #(#link_data,)*
+                };
+
+                Ok(this)
             }
         }
     }

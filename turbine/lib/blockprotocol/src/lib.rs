@@ -15,7 +15,7 @@ use crate::entity::{Entity, EntityId};
 pub mod entity;
 mod polyfill;
 pub mod types;
-pub use polyfill::fold_tuple_reports;
+pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
 #[derive(Debug, Copy, Clone)]
 pub struct BaseUrlRef<'a>(&'a str);

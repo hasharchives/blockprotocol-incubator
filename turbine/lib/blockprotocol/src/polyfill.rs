@@ -1,6 +1,8 @@
 //! Temporary helper trait for folding reports until [#2377](https://github.com/hashintel/hash/discussions/2377)
 //! is resolved and implemented.
 
+use alloc::{vec, vec::Vec};
+
 use error_stack::{Context, Report};
 
 pub trait TupleExt {
@@ -79,4 +81,27 @@ all_the_tuples!(impl_tuple_ext);
 
 pub fn fold_tuple_reports<T: TupleExt>(value: T) -> Result<T::Ok, Report<T::Context>> {
     value.fold_reports()
+}
+
+// TODO: in theory we could also use `FromIterator` here
+pub fn fold_iter_reports<I: IntoIterator<Item = Result<T, Report<C>>>, T, C>(
+    iter: I,
+) -> Result<Vec<T>, Report<C>> {
+    let iter = iter.into_iter();
+
+    let mut output: Result<Vec<T>, Report<C>> = Ok(iter
+        .size_hint()
+        .1
+        .map_or_else(|| Vec::new(), |max| Vec::with_capacity(max)));
+
+    for element in iter {
+        match (&mut output, element) {
+            (Err(output), Err(element)) => output.extend_one(element),
+            (Err(_), Ok(_)) => {}
+            (Ok(output), Ok(element)) => output.push(element),
+            (output, Err(element)) => *output = Err(element),
+        }
+    }
+
+    output
 }

@@ -46,7 +46,13 @@ impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID == *value.id() {
+            return None;
+        }
+        let properties = Properties::try_from_value(value.properties);
+        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
+        let this = Self { properties };
+        Ok(this)
     }
 }
 #[derive(Debug, Clone, Serialize)]
