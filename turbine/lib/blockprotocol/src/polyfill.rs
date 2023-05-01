@@ -77,6 +77,6 @@ macro_rules! impl_tuple_ext {
 
 all_the_tuples!(impl_tuple_ext);
 
-pub fn fold_reports<T: TupleExt>(value: T) -> Result<T::Ok, Report<T::Context>> {
+pub fn fold_tuple_reports<T: TupleExt>(value: T) -> Result<T::Ok, Report<T::Context>> {
     value.fold_reports()
 }

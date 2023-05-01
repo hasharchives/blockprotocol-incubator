@@ -189,13 +189,13 @@ fn generate_owned(
     for properties in properties_chunks.by_ref() {
         let names = properties.map(|property| &property.name);
         properties_fold
-            .push(quote!(let (#(#names,)*) = blockprotocol::fold_reports((#(#names,)*))?));
+            .push(quote!(let (#(#names,)*) = blockprotocol::fold_tuple_reports((#(#names,)*))?));
     }
 
     if let Some(properties) = properties_chunks.into_remainder() {
         let names: Vec<_> = properties.map(|property| &property.name).collect();
         properties_fold
-            .push(quote!(let (#(#names,)*) = blockprotocol::fold_reports((#(#names,)*))?));
+            .push(quote!(let (#(#names,)*) = blockprotocol::fold_tuple_reports((#(#names,)*))?));
     }
 
     let properties_self = properties.values().map(|property| &property.name);
