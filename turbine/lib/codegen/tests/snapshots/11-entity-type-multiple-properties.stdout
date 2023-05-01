@@ -18,19 +18,7 @@ pub struct Properties {
 }
 impl Properties {
     fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-        let country_code = 'property: {
-            let value =
-                properties.remove("http://localhost:3000/@alice/types/property-type/countryCode/");
-            let Some (value) = value else { break 'property Err (Report :: new (EntityGenericError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/countryCode/"))) } ;
-            <CountryCode>::try_from_value(value)
-        };
-        let name = 'property: {
-            let value = properties.remove("http://localhost:3000/@alice/types/property-type/name/");
-            let Some (value) = value else { break 'property Err (Report :: new (EntityGenericError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/name/"))) } ;
-            <Name>::try_from_value(value)
-        };
-        let (country_code, name) = blockprotocol::fold_reports((country_code, name))?;
-        Ok(Self { country_code, name })
+        todo!()
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -38,6 +26,7 @@ impl Properties {
 pub struct Country {
     pub properties: Properties,
 }
+pub type CountryV1 = Country;
 impl Type for Country {
     type Mut < 'a > = CountryMut < 'a > where Self : 'a ;
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
@@ -57,15 +46,9 @@ impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID != *value.id() {
-            return None;
-        }
-        Some(Ok(Self {
-            properties: Properties::try_from_value(value.properties)?,
-        }))
+        todo!()
     }
 }
-pub type CountryV1 = Country;
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/countryCode/")]

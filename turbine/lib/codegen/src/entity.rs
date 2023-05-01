@@ -118,87 +118,46 @@ fn generate_use(
     }
 }
 
-#[allow(clippy::too_many_lines)]
-fn generate_owned(
-    entity: &EntityType,
+fn generate_type(
+    variant: Variant,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
 ) -> TokenStream {
-    let property_try_from: Vec<_> = properties
-        .iter()
-        .map(|(base, property)| {
-            let Property {
-                name,
-                type_,
-                kind,
-                required,
-            } = property;
+    let lifetime = matches!(variant, Variant::Ref | Variant::Mut).then(|| quote!(<'a>));
 
-            let index = base.as_str();
+    let name = match variant {
+        Variant::Owned => &location.name,
+        Variant::Ref => &location.name_ref,
+        Variant::Mut => &location.name_mut,
+    };
 
-            let required_check = if *required {
-                quote! {
-                    let Some(value) = value else {
-                        break 'property Err(Report::new(EntityGenericError::ExpectedProperty(#index)))
-                    };
-                }
-            } else {
-                quote! {
-                    let Some(value) = value else {
-                        break 'property Ok(None)
-                    };
+    let alias = name.alias.as_ref().map(|alias| {
+        let alias = Ident::new(alias, Span::call_site());
+        let name = Ident::new(&name.value, Span::call_site());
 
-                    if value.is_null() {
-                        break 'property Ok(None)
-                    }
-                }
-            };
+        quote!(pub type #alias #lifetime = #name #lifetime;)
+    });
 
-            let convert = match kind {
-                PropertyKind::Array => quote! {
-                    if let serde_json::Value::Array(value) = value {
-                        // TODO: collect errors using error-stack
-                        value.into_iter()
-                            .map(|value| <#type_>::try_from_value(value))
-                            .collect::<Result<Vec<_>, _>>()
-                            .change_context(EntityGenericError::PropertyError)
-                    } else {
-                        Err(Report::new(EntityGenericError::ExpectedArray(#index)))
-                    }
-                },
-                PropertyKind::Plain => quote!(<#type_>::try_from_value(value)),
-                PropertyKind::Boxed => quote!(<#type_>::try_from_value(value).map(Box::new)),
-            };
+    let name = Ident::new(&name.value, Span::call_site());
 
-            quote! {let #name = 'property: {
-                let value = properties.remove(#index);
+    let properties_name = match variant {
+        Variant::Owned => Ident::new("Properties", Span::call_site()),
+        Variant::Ref => Ident::new("PropertiesRef", Span::call_site()),
+        Variant::Mut => Ident::new("PropertiesMut", Span::call_site()),
+    };
 
-                #required_check
-                #convert
-            }}
-        })
-        .collect();
+    let reference = match variant {
+        Variant::Owned => None,
+        Variant::Ref => Some(quote!(&'a)),
+        Variant::Mut => Some(quote!(&'a mut)),
+    };
 
-    let mut properties_fold = vec![];
-    let mut properties_chunks = properties.values().array_chunks::<16>();
+    let mut fields = vec![quote!(pub properties: #properties_name #lifetime)];
 
-    // TODO:
-    // in theory we could optimize this further currently we just fold all reports of the first 16
-    // elements, in theory we could stack them even further
-    for properties in properties_chunks.by_ref() {
-        let names = properties.map(|property| &property.name);
-        properties_fold
-            .push(quote!(let (#(#names,)*) = blockprotocol::fold_tuple_reports((#(#names,)*))?));
+    if state.is_link {
+        fields.push(quote!(pub link_data: #reference LinkData));
     }
-
-    if let Some(properties) = properties_chunks.into_remainder() {
-        let names: Vec<_> = properties.map(|property| &property.name).collect();
-        properties_fold
-            .push(quote!(let (#(#names,)*) = blockprotocol::fold_tuple_reports((#(#names,)*))?));
-    }
-
-    let properties_self = properties.values().map(|property| &property.name);
 
     let properties = properties.iter().map(|(base, property)| {
         let url = base.as_str();
@@ -210,9 +169,13 @@ fn generate_owned(
         } = property;
 
         let mut type_ = match kind {
-            PropertyKind::Array => {
+            PropertyKind::Array if variant == Variant::Owned || variant == Variant::Mut => {
                 state.import.vec = true;
                 quote!(Vec<#type_>)
+            }
+            PropertyKind::Array => {
+                state.import.box_ = true;
+                quote!(Box<[#type_]>)
             }
             PropertyKind::Plain => type_.to_token_stream(),
             PropertyKind::Boxed => {
@@ -231,42 +194,23 @@ fn generate_owned(
         }
     });
 
-    let mut fields = vec![quote!(pub properties: Properties)];
-
-    if state.is_link {
-        fields.push(quote!(pub link_data: LinkData));
-    }
-
-    let name = Ident::new(&location.name.value, Span::call_site());
-    let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
-    let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
-
-    let base_url = entity.id().base_url.as_str();
-    let version = entity.id().version;
-
-    let alias = location.name.alias.as_ref().map(|alias| {
-        let alias = Ident::new(alias, Span::call_site());
-
-        quote!(pub type #alias = #name;)
-    });
-
-    let try_link_data = state.is_link.then(|| quote!(link_data: entity.link_data.ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData))?,));
-
     quote! {
         #[derive(Debug, Clone, Serialize)]
-        pub struct Properties {
+        pub struct #properties_name #lifetime {
             #(#properties),*
         }
 
-        impl Properties {
-            fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-                #(#property_try_from;)*
-
-                #(#properties_fold;)*
-
-                Ok(Self {
-                    #(#properties_self),*
-                })
+        impl #properties_name #lifetime {
+            fn try_from_value(properties: #reference HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+                // TODO: factor out
+                todo!()
+                // #(#property_try_from;)*
+                //
+                // #(#properties_fold;)*
+                //
+                // Ok(Self {
+                //     #(#properties_self),*
+                // })
             }
         }
 
@@ -275,6 +219,31 @@ fn generate_owned(
         pub struct #name {
             #(#fields),*
         }
+
+        // TODO: factor out try_from_entity!
+
+        #alias
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+fn generate_owned(
+    entity: &EntityType,
+    location: &Location,
+    properties: &BTreeMap<&BaseUrl, Property>,
+    state: &mut State,
+) -> TokenStream {
+    let name = Ident::new(&location.name.value, Span::call_site());
+    let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
+    let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
+
+    let base_url = entity.id().base_url.as_str();
+    let version = entity.id().version;
+
+    let def = generate_type(Variant::Owned, location, properties, state);
+
+    quote! {
+        #def
 
         impl Type for #name {
             type Mut<'a> = #name_mut<'a> where Self: 'a;
@@ -297,18 +266,10 @@ fn generate_owned(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-                if Self::ID != *value.id() {
-                    return None;
-                }
-
-                Some(Ok(Self {
-                    properties: Properties::try_from_value(value.properties)?,
-                    #try_link_data
-                }))
+                // TODO!
+                todo!()
             }
         }
-
-        #alias
     }
 }
 
