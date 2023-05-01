@@ -72,14 +72,22 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
         todo!()
     }
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertiesMut<'a> {}
-#[derive(Debug, Serialize)]
+impl PropertiesMut<'a> {
+    fn try_from_value(
+        properties: &'a mut HashMap<BaseUrl, Value>,
+    ) -> Result<Self, GenericEntityError> {
+        todo!()
+    }
+}
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfMut<'a> {
     pub properties: PropertiesMut<'a>,
     pub link_data: &'a mut LinkData,
 }
+pub type PartOfV1Mut<'a> = PartOfMut<'a>;
 impl TypeMut for PartOfMut<'_> {
     type Owned = PartOf;
 
@@ -94,4 +102,3 @@ impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {
         todo!()
     }
 }
-pub type PartOfV1Mut<'a> = PartOfMut<'a>;

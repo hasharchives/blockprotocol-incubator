@@ -317,22 +317,13 @@ fn generate_mut(
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
 ) -> TokenStream {
-    let def = generate_type(Variant::Mut, location, properties, state);
-
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
 
-    quote! {
-        #[derive(Debug, Serialize)]
-        pub struct PropertiesMut<'a> {
-            #(#properties),*
-        }
+    let def = generate_type(Variant::Mut, location, properties, state);
 
-        #[derive(Debug, Serialize)]
-        #[serde(rename_all = "camelCase")]
-        pub struct #name_mut<'a> {
-            #(#fields),*
-        }
+    quote! {
+        #def
 
         impl TypeMut for #name_mut<'_> {
             type Owned = #name;
@@ -351,8 +342,6 @@ fn generate_mut(
                 todo!()
             }
         }
-
-        #alias
     }
 }
 

@@ -81,18 +81,26 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
         todo!()
     }
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/countryCode/")]
     pub country_code: CountryCode::Mut<'a>,
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name::Mut<'a>,
 }
-#[derive(Debug, Serialize)]
+impl PropertiesMut<'a> {
+    fn try_from_value(
+        properties: &'a mut HashMap<BaseUrl, Value>,
+    ) -> Result<Self, GenericEntityError> {
+        todo!()
+    }
+}
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
     pub properties: PropertiesMut<'a>,
 }
+pub type CountryV2Mut<'a> = CountryMut<'a>;
 impl TypeMut for CountryMut<'_> {
     type Owned = Country;
 
@@ -107,7 +115,6 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
         todo!()
     }
 }
-pub type CountryV2Mut<'a> = CountryMut<'a>;
 pub mod v1;
 pub use v1::CountryV1;
 
@@ -191,12 +198,19 @@ impl<'a> EntityTypeRef<'a> for CountryV1Ref<'a> {
         todo!()
     }
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name::Mut<'a>,
 }
-#[derive(Debug, Serialize)]
+impl PropertiesMut<'a> {
+    fn try_from_value(
+        properties: &'a mut HashMap<BaseUrl, Value>,
+    ) -> Result<Self, GenericEntityError> {
+        todo!()
+    }
+}
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryV1Mut<'a> {
     pub properties: PropertiesMut<'a>,
