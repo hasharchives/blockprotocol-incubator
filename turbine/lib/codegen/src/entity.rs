@@ -7,6 +7,7 @@ use std::{
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
+use syn::{token::Pub, Token, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
     EntityType, EntityTypeReference,
@@ -15,15 +16,8 @@ use type_system::{
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
-    shared::{generate_mod, imports, Property, PropertyKind},
+    shared::{generate_mod, generate_property, imports, Import, Property, PropertyKind, Variant},
 };
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum Variant {
-    Owned,
-    Ref,
-    Mut,
-}
 
 const RESERVED: &[&str] = &[
     "Type",
@@ -50,12 +44,6 @@ static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
         .expect("should be valid url"),
     )
 });
-
-#[derive(Debug, Copy, Clone)]
-struct Import {
-    vec: bool,
-    box_: bool,
-}
 
 struct State {
     is_link: bool,
@@ -117,177 +105,16 @@ fn generate_use(
     }
 }
 
-fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
-    let mut fold = vec![];
-    let mut unfold = vec![];
-
-    let mut chunks = properties
-        .values()
-        .map(|Property { name, .. }| name)
-        .array_chunks::<16>();
-
-    let mut index = 0;
-    // in theory we could merge even more, currently "just" 16 fields are batched together
-    for chunk in &mut chunks {
-        let result = format_ident!("__report{index}");
-        fold.push(quote!(let #result = blockprotocol::fold_tuple_reports((#(#chunk,)*))));
-        unfold.push((quote!((#(#chunk,)*)), result));
-        index += 1;
-    }
-
-    if let Some(remainder) = chunks.into_remainder() {
-        let result = format_ident!("__report{index}");
-        let chunk: Vec<_> = remainder.collect();
-
-        fold.push(quote!(let #result = blockprotocol::fold_tuple_reports((#(#chunk,)*))));
-        unfold.push((quote!((#(#chunk,)*)), result));
-    }
-
-    // this creates an implicit limit of 16*16 elements (~> 256 element)
-    // o god, the monomorphised code must be huge D:
-    let (unfold_lhs, unfold_rhs): (Vec<_>, Vec<_>) = unfold.into_iter().unzip();
-
-    quote! {
-        #(#fold;)*
-
-        let (#(#unfold_lhs,)*) = blockprotocol::fold_tuple_reports((#(#unfold_rhs,)*))?;
-    }
-}
-
 fn generate_properties_try_from_value(
     variant: Variant,
-    location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
 ) -> TokenStream {
-    // fundamentally we have 3 phases:
-    // 1) get all values (as Result)
-    // 2) merge them together using `blockprotocol::fold_tuple_reports`
-    // 3) merge all values together
-
-    // makes use of labelled breaks in blocks (introduced in 1.65)
-    let values = properties.iter().map(
-        |(
-            base,
-            Property {
-                name,
-                type_,
-                kind,
-                required,
-            },
-        )| {
-            let index = base.as_str();
-
-            let type_ = match variant {
-                Variant::Owned => type_.to_token_stream(),
-                Variant::Ref => quote!(#type_::Ref<'a>),
-                Variant::Mut => quote!(#type_::Mut<'a>)
-            };
-
-            // TODO: keep mutable reference on entity as safeguard
-            let access = match variant {
-                Variant::Owned => quote!(let value = properties.remove(#index);),
-                Variant::Ref => quote!(let value = properties.get(#index);),
-                Variant::Mut => quote! {
-                    // Note: This is super sketch
-                    // SAFETY: We already have &mut access, meaning that no one else has mut access
-                    //  the urls are unique and are not colliding, meaning that there's no overlap
-                    //  and we always have a single mutable reference to each value.
-                    //  In theory whenever a new value is added or removed the reference could get
-                    //  invalidated, to circumvent this `EntityMut` variant is holding a mutable
-                    //  reference.
-                    //  Heavy inspiration has been taken from https://stackoverflow.com/a/53146512/9077988
-                    //  THIS IS CURRENTLY UNTESTED (god I am scared)
-                    //  This is very similar to `get_mut_many`, but we need to know if a value
-                    //  does not exist and if it doesn't exist which, we would also need to convert
-                    //  serde_json HashMap into a hashbrown::HashMap for it to work.
-                    let value = unsafe {
-                        let value = properties.get_mut(#index);
-                        let value = value.map(|value| value as *mut _);
-
-                        &mut *value
-                    };
-                },
-            };
-
-            let unwrap = if *required {
-                quote! {
-                    let Some(value) = value else {
-                        break 'property Err(Report::new(GenericEntityError::ExpectedProperty(#index)));
-                    };
-                }
-
-            } else {
-                // the value is wrapped in `Option<>` and can be missing!
-                quote! {
-                    let Some(value) = value else {
-                        break 'property Ok(None);
-                    };
-
-                    if value.is_null() {
-                        break 'property Ok(None)
-                    };
-                }
-            };
-
-            let apply = match kind {
-                PropertyKind::Array => quote! {
-                    let value = if let serde_json::Value::Array(value) = value {
-                        blockprotocol::fold_iter_reports(
-                            value.into_iter().map(|value| <#type_>::try_from_value(value))
-                        ).change_context(GenericEntityError::Property(#index))
-                    } else {
-                        Err(Report::new(GenericEntityError::ExpectedArray(#index)))
-                    };
-                },
-                PropertyKind::Plain => quote! {
-                    let value = <#type_>::try_from_value(value)
-                        .change_context(Report::new(GenericEntityError::Property(#index)));
-                },
-                PropertyKind::Boxed => quote! {
-                    let value = <#type_>::try_from_value(value)
-                        .map(Box::new)
-                        .change_context(Report::new(GenericEntityError::Property(#index)));
-                }
-            };
-
-            let ret = if *required {
-                quote!(value)
-            } else {
-                quote!(value.map(Some))
-            };
-
-            quote! {
-                let #name = 'property: {
-                    #access
-
-                    #unwrap
-
-                    #apply
-
-                    #ret
-                };
-            }
-        },
-    );
-
-    let fold = generate_fold(properties);
-
-    let fields = properties
-        .values()
-        .map(|Property { name, .. }| name.to_token_stream());
-
-    quote! {
-        #(#values)*
-
-        #fold
-
-        // merge all values together, once we're here all errors have been cleared
-        let this = Self {
-            #(#fields),*
-        };
-
-        Ok(this)
-    }
+    shared::generate_properties_try_from_value(
+        variant,
+        properties,
+        &Ident::new("GenericEntityError", Span::call_site()),
+        &quote!(Self),
+    )
 }
 
 fn generate_type(
@@ -313,7 +140,7 @@ fn generate_type(
 
     let name = Ident::new(&name.value, Span::call_site());
 
-    let try_from_value = generate_properties_try_from_value(variant, location, properties);
+    let try_from_value = generate_properties_try_from_value(variant, properties);
 
     let properties_name = match variant {
         Variant::Owned => Ident::new("Properties", Span::call_site()),
@@ -334,44 +161,13 @@ fn generate_type(
     }
 
     let properties = properties.iter().map(|(base, property)| {
-        let url = base.as_str();
-        let Property {
-            name,
-            type_,
-            kind,
-            required,
-        } = property;
-
-        let type_ = match variant {
-            Variant::Owned => type_.to_token_stream(),
-            Variant::Ref => quote!(#type_::Ref<'a>),
-            Variant::Mut => quote!(#type_::Mut<'a>),
-        };
-
-        let mut type_ = match kind {
-            PropertyKind::Array if variant == Variant::Owned || variant == Variant::Mut => {
-                state.import.vec = true;
-                quote!(Vec<#type_>)
-            }
-            PropertyKind::Array => {
-                state.import.box_ = true;
-                quote!(Box<[#type_]>)
-            }
-            PropertyKind::Plain => type_.to_token_stream(),
-            PropertyKind::Boxed => {
-                state.import.box_ = true;
-                quote!(Box<#type_>)
-            }
-        };
-
-        if !required {
-            type_ = quote!(Option<#type_>);
-        }
-
-        quote! {
-            #[serde(rename = #url)]
-            pub #name: #type_
-        }
+        generate_property(
+            base,
+            property,
+            variant,
+            Some(&Visibility::Public(Pub::default())),
+            &mut state.import,
+        )
     });
 
     quote! {

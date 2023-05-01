@@ -5,6 +5,7 @@ use std::{
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
+use syn::{token::Pub, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
     DataTypeReference, Object, PropertyType, PropertyTypeReference, PropertyValues, ValueOrArray,
@@ -13,26 +14,13 @@ use type_system::{
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
-    shared::{generate_mod, imports, Property, PropertyKind},
+    shared::{generate_mod, generate_property, imports, Import, Property, PropertyKind, Variant},
 };
-
-#[derive(Debug, Copy, Clone)]
-struct Import {
-    vec: bool,
-    box_: bool,
-}
 
 struct State {
     inner: Vec<Inner>,
     import: Import,
     inner_name: String,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum Variant {
-    Owned,
-    Ref,
-    Mut,
 }
 
 const RESERVED: &[&str] = &[
@@ -104,63 +92,6 @@ fn generate_use(
     }
 }
 
-fn generate_try_from_value_variant(
-    variant: Variant,
-    type_: &TokenStream,
-    value: &PropertyValues,
-    locations: &HashMap<&VersionedUrl, Location>,
-    inner: Option<&Ident>,
-) -> TokenStream {
-    let suffix = match variant {
-        Variant::Owned => None,
-        Variant::Ref => Some(quote!(::Ref<'a>)),
-        Variant::Mut => Some(quote!(::Mut<'a>)),
-    };
-
-    match value {
-        PropertyValues::DataTypeReference(value) => {
-            let location = &locations[value.url()];
-            let name = Ident::new(
-                location
-                    .alias
-                    .value
-                    .as_ref()
-                    .unwrap_or(&location.name.value),
-                Span::call_site(),
-            );
-
-            let index = value.url().base_url.as_str();
-
-            quote!({
-                let value = <#name #suffix>::try_from_value(value)
-                    .change_context(GenericPropertyError::Data(#index));
-
-                value.map(#type_)
-            })
-        }
-        PropertyValues::PropertyTypeObject(_) => {
-            // TODO: this is pretty much the same code as the one we have been using for
-            //  `Properties`! ~> only difference is the context
-
-            todo!()
-        }
-        PropertyValues::ArrayOfPropertyValues(_) => {
-            // delegate to the inner type `try_from_value`
-            // TODO: we need to know the name of `Inner`
-            let inner = inner.expect("can only construct array if `Inner` is known!");
-
-            quote!({
-                let value = match value {
-                    serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
-                        array.into_iter().map(|value| <#inner #suffix>::try_from_value(value))
-                    ).change_context(GenericPropertyError::Array),
-                    _ => Err(Report::new(GenericPropertyError::ExpectedArray))
-                }
-            })
-        }
-    }
-}
-
 fn generate_try_from_value(one_of: &[PropertyValues]) -> TokenStream {
     if let [value] = one_of {
         // we're in hoist mode!
@@ -195,7 +126,15 @@ fn generate_type(
         };
 
         // we can hoist!
-        let (body, inner) = generate_contents(id, variant, value, resolver, locations, true, state);
+        let (body, try_from) = generate_contents(
+            (id, variant),
+            value,
+            resolver,
+            locations,
+            true,
+            &quote!(Self),
+            state,
+        );
         let semicolon = semicolon.then_some(quote!(;));
 
         return quote! {
@@ -207,9 +146,16 @@ fn generate_type(
 
     // we cannot hoist and therefore need to create an enum
     let body = values.iter().enumerate().map(|(index, value)| {
-        let (body, inner) =
-            generate_contents(id, variant, value, resolver, locations, false, state);
         let name = format_ident!("Variant{index}");
+        let (body, try_from) = generate_contents(
+            (id, variant),
+            value,
+            resolver,
+            locations,
+            false,
+            &quote!(Self::#name),
+            state,
+        );
 
         // TODO: try_from_value
         quote! {
@@ -248,15 +194,22 @@ fn generate_inner(
     name
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_contents(
-    id: &VersionedUrl,
-    variant: Variant,
+    (id, variant): (&VersionedUrl, Variant),
     value: &PropertyValues,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
     hoist: bool,
+    type_: &TokenStream,
     state: &mut State,
-) -> (TokenStream, Option<Ident>) {
+) -> (TokenStream, TokenStream) {
+    let suffix = match variant {
+        Variant::Owned => None,
+        Variant::Ref => Some(quote!(::Ref<'a>)),
+        Variant::Mut => Some(quote!(::Mut<'a>)),
+    };
+
     match value {
         PropertyValues::DataTypeReference(reference) => {
             let location = &locations[reference.url()];
@@ -269,14 +222,15 @@ fn generate_contents(
                 .unwrap_or(&location.name.value);
             let name = Ident::new(name, Span::call_site());
 
-            (
-                match variant {
-                    Variant::Owned => quote!((#vis #name)),
-                    Variant::Ref => quote!((#vis #name::Ref<'a>)),
-                    Variant::Mut => quote!((#vis #name::Mut<'a>)),
-                },
-                None,
-            )
+            let index = reference.url().base_url.as_str();
+            let try_from = quote!({
+                let value = <#name #suffix>::try_from_value(value)
+                    .change_context(GenericPropertyError::Data(#index));
+
+                value.map(#type_)
+            });
+
+            (quote!((#vis #name #suffix)), try_from)
         }
         PropertyValues::PropertyTypeObject(object) => {
             let property_names = resolver.property_names(object.properties().values().map(
@@ -288,47 +242,22 @@ fn generate_contents(
 
             let properties = properties(id, object, resolver, &property_names, locations);
 
+            let try_from = shared::generate_properties_try_from_value(
+                variant,
+                &properties,
+                &Ident::new("GenericPropertyError", Span::call_site()),
+                type_,
+            );
+
+            let visibility = hoist.then(|| Visibility::Public(Pub::default()));
             let properties = properties.iter().map(|(base, property)| {
-                let url = base.as_str();
-                let Property {
-                    name,
-                    type_,
-                    kind,
-                    required,
-                } = property;
-
-                let type_ = match variant {
-                    Variant::Owned => type_.to_token_stream(),
-                    Variant::Ref => quote!(#type_::Ref<'a>),
-                    Variant::Mut => quote!(#type_::Mut<'a>),
-                };
-
-                let mut type_ = match kind {
-                    PropertyKind::Array if variant == Variant::Owned || variant == Variant::Mut => {
-                        state.import.vec = true;
-                        quote!(Vec<#type_>)
-                    }
-                    PropertyKind::Array => {
-                        state.import.box_ = true;
-                        quote!(Box<[#type_]>)
-                    }
-                    PropertyKind::Plain => type_,
-                    PropertyKind::Boxed => {
-                        state.import.box_ = true;
-                        quote!(Box<#type_>)
-                    }
-                };
-
-                if !required {
-                    type_ = quote!(Option<#type_>);
-                }
-
-                let vis = hoist.then_some(quote!(pub));
-
-                quote! {
-                    #[serde(rename = #url)]
-                    #vis #name: #type_
-                }
+                generate_property(
+                    base,
+                    property,
+                    variant,
+                    visibility.as_ref(),
+                    &mut state.import,
+                )
             });
 
             (
@@ -337,7 +266,7 @@ fn generate_contents(
                         #(#properties),*
                     }
                 },
-                None,
+                try_from,
             )
         }
         // TODO: automatically flatten, different modes?, inner data-type reference should just be a
@@ -354,10 +283,19 @@ fn generate_contents(
                 Variant::Owned => None,
             };
 
+            let try_from = quote!({
+                let value = match value {
+                    serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                        array.into_iter().map(|value| <#inner #lifetime>::try_from_value(value))
+                    ).change_context(GenericPropertyError::Array),
+                    _ => Err(Report::new(GenericPropertyError::ExpectedArray))
+                }
+            });
+
             // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
             // Array
             state.import.vec = true;
-            (quote!((#vis Vec<#inner #lifetime>)), Some(inner))
+            (quote!((#vis Vec<#inner #lifetime>)), try_from)
         }
     }
 }
