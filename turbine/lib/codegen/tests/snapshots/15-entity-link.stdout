@@ -46,12 +46,18 @@ impl EntityType for PartOf {
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {}
+impl PropertiesRef<'a> {
+    fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        todo!()
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfRef<'a> {
     pub properties: PropertiesRef<'a>,
     pub link_data: &'a LinkData,
 }
+pub type PartOfV1Ref<'a> = PartOfRef<'a>;
 impl TypeRef for PartOfRef<'_> {
     type Owned = PartOf;
 
@@ -66,7 +72,6 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
         todo!()
     }
 }
-pub type PartOfV1Ref<'a> = PartOfRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {}
 #[derive(Debug, Serialize)]

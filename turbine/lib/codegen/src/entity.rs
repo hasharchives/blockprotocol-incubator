@@ -168,6 +168,12 @@ fn generate_type(
             required,
         } = property;
 
+        let type_ = match variant {
+            Variant::Owned => type_.to_token_stream(),
+            Variant::Ref => quote!(#type_::Ref<'a>),
+            Variant::Mut => quote!(#type_::Mut<'a>),
+        };
+
         let mut type_ = match kind {
             PropertyKind::Array if variant == Variant::Owned || variant == Variant::Mut => {
                 state.import.vec = true;
@@ -216,7 +222,7 @@ fn generate_type(
 
         #[derive(Debug, Clone, Serialize)]
         #[serde(rename_all = "camelCase")]
-        pub struct #name {
+        pub struct #name #lifetime {
             #(#fields),*
         }
 
@@ -278,65 +284,13 @@ fn generate_ref(
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
 ) -> TokenStream {
-    let properties = properties.iter().map(|(base, property)| {
-        let url = base.as_str();
-        let Property {
-            name,
-            type_,
-            kind,
-            required,
-        } = property;
-
-        let type_ = quote!(#type_::Ref<'a>);
-
-        let mut type_ = match kind {
-            PropertyKind::Array => {
-                state.import.box_ = true;
-                quote!(Box<[#type_]>)
-            }
-            PropertyKind::Plain => type_,
-            PropertyKind::Boxed => {
-                state.import.box_ = true;
-                quote!(Box<#type_>)
-            }
-        };
-
-        if !required {
-            type_ = quote!(Option<#type_>);
-        }
-
-        quote! {
-            #[serde(rename = #url)]
-            pub #name: #type_
-        }
-    });
-
-    let mut fields = vec![quote!(pub properties: PropertiesRef<'a>)];
-
-    if state.is_link {
-        fields.push(quote!(pub link_data: &'a LinkData));
-    }
-
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
 
-    let alias = location.name_ref.alias.as_ref().map(|alias| {
-        let alias = Ident::new(alias, Span::call_site());
-
-        quote!(pub type #alias<'a> = #name_ref<'a>;)
-    });
+    let def = generate_type(Variant::Ref, location, properties, state);
 
     quote! {
-        #[derive(Debug, Clone, Serialize)]
-        pub struct PropertiesRef<'a> {
-            #(#properties),*
-        }
-
-        #[derive(Debug, Clone, Serialize)]
-        #[serde(rename_all = "camelCase")]
-        pub struct #name_ref<'a> {
-            #(#fields),*
-        }
+        #def
 
         impl TypeRef for #name_ref<'_> {
             type Owned = #name;
@@ -355,8 +309,6 @@ fn generate_ref(
                 todo!()
             }
         }
-
-        #alias
     }
 }
 
@@ -365,53 +317,10 @@ fn generate_mut(
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
 ) -> TokenStream {
-    let properties = properties.iter().map(|(base, property)| {
-        let url = base.as_str();
-        let Property {
-            name,
-            type_,
-            kind,
-            required,
-        } = property;
-
-        let type_ = quote!(#type_::Mut<'a>);
-
-        let mut type_ = match kind {
-            PropertyKind::Array => {
-                state.import.vec = true;
-                quote!(Vec<#type_>)
-            }
-            PropertyKind::Plain => type_,
-            PropertyKind::Boxed => {
-                state.import.box_ = true;
-                quote!(Box<#type_>)
-            }
-        };
-
-        if !required {
-            type_ = quote!(Option<#type_>);
-        }
-
-        quote! {
-            #[serde(rename = #url)]
-            pub #name: #type_
-        }
-    });
-
-    let mut fields = vec![quote!(pub properties: PropertiesMut<'a>)];
-
-    if state.is_link {
-        fields.push(quote!(pub link_data: &'a mut LinkData));
-    }
+    let def = generate_type(Variant::Mut, location, properties, state);
 
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
-
-    let alias = location.name_mut.alias.as_ref().map(|alias| {
-        let alias = Ident::new(alias, Span::call_site());
-
-        quote!(pub type #alias<'a> = #name_mut<'a>;)
-    });
 
     quote! {
         #[derive(Debug, Serialize)]

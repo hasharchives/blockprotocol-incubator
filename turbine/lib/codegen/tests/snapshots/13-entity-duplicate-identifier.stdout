@@ -58,11 +58,17 @@ pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@bob/types/property-type/name/")]
     pub name_1: Name1::Ref<'a>,
 }
+impl PropertiesRef<'a> {
+    fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        todo!()
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     pub properties: PropertiesRef<'a>,
 }
+pub type CountryV1Ref<'a> = CountryRef<'a>;
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;
 
@@ -77,7 +83,6 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
         todo!()
     }
 }
-pub type CountryV1Ref<'a> = CountryRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]

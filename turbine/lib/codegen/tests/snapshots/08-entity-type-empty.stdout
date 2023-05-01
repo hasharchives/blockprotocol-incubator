@@ -44,11 +44,17 @@ impl EntityType for Country {
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {}
+impl PropertiesRef<'a> {
+    fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        todo!()
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     pub properties: PropertiesRef<'a>,
 }
+pub type CountryV1Ref<'a> = CountryRef<'a>;
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;
 
@@ -63,7 +69,6 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
         todo!()
     }
 }
-pub type CountryV1Ref<'a> = CountryRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {}
 #[derive(Debug, Serialize)]
