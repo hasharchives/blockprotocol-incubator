@@ -6,7 +6,7 @@ use std::{
 
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
     EntityType, EntityTypeReference,
@@ -114,6 +114,43 @@ fn generate_use(
         use hashbrown::HashMap;
 
         #(#imports)*
+    }
+}
+
+fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
+    let mut fold = vec![];
+    let mut unfold = vec![];
+
+    let mut chunks = properties
+        .values()
+        .map(|Property { name, .. }| name)
+        .array_chunks::<16>();
+
+    let mut index = 0;
+    // in theory we could merge even more, currently "just" 16 fields are batched together
+    for chunk in &mut chunks {
+        let result = format_ident!("__report{index}");
+        fold.push(quote!(let #result = blockprotocol::fold_tuple_reports((#(#chunk,)*))));
+        unfold.push((quote!((#(#chunk,)*)), result));
+        index += 1;
+    }
+
+    if let Some(remainder) = chunks.into_remainder() {
+        let result = format_ident!("__report{index}");
+        let chunk: Vec<_> = remainder.collect();
+
+        fold.push(quote!(let #result = blockprotocol::fold_tuple_reports((#(#chunk,)*))));
+        unfold.push((quote!((#(#chunk,)*)), result));
+    }
+
+    // this creates an implicit limit of 16*16 elements (~> 256 element)
+    // o god, the monomorphised code must be huge D:
+    let (unfold_lhs, unfold_rhs): (Vec<_>, Vec<_>) = unfold.into_iter().unzip();
+
+    quote! {
+        #(#fold;)*
+
+        let (#(#unfold_lhs,)*) = blockprotocol::fold_tuple_reports((#(#unfold_rhs,)*))?;
     }
 }
 
@@ -227,12 +264,16 @@ fn generate_properties_try_from_value(
         },
     );
 
+    let fold = generate_fold(properties);
+
     let fields = properties
         .values()
         .map(|Property { name, .. }| name.to_token_stream());
 
     quote! {
         #(#values)*
+
+        #fold
 
         // merge all values together, once we're here all errors have been cleared
         let this = Self {

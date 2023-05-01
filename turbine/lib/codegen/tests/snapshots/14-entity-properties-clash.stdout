@@ -27,6 +27,8 @@ impl Properties {
             ));
             value
         };
+        let __report0 = blockprotocol::fold_tuple_reports((properties,));
+        let ((properties,),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self { properties };
         Ok(this)
     }
@@ -83,6 +85,8 @@ impl PropertiesRef<'a> {
             ));
             value
         };
+        let __report0 = blockprotocol::fold_tuple_reports((properties,));
+        let ((properties,),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self { properties };
         Ok(this)
     }
@@ -131,6 +135,8 @@ impl PropertiesMut<'a> {
             ));
             value
         };
+        let __report0 = blockprotocol::fold_tuple_reports((properties,));
+        let ((properties,),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self { properties };
         Ok(this)
     }

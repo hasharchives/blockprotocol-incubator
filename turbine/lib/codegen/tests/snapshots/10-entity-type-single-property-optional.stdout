@@ -29,6 +29,8 @@ impl Properties {
             ));
             value.map(Some)
         };
+        let __report0 = blockprotocol::fold_tuple_reports((name,));
+        let ((name,),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self { name };
         Ok(this)
     }
@@ -87,6 +89,8 @@ impl PropertiesRef<'a> {
             ));
             value.map(Some)
         };
+        let __report0 = blockprotocol::fold_tuple_reports((name,));
+        let ((name,),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self { name };
         Ok(this)
     }
@@ -138,6 +142,8 @@ impl PropertiesMut<'a> {
             ));
             value.map(Some)
         };
+        let __report0 = blockprotocol::fold_tuple_reports((name,));
+        let ((name,),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self { name };
         Ok(this)
     }

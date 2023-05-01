@@ -11,6 +11,8 @@ use serde::Serialize;
 pub struct Properties {}
 impl Properties {
     fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        let __report0 = blockprotocol::fold_tuple_reports(());
+        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self {};
         Ok(this)
     }
@@ -53,6 +55,8 @@ impl EntityType for Country {
 pub struct PropertiesRef<'a> {}
 impl PropertiesRef<'a> {
     fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        let __report0 = blockprotocol::fold_tuple_reports(());
+        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self {};
         Ok(this)
     }
@@ -83,6 +87,8 @@ impl PropertiesMut<'a> {
     fn try_from_value(
         properties: &'a mut HashMap<BaseUrl, Value>,
     ) -> Result<Self, GenericEntityError> {
+        let __report0 = blockprotocol::fold_tuple_reports(());
+        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
         let this = Self {};
         Ok(this)
     }
