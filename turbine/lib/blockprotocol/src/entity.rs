@@ -83,7 +83,7 @@ pub struct LinkData {
 }
 
 #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
-pub struct EntityProperties(HashMap<BaseUrl, Value>);
+pub struct EntityProperties(pub HashMap<BaseUrl, Value>);
 
 impl EntityProperties {
     #[must_use]

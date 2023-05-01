@@ -4,10 +4,17 @@ use blockprotocol::{
     entity::Entity, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
     PropertyType as _, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
-use error_stack::Result;
+use error_stack::{Report, Result};
+use hashbrown::HashMap;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {}
+impl Properties {
+    fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        let () = blockprotocol::fold_reports(())?;
+        Ok(Self {})
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Country {
@@ -32,7 +39,12 @@ impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID != *value.id() {
+            return None;
+        }
+        Some(Ok(Self {
+            properties: Properties::try_from_value(value.properties)?,
+        }))
     }
 }
 pub type CountryV1 = Country;

@@ -4,7 +4,8 @@ use blockprotocol::{
     entity::Entity, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
     PropertyType as _, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
-use error_stack::Result;
+use error_stack::{Report, Result};
+use hashbrown::HashMap;
 use serde::Serialize;
 
 use crate::localhost_3000::alice::property::name::Name;
@@ -12,6 +13,17 @@ use crate::localhost_3000::alice::property::name::Name;
 pub struct Properties {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
     pub name: Name,
+}
+impl Properties {
+    fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        let name = 'property: {
+            let value = properties.remove("http://localhost:3000/@alice/types/property-type/name/");
+            let Some (value) = value else { break 'property Err (Report :: new (EntityGenericError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/name/"))) } ;
+            <Name>::try_from_value(value)
+        };
+        let (name,) = blockprotocol::fold_reports((name,))?;
+        Ok(Self { name })
+    }
 }
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,7 +49,12 @@ impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID != *value.id() {
+            return None;
+        }
+        Some(Ok(Self {
+            properties: Properties::try_from_value(value.properties)?,
+        }))
     }
 }
 pub type CountryV1 = Country;

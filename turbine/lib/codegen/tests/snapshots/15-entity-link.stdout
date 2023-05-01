@@ -5,10 +5,17 @@ use blockprotocol::{
     EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError, PropertyType as _, Type, TypeMut,
     TypeRef, VersionedUrlRef,
 };
-use error_stack::Result;
+use error_stack::{Report, Result};
+use hashbrown::HashMap;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {}
+impl Properties {
+    fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        let () = blockprotocol::fold_reports(())?;
+        Ok(Self {})
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOf {
@@ -34,7 +41,15 @@ impl EntityType for PartOf {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        todo!()
+        if Self::ID != *value.id() {
+            return None;
+        }
+        Some(Ok(Self {
+            properties: Properties::try_from_value(value.properties)?,
+            link_data: entity
+                .link_data
+                .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData))?,
+        }))
     }
 }
 pub type PartOfV1 = PartOf;

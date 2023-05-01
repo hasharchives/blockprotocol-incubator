@@ -1,4 +1,5 @@
 #![feature(result_option_inspect)]
+#![feature(iter_array_chunks)]
 
 mod analysis;
 mod data;

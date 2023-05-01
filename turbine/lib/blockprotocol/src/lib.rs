@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(error_in_core)]
+#![feature(never_type)]
 
 extern crate alloc;
 
@@ -7,12 +8,14 @@ use alloc::borrow::ToOwned;
 
 use error_stack::{Context, Result};
 use serde::Serialize;
-use type_system::url::BaseUrl;
+use type_system::url::{BaseUrl, VersionedUrl};
 
 use crate::entity::{Entity, EntityId};
 
 pub mod entity;
+mod polyfill;
 pub mod types;
+pub use polyfill::fold_reports;
 
 #[derive(Debug, Copy, Clone)]
 pub struct BaseUrlRef<'a>(&'a str);
@@ -29,6 +32,11 @@ impl<'a> BaseUrlRef<'a> {
     #[must_use]
     pub fn into_owned(self) -> BaseUrl {
         BaseUrl::new(self.0.to_owned()).expect("invalid Base URL")
+    }
+
+    #[must_use]
+    pub const fn as_str(&self) -> &str {
+        self.0
     }
 }
 
@@ -52,6 +60,20 @@ impl<'a> VersionedUrlRef<'a> {
     #[must_use]
     pub const fn version(&self) -> u32 {
         self.version
+    }
+
+    #[must_use]
+    pub fn into_owned(self) -> VersionedUrl {
+        VersionedUrl {
+            base_url: self.base.into_owned(),
+            version: self.version,
+        }
+    }
+}
+
+impl PartialEq<VersionedUrl> for VersionedUrlRef<'_> {
+    fn eq(&self, other: &VersionedUrl) -> bool {
+        self.version == other.version && self.base.as_str() == other.base_url.as_str()
     }
 }
 

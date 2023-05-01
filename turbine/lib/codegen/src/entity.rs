@@ -9,15 +9,21 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
-    EntityType, EntityTypeReference, ValueOrArray,
+    EntityType, EntityTypeReference,
 };
 
 use crate::{
-    analysis::EdgeKind,
-    name::{Location, LocationKind, NameResolver, PropertyName},
+    name::{Location, NameResolver, PropertyName},
     shared,
     shared::{generate_mod, imports, Property, PropertyKind},
 };
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+enum Variant {
+    Owned,
+    Ref,
+    Mut,
+}
 
 const RESERVED: &[&str] = &[
     "Type",
@@ -32,6 +38,8 @@ const RESERVED: &[&str] = &[
     "Properties",
     "PropertiesRef",
     "PropertiesMut",
+    "Report",
+    "HashMap",
 ];
 
 static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
@@ -103,18 +111,95 @@ fn generate_use(
         use blockprotocol::PropertyType as _;
         use blockprotocol::{VersionedUrlRef, GenericEntityError};
         use blockprotocol::entity::Entity;
-        use error_stack::Result;
+        use error_stack::{Result, Report};
+        use hashbrown::HashMap;
 
         #(#imports)*
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_owned(
     entity: &EntityType,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
 ) -> TokenStream {
+    let property_try_from: Vec<_> = properties
+        .iter()
+        .map(|(base, property)| {
+            let Property {
+                name,
+                type_,
+                kind,
+                required,
+            } = property;
+
+            let index = base.as_str();
+
+            let required_check = if *required {
+                quote! {
+                    let Some(value) = value else {
+                        break 'property Err(Report::new(EntityGenericError::ExpectedProperty(#index)))
+                    };
+                }
+            } else {
+                quote! {
+                    let Some(value) = value else {
+                        break 'property Ok(None)
+                    };
+
+                    if value.is_null() {
+                        break 'property Ok(None)
+                    }
+                }
+            };
+
+            let convert = match kind {
+                PropertyKind::Array => quote! {
+                    if let serde_json::Value::Array(value) = value {
+                        // TODO: collect errors using error-stack
+                        value.into_iter()
+                            .map(|value| <#type_>::try_from_value(value))
+                            .collect::<Result<Vec<_>, _>>()
+                            .change_context(EntityGenericError::PropertyError)
+                    } else {
+                        Err(Report::new(EntityGenericError::ExpectedArray(#index)))
+                    }
+                },
+                PropertyKind::Plain => quote!(<#type_>::try_from_value(value)),
+                PropertyKind::Boxed => quote!(<#type_>::try_from_value(value).map(Box::new)),
+            };
+
+            quote! {let #name = 'property: {
+                let value = properties.remove(#index);
+
+                #required_check
+                #convert
+            }}
+        })
+        .collect();
+
+    let mut properties_fold = vec![];
+    let mut properties_chunks = properties.values().array_chunks::<16>();
+
+    // TODO:
+    // in theory we could optimize this further currently we just fold all reports of the first 16
+    // elements, in theory we could stack them even further
+    for properties in properties_chunks.by_ref() {
+        let names = properties.map(|property| &property.name);
+        properties_fold
+            .push(quote!(let (#(#names,)*) = blockprotocol::fold_reports((#(#names,)*))?));
+    }
+
+    if let Some(properties) = properties_chunks.into_remainder() {
+        let names: Vec<_> = properties.map(|property| &property.name).collect();
+        properties_fold
+            .push(quote!(let (#(#names,)*) = blockprotocol::fold_reports((#(#names,)*))?));
+    }
+
+    let properties_self = properties.values().map(|property| &property.name);
+
     let properties = properties.iter().map(|(base, property)| {
         let url = base.as_str();
         let Property {
@@ -165,10 +250,24 @@ fn generate_owned(
         quote!(pub type #alias = #name;)
     });
 
+    let try_link_data = state.is_link.then(|| quote!(link_data: entity.link_data.ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData))?,));
+
     quote! {
         #[derive(Debug, Clone, Serialize)]
         pub struct Properties {
             #(#properties),*
+        }
+
+        impl Properties {
+            fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+                #(#property_try_from;)*
+
+                #(#properties_fold;)*
+
+                Ok(Self {
+                    #(#properties_self),*
+                })
+            }
         }
 
         #[derive(Debug, Clone, Serialize)]
@@ -198,8 +297,14 @@ fn generate_owned(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-                // TODO!
-                todo!()
+                if Self::ID != *value.id() {
+                    return None;
+                }
+
+                Some(Ok(Self {
+                    properties: Properties::try_from_value(value.properties)?,
+                    #try_link_data
+                }))
             }
         }
 
