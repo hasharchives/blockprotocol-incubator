@@ -41,6 +41,8 @@ pub enum Error {
     Cargo,
     #[error("path error")]
     Path,
+    #[error("io error")]
+    Io,
 }
 
 fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
@@ -150,6 +152,14 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
 
         folder.insert(VecDeque::from(directories), file, contents);
     }
+
+    // TODO: contents need to be in `lib.rs` (rename Mod to Lib if present)
+    folder.normalize_top_level(config.style);
+
+    folder
+        .output(&config.root)
+        .into_report()
+        .change_context(Error::Io)?;
 
     // TODO: generate the intermediate `mod.rs` and `module.rs` files, put all files onto the fs
     // TODO: rustfmt

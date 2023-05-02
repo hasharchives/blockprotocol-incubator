@@ -1,13 +1,16 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    path::Path,
+};
 
-use codegen::{Directory, File, Path};
+use codegen::{Directory, File};
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{format_ident, quote};
+use quote::quote;
 
 use crate::Style;
 
 #[derive(Debug)]
-pub enum VirtualFile {
+pub(crate) enum VirtualFile {
     Mod { body: TokenStream },
     Rust { name: String, body: TokenStream },
 }
@@ -19,10 +22,22 @@ impl VirtualFile {
             Self::Rust { name, .. } => name.as_str(),
         }
     }
+
+    const fn extension(&self) -> &str {
+        match self {
+            Self::Mod { .. } | Self::Rust { .. } => "rs",
+        }
+    }
+
+    const fn contents(&self) -> &TokenStream {
+        match self {
+            Self::Mod { body } | Self::Rust { body, .. } => body,
+        }
+    }
 }
 
 #[derive(Debug)]
-pub struct VirtualFolder {
+pub(crate) struct VirtualFolder {
     name: String,
 
     files: HashMap<String, VirtualFile>,
@@ -135,6 +150,10 @@ impl VirtualFolder {
         result
     }
 
+    pub(crate) fn normalize_top_level(&mut self, style: Style) {
+        todo!()
+    }
+
     pub(crate) fn insert(
         &mut self,
         mut directories: VecDeque<Directory>,
@@ -166,5 +185,22 @@ impl VirtualFolder {
                 });
             }
         }
+    }
+
+    pub(crate) fn output(self, base: impl AsRef<Path>) -> std::io::Result<()> {
+        let base = base.as_ref();
+
+        for (name, file) in self.files {
+            let extension = file.extension();
+
+            let path = base.join(name).with_extension(extension);
+            std::fs::write(path, file.contents().to_string())?;
+        }
+
+        for (name, folder) in self.folders {
+            folder.output(base.join(name))?;
+        }
+
+        Ok(())
     }
 }
