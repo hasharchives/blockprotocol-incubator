@@ -218,7 +218,10 @@ impl VirtualFolder {
         }
 
         for (name, folder) in self.folders {
-            folder.output(base.join(name))?;
+            let next = base.join(name);
+
+            std::fs::create_dir_all(&next)?;
+            folder.output(&next)?;
         }
 
         Ok(())

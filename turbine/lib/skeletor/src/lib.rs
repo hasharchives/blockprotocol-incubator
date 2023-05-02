@@ -4,6 +4,7 @@ mod vfs;
 
 use std::{
     collections::VecDeque,
+    iter::once,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -50,6 +51,9 @@ pub enum Error {
 
 fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
     let root = root.as_ref();
+    std::fs::create_dir_all(root)
+        .into_report()
+        .change_context(Error::Path)?;
     let abs_root = std::fs::canonicalize(root)
         .into_report()
         .change_context(Error::Path)?;
@@ -68,11 +72,12 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
     let source_id = SourceId::for_path(&abs_root)
         .into_report()
         .change_context(Error::Cargo)?;
-    let (package, _) = cargo::ops::read_package(&abs_root, source_id, &cargo_config)
-        .into_report()
-        .change_context(Error::Cargo)?;
+    let (package, _) =
+        cargo::ops::read_package(&abs_root.join("Cargo.toml"), source_id, &cargo_config)
+            .into_report()
+            .change_context(Error::Cargo)?;
 
-    let workspace = Workspace::new(&root.join("Cargo.toml"), &cargo_config)
+    let workspace = Workspace::new(&abs_root.join("Cargo.toml"), &cargo_config)
         .into_report()
         .change_context(Error::Codegen)?;
 
@@ -86,7 +91,7 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
                 crate_spec: Some("hashbrown".to_owned()),
                 rename: None,
                 features: Some(
-                    ["core", "alloc", "ahash", "inline-more"]
+                    ["ahash", "inline-more"]
                         .into_iter()
                         .map(ToOwned::to_owned)
                         .collect(),
@@ -131,6 +136,19 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
                 rev: None,
                 tag: None,
             },
+            DepOp {
+                crate_spec: Some("serde_json".to_owned()),
+                rename: None,
+                features: Some(once("alloc").map(ToOwned::to_owned).collect()),
+                default_features: Some(false),
+                optional: Some(false),
+                registry: None,
+                path: None,
+                git: None,
+                branch: None,
+                rev: None,
+                tag: None,
+            },
         ],
         section: DepTable::default(),
         dry_run: false,
@@ -159,7 +177,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
     folder.normalize_top_level(config.style);
 
     folder
-        .output(&config.root)
+        .output(config.root.join("src"))
         .into_report()
         .change_context(Error::Io)?;
 

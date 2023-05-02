@@ -84,9 +84,10 @@ fn generate_use(
         use serde::Serialize;
         use blockprotocol::{Type, TypeRef, TypeMut};
         use blockprotocol::{PropertyType, PropertyTypeRef, PropertyTypeMut};
-        use blockprotocol::DataType as _;
-        use blockprotocol::{VersionedUrlRef, GenericEntityError};
-        use error_stack::Result;
+        use blockprotocol::{DataType as _, DataTypeRef as _, DataTypeMut as _};
+        use blockprotocol::url;
+        use blockprotocol::{VersionedUrlRef, GenericPropertyError};
+        use error_stack::{Result, ResultExt as _};
 
         #(#imports)*
     }
@@ -278,16 +279,20 @@ fn generate_contents(
                 .value
                 .as_ref()
                 .unwrap_or(&location.name.value);
-            let name = Ident::new(name, Span::call_site());
+            let mut name = Ident::new(name, Span::call_site()).to_token_stream();
+
+            if let Some(suffix) = suffix {
+                name = quote!(<#name as Type>#suffix);
+            }
 
             let try_from = quote!({
-                let value = <#name #suffix>::try_from_value(value)
+                let value = <#name>::try_from_value(value)
                     .change_context(GenericPropertyError::Data);
 
                 value.map(#type_)
             });
 
-            (quote!((#vis #name #suffix)), try_from)
+            (quote!((#vis #name)), try_from)
         }
         PropertyValues::PropertyTypeObject(object) => {
             let property_names = resolver.property_names(object.properties().values().map(
@@ -376,10 +381,13 @@ fn generate_owned(
     let name_ref = Ident::new(location.name_ref.value.as_str(), Span::call_site());
     let name_mut = Ident::new(location.name_mut.value.as_str(), Span::call_site());
 
+    let base_url = property.id().base_url.as_str();
+    let version = property.id().version;
+
     let alias = location.name.alias.as_ref().map(|alias| {
         let alias = Ident::new(alias, Span::call_site());
 
-        quote!(pub type #alias<'a> = #name<'a>;)
+        quote!(pub type #alias = #name;)
     });
 
     let Type {
@@ -402,6 +410,8 @@ fn generate_owned(
         impl Type for #name {
             type Mut<'a> = #name_mut<'a> where Self: 'a;
             type Ref<'a> = #name_ref<'a> where Self: 'a;
+
+            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
             fn as_mut(&mut self) -> Self::Mut<'_> {
                 // TODO!

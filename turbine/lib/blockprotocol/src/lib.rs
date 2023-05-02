@@ -13,8 +13,11 @@ use type_system::url::{BaseUrl, VersionedUrl};
 use crate::entity::{Entity, EntityId};
 
 pub mod entity;
+mod error;
 mod polyfill;
 pub mod types;
+
+pub use error::GenericPropertyError;
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
 #[derive(Debug, Copy, Clone)]
