@@ -1,6 +1,6 @@
 #![feature(error_in_core)]
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use cargo::{
     core::{Dependency, Shell, SourceId, Workspace},
@@ -8,7 +8,6 @@ use cargo::{
         cargo_add::{AddOptions, DepOp},
         NewOptions,
     },
-    Config,
 };
 use codegen::AnyTypeRepr;
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
@@ -17,6 +16,12 @@ use onlyerror::Error;
 pub enum Style {
     Mod,
     Module,
+}
+
+pub struct Config {
+    pub root: PathBuf,
+    pub style: Style,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Copy, Clone, Error)]
@@ -29,16 +34,16 @@ pub enum Error {
     Path,
 }
 
-fn setup(root: impl AsRef<Path>) -> Result<(), Error> {
+fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
     let root = root.as_ref();
     let abs_root = std::fs::canonicalize(root)
         .into_report()
         .change_context(Error::Path)?;
 
-    let cargo_init = NewOptions::new(None, false, true, root.to_owned(), None, None, None)
+    let cargo_init = NewOptions::new(None, false, true, root.to_owned(), name, None, None)
         .into_report()
         .change_context(Error::Cargo)?;
-    let cargo_config = Config::default()
+    let cargo_config = cargo::Config::default()
         .into_report()
         .change_context(Error::Cargo)?;
 
@@ -118,15 +123,13 @@ fn setup(root: impl AsRef<Path>) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn generate(root: impl AsRef<Path>, types: Vec<AnyTypeRepr>) -> Result<(), Error> {
-    let root = root.as_ref();
-    let abs_root = std::fs::canonicalize(root)
-        .into_report()
-        .change_context(Error::Path)?;
-
+pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
     let types = codegen::process(types).change_context(Error::Codegen)?;
 
-    setup(root)?;
+    setup(&config.root, config.name)?;
+
+    // TODO: generate the intermediate `mod.rs` and `module.rs` files, put all files onto the fs
+    // TODO: rustfmt
 
     todo!()
 }
