@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
+    marker::PhantomData,
     ops::Deref,
     str::FromStr,
 };
@@ -35,6 +36,7 @@ const RESERVED: &[&str] = &[
     "Report",
     "HashMap",
     "BaseUrl",
+    "String",
 ];
 
 static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
@@ -92,6 +94,12 @@ fn generate_use(
         ));
     }
 
+    if state.import.phantom_data {
+        imports.push(quote!(
+            use core::marker::PhantomData;
+        ));
+    }
+
     quote! {
         use serde::Serialize;
         use blockprotocol::{Type, TypeRef, TypeMut};
@@ -102,6 +110,7 @@ fn generate_use(
         use blockprotocol::{BaseUrl, url};
         use error_stack::{Result, Report, ResultExt as _};
         use hashbrown::HashMap;
+        use alloc::string::String;
 
         #(#imports)*
     }
@@ -147,8 +156,6 @@ fn generate_type(
 
     let name = Ident::new(&name.value, Span::call_site());
 
-    let try_from_value = generate_properties_try_from_value(variant, properties);
-
     let properties_name = match variant {
         Variant::Owned => Ident::new("Properties", Span::call_site()),
         Variant::Ref => Ident::new("PropertiesRef", Span::call_site()),
@@ -172,21 +179,41 @@ fn generate_type(
         fields.push(quote!(pub link_data: #reference LinkData));
     }
 
-    let properties = properties.iter().map(|(base, property)| {
-        generate_property(
-            base,
-            property,
-            variant,
-            Some(&Visibility::Public(Pub::default())),
-            &mut state.import,
+    let (body, try_from_value) = if properties.is_empty() {
+        if matches!(variant, Variant::Ref | Variant::Mut) {
+            state.import.phantom_data = true;
+
+            (
+                quote!((pub PhantomData<&'a ()>);),
+                quote!(Self(PhantomData)),
+            )
+        } else {
+            (quote!(;), quote!(Self))
+        }
+    } else {
+        let try_from_value = generate_properties_try_from_value(variant, properties);
+
+        let properties = properties.iter().map(|(base, property)| {
+            generate_property(
+                base,
+                property,
+                variant,
+                Some(&Visibility::Public(Pub::default())),
+                &mut state.import,
+            )
+        });
+
+        (
+            quote!({
+                #(#properties),*
+            }),
+            try_from_value,
         )
-    });
+    };
 
     quote! {
         #derive
-        pub struct #properties_name #lifetime {
-            #(#properties),*
-        }
+        pub struct #properties_name #lifetime #body
 
         impl #lifetime #properties_name #lifetime {
             fn try_from_value(#mutability properties: #reference HashMap<String, serde_json::Value>) -> Result<Self, GenericEntityError> {
@@ -438,6 +465,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         import: Import {
             vec: false,
             box_: false,
+            phantom_data: false,
         },
     };
 

@@ -627,6 +627,7 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
         import: Import {
             vec: false,
             box_: false,
+            phantom_data: false,
         },
         inner_name: inner,
     };

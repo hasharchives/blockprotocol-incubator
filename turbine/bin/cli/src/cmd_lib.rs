@@ -107,10 +107,10 @@ fn call_remote(url: Url) -> Result<Vec<AnyTypeRepr>, Error> {
           "outgoing": 1
         },
         "constrainsValuesOn": {
-          "outgoing": 1
+          "outgoing": 128
         },
         "constrainsPropertiesOn": {
-          "outgoing": 1
+          "outgoing": 128
         },
         "constrainsLinksOn": {
           "outgoing": 1

@@ -260,9 +260,32 @@ impl<'a> DependencyAnalyzer<'a> {
 
         let count = graph.node_count();
 
-        let mut graph = graph.filter_map(|_, node| *node, |_, edge| Some(*edge));
+        let mut missing = vec![];
+        let mut graph = graph.filter_map(
+            |index, node| {
+                if node.is_none() {
+                    missing.push(index);
+                }
+
+                *node
+            },
+            |_, edge| Some(*edge),
+        );
 
         if graph.node_count() != count {
+            let reverse: HashMap<_, _> = lookup
+                .into_iter()
+                .map(|(key, value)| (value, key))
+                .collect();
+
+            println!(
+                "{:?}",
+                missing
+                    .into_iter()
+                    .map(|missing| reverse.get(&missing))
+                    .collect::<Vec<_>>()
+            );
+
             return Err(Report::new(AnalysisError::IncompleteGraph));
         }
 

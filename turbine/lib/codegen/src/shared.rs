@@ -164,6 +164,7 @@ pub(crate) enum Variant {
 pub(crate) struct Import {
     pub(crate) vec: bool,
     pub(crate) box_: bool,
+    pub(crate) phantom_data: bool,
 }
 
 fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {

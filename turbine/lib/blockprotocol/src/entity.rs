@@ -107,7 +107,7 @@ pub struct EntityMetadata {
 pub struct Entity {
     pub properties: EntityProperties,
     #[serde(default)]
-    link_data: Option<LinkData>,
+    pub link_data: Option<LinkData>,
     pub metadata: EntityMetadata,
 }
 
