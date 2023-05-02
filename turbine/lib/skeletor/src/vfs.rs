@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use codegen::{File, Path};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 
@@ -119,6 +120,12 @@ impl VirtualFolder {
             }
         }
 
+        // TODO: insert File (from codegen)
+
         result
+    }
+
+    pub fn insert(&mut self, path: Path) {
+        todo!()
     }
 }

@@ -21,7 +21,7 @@ pub(crate) enum ModuleFlavor {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Directory(String);
+pub struct Directory(String);
 
 impl Directory {
     pub(crate) fn name(&self) -> &str {
@@ -30,7 +30,7 @@ impl Directory {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct File(String);
+pub struct File(String);
 
 impl File {
     pub(crate) fn name(&self) -> &str {
@@ -47,14 +47,16 @@ impl File {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Path(Vec<Directory>, File);
+pub struct Path(Vec<Directory>, File);
 
 impl Path {
-    pub(crate) fn directories(&self) -> &[Directory] {
+    #[must_use]
+    pub fn directories(&self) -> &[Directory] {
         &self.0
     }
 
-    pub(crate) fn file(&self) -> &File {
+    #[must_use]
+    pub const fn file(&self) -> &File {
         &self.1
     }
 }

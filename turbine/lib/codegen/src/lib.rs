@@ -10,7 +10,9 @@ mod property;
 mod shared;
 
 use std::{
+    cmp::Ordering,
     collections::{BTreeMap, HashMap},
+    hash::{Hash, Hasher},
     path::PathBuf,
 };
 
@@ -19,6 +21,7 @@ use quote::__private::TokenStream;
 use thiserror::Error;
 use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
 
+pub use crate::name::{Directory, File, Path};
 use crate::{analysis::DependencyAnalyzer, name::NameResolver};
 
 // what we need to do:
@@ -60,12 +63,38 @@ use crate::{analysis::DependencyAnalyzer, name::NameResolver};
 // TODO: entities can also have link data associated with them! (important on self?)
 //
 // TODO: tests?
-fn fetch() {}
 
-#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub struct File {
+#[derive(Debug, Clone)]
+pub struct OutputPath {
     pub path: PathBuf,
+    pub typed: Path,
 }
+
+impl Hash for OutputPath {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.path.hash(state);
+    }
+}
+
+impl PartialOrd<Self> for OutputPath {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.path.partial_cmp(&other.path)
+    }
+}
+
+impl Ord for OutputPath {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.path.cmp(&other.path)
+    }
+}
+
+impl PartialEq<Self> for OutputPath {
+    fn eq(&self, other: &Self) -> bool {
+        self.path.eq(&other.path)
+    }
+}
+
+impl Eq for OutputPath {}
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {
@@ -111,7 +140,7 @@ impl AnyType {
 /// ## Errors
 ///
 /// if `AnyTypeRepr` is malformed, or an error occurred while generating code
-pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, Error> {
+pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<OutputPath, TokenStream>, Error> {
     let values: Result<Vec<_>, _> = values
         .into_iter()
         .map(|any| match any {
@@ -144,8 +173,9 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<File, TokenStream>, 
 
     for value in lookup.values() {
         let location = names.location(value.id());
-        let file = File {
-            path: location.path.into(),
+        let file = OutputPath {
+            path: location.path.clone().into(),
+            typed: location.path,
         };
 
         let contents = match value {
