@@ -9,6 +9,10 @@ edition = "2021"
 cargo = "0.70.1"
 error-stack = { version = "0.3.1", features = ['anyhow'] }
 
+quote = "1.0.26"
+proc-macro2 = "1.0.56"
+syn = "2.0.15"
+
 # Once stabilized move to 0.1.3, but we need the fully quantified paths
 onlyerror = { git = "https://github.com/parasyte/onlyerror", default-features = false }
 

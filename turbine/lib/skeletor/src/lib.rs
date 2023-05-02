@@ -1,5 +1,7 @@
 #![feature(error_in_core)]
 
+mod vfs;
+
 use std::path::{Path, PathBuf};
 
 use cargo::{
@@ -13,6 +15,7 @@ use codegen::AnyTypeRepr;
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
 use onlyerror::Error;
 
+#[derive(Debug, Copy, Clone)]
 pub enum Style {
     Mod,
     Module,
@@ -54,7 +57,7 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
     let source_id = SourceId::for_path(&abs_root)
         .into_report()
         .change_context(Error::Cargo)?;
-    let (package,) = cargo::ops::read_package(&abs_root, source_id, &cargo_config)
+    let (package, _) = cargo::ops::read_package(&abs_root, source_id, &cargo_config)
         .into_report()
         .change_context(Error::Cargo)?;
 
@@ -74,6 +77,7 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
                 features: Some(
                     ["core", "alloc", "ahash", "inline-more"]
                         .into_iter()
+                        .map(ToOwned::to_owned)
                         .collect(),
                 ),
                 default_features: Some(false),
@@ -101,7 +105,12 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
             DepOp {
                 crate_spec: Some("serde".to_owned()),
                 rename: None,
-                features: Some(["derive", "alloc"].into_iter().collect()),
+                features: Some(
+                    ["derive", "alloc"]
+                        .into_iter()
+                        .map(ToOwned::to_owned)
+                        .collect(),
+                ),
                 default_features: Some(false),
                 optional: Some(false),
                 registry: None,
@@ -133,3 +142,6 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
 
     todo!()
 }
+
+#[test]
+fn compile() {}
