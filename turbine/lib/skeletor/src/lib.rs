@@ -13,9 +13,9 @@ use cargo::{
     core::{SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
-        CompileOptions, FixOptions, NewOptions,
+        NewOptions,
     },
-    util::{command_prelude::CompileMode, toml_mut::manifest::DepTable},
+    util::toml_mut::manifest::DepTable,
 };
 use codegen::AnyTypeRepr;
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};

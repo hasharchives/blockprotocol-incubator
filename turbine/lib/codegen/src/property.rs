@@ -142,7 +142,6 @@ fn generate_type(
         let semicolon = semicolon.then_some(quote!(;));
 
         // TODO: as_ref, as_mut, into_owned (tho they should be relatively easy)
-        //  TODO: do these only after we're done with project bootstrapping!
 
         let def = quote! {
             #derive
@@ -156,8 +155,6 @@ fn generate_type(
         };
     }
 
-    // TODO: basically do the same as untagged, just run it through try and if none fit just return
-    //  all errors
     // we cannot hoist and therefore need to create an enum
     let (body, try_from_variants): (Vec<_>, Vec<_>) = values
         .iter()
@@ -174,7 +171,6 @@ fn generate_type(
                 state,
             );
 
-            // TODO: try_from_value
             (
                 quote! {
                     #name #body
@@ -358,7 +354,6 @@ fn generate_contents(
         }
         // TODO: automatically flatten, different modes?, inner data-type reference should just be a
         //  newtype?
-        // TODO: needs a `generate_object` in that case ~> not really tho
         PropertyValues::ArrayOfPropertyValues(array) => {
             let items = array.items();
             let inner = generate_inner(id, variant, items.one_of(), resolver, locations, state);
