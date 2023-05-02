@@ -92,14 +92,6 @@ fn generate_use(
     }
 }
 
-fn generate_try_from_value(one_of: &[PropertyValues]) -> TokenStream {
-    if let [value] = one_of {
-        // we're in hoist mode!
-    }
-
-    todo!()
-}
-
 fn generate_type(
     id: &VersionedUrl,
     name: &Ident,
@@ -137,12 +129,26 @@ fn generate_type(
         );
         let semicolon = semicolon.then_some(quote!(;));
 
+        // TODO: as_ref, as_mut, into_owned (tho they should be relatively easy)
+        //  TODO: do these only after we're done with project bootstrapping!
+
         return quote! {
             // TODO: try_from_value (depending on variant)
             #derive
             pub struct #name #lifetime #body #semicolon
+
+            // impl #name #lifetime {
+            //     // TODO: needs special thing from Type (and reference) (and maybe just different name?)
+            //     // TODO: maybe just output the body and then they can do whatever they want
+            //     fn try_from_value(value: serde_json::Value) -> Result<Self, GenericPropertyError> {
+            //         #try_from
+            //     }
+            // }
         };
     }
+
+    // TODO: basically do the same as untagged, just run it through try and if none fit just return
+    //  all errors
 
     // we cannot hoist and therefore need to create an enum
     let body = values.iter().enumerate().map(|(index, value)| {
