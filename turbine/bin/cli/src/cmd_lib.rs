@@ -1,18 +1,30 @@
-use std::path::PathBuf;
+use std::{
+    fmt::{Display, Formatter},
+    path::PathBuf,
+};
 
 use clap::{Args, ValueEnum, ValueHint};
 use codegen::AnyTypeRepr;
-use error_stack::{FutureExt, IntoReport, Result, ResultExt};
+use error_stack::{IntoReport, Result, ResultExt};
 use reqwest::blocking::Client;
 use serde_json::{json, Value};
 use skeletor::{Config, Style};
 use thiserror::Error;
 use url::Url;
 
-#[derive(ValueEnum, Debug)]
+#[derive(ValueEnum, Copy, Clone, Debug)]
 pub enum LibStyle {
     Mod,
     Module,
+}
+
+impl Display for LibStyle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LibStyle::Mod => f.write_str("mod"),
+            LibStyle::Module => f.write_str("module"),
+        }
+    }
 }
 
 impl From<LibStyle> for Style {
@@ -36,13 +48,13 @@ pub struct LibOrigin {
 
 #[derive(Args, Debug)]
 pub(crate) struct Lib {
-    #[arg(value_hint = ValueHint::DirectoryPath)]
+    #[arg(value_hint = ValueHint::DirPath)]
     root: PathBuf,
 
     #[command(flatten)]
     origin: LibOrigin,
 
-    #[arg(long, default = LibStyle::Mod)]
+    #[arg(long, default_value_t = LibStyle::Mod)]
     style: LibStyle,
 
     #[arg(long)]
@@ -143,10 +155,11 @@ fn call_remote(url: Url) -> Result<Vec<AnyTypeRepr>, Error> {
 
     // Do the same as:
     // .vertices | .[] | .[] | .inner.schema
-    let response: Value = response.json().change_context(Error::Http)?;
+    let response: Value = response.json().into_report().change_context(Error::Http)?;
 
+    // TODO: propagate error?!
     let types = response["vertices"]
-        .as_object_mut()
+        .as_object()
         .expect("should conform to format")
         .values()
         .flat_map(|value| {
@@ -166,20 +179,15 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
     let origin = Origin::from(lib.origin);
 
     let types = match origin {
-        Origin::Remote(remote) => {
-            let types = call_remote(remote)?;
-
-            types
-        }
+        Origin::Remote(remote) => call_remote(remote)?,
         Origin::Local(local) => {
-            let types = std::fs::read_to_string()
+            let types = std::fs::read_to_string(local)
                 .into_report()
                 .change_context(Error::Io)?;
-            let types = serde_json::from_str::<Vec<AnyTypeRepr>>(&types)
-                .into_report()
-                .change_context(Error::Serde)?;
 
-            types
+            serde_json::from_str::<Vec<AnyTypeRepr>>(&types)
+                .into_report()
+                .change_context(Error::Serde)?
         }
     };
 

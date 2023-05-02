@@ -37,6 +37,7 @@ impl VirtualFile {
         }
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     fn into_contents(self) -> TokenStream {
         match self {
             Self::Lib { body } | Self::Mod { body } | Self::Rust { body, .. } => body,
@@ -63,7 +64,7 @@ impl VirtualFolder {
 
     pub(crate) fn generate_body(&self) -> TokenStream {
         let files = self.files.values().filter_map(|file| match file {
-            VirtualFile::Mod { .. } => None,
+            VirtualFile::Mod { .. } | VirtualFile::Lib { .. } => None,
             VirtualFile::Rust { name, .. } => Some(Ident::new(name, Span::call_site())),
         });
 
