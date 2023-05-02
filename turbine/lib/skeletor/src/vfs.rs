@@ -11,6 +11,7 @@ use crate::Style;
 
 #[derive(Debug)]
 pub(crate) enum VirtualFile {
+    Lib { body: TokenStream },
     Mod { body: TokenStream },
     Rust { name: String, body: TokenStream },
 }
@@ -18,6 +19,7 @@ pub(crate) enum VirtualFile {
 impl VirtualFile {
     fn name(&self) -> &str {
         match self {
+            Self::Lib { .. } => "lib",
             Self::Mod { .. } => "mod",
             Self::Rust { name, .. } => name.as_str(),
         }
@@ -25,13 +27,19 @@ impl VirtualFile {
 
     const fn extension(&self) -> &str {
         match self {
-            Self::Mod { .. } | Self::Rust { .. } => "rs",
+            Self::Lib { .. } | Self::Mod { .. } | Self::Rust { .. } => "rs",
         }
     }
 
     const fn contents(&self) -> &TokenStream {
         match self {
-            Self::Mod { body } | Self::Rust { body, .. } => body,
+            Self::Lib { body } | Self::Mod { body } | Self::Rust { body, .. } => body,
+        }
+    }
+
+    fn into_contents(self) -> TokenStream {
+        match self {
+            Self::Lib { body } | Self::Mod { body } | Self::Rust { body, .. } => body,
         }
     }
 }
@@ -145,13 +153,24 @@ impl VirtualFolder {
             }
         }
 
-        // TODO: insert File (from codegen)
-
         result
     }
 
     pub(crate) fn normalize_top_level(&mut self, style: Style) {
-        todo!()
+        let contents = self.normalize(style);
+        if let Some(file) = contents {
+            let contents = file.into_contents();
+
+            self.files
+                .insert("lib".to_owned(), VirtualFile::Lib { body: contents });
+        }
+
+        if let Some(mod_) = self.files.remove("mod") {
+            let contents = mod_.into_contents();
+
+            self.files
+                .insert("lib".to_owned(), VirtualFile::Lib { body: contents });
+        }
     }
 
     pub(crate) fn insert(

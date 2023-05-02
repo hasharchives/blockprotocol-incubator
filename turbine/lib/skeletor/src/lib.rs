@@ -5,10 +5,11 @@ mod vfs;
 use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
+    process::Command,
 };
 
 use cargo::{
-    core::{Shell, SourceId, Workspace},
+    core::{SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
         NewOptions,
@@ -43,6 +44,8 @@ pub enum Error {
     Path,
     #[error("io error")]
     Io,
+    #[error("format error")]
+    Format,
 }
 
 fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
@@ -153,7 +156,6 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         folder.insert(VecDeque::from(directories), file, contents);
     }
 
-    // TODO: contents need to be in `lib.rs` (rename Mod to Lib if present)
     folder.normalize_top_level(config.style);
 
     folder
@@ -161,11 +163,14 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         .into_report()
         .change_context(Error::Io)?;
 
-    // TODO: generate the intermediate `mod.rs` and `module.rs` files, put all files onto the fs
-    // TODO: rustfmt
+    let mut child = Command::new("cargo-fmt")
+        .arg("--all")
+        .current_dir(&config.root)
+        .spawn()
+        .into_report()
+        .change_context(Error::Format)?;
 
-    todo!()
+    child.wait().into_report().change_context(Error::Format)?;
+
+    Ok(())
 }
-
-#[test]
-fn compile() {}
