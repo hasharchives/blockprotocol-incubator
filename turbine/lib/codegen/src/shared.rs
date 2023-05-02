@@ -254,7 +254,7 @@ pub(crate) fn generate_properties_try_from_value(
                         let value = properties.get_mut(#index);
                         let value = value.map(|value| value as *mut _);
 
-                        value.map(|value| &mut *value)
+                        value.map(|value: *mut serde_json::Value| &mut *value)
                     };
                 },
             };

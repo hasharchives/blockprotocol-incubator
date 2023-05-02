@@ -31,6 +31,7 @@ const RESERVED: &[&str] = &[
     "VersionedUrlRef",
     "GenericPropertyError",
     "Serialize",
+    "Report",
 ];
 
 struct Inner {
@@ -87,7 +88,7 @@ fn generate_use(
         use blockprotocol::{DataType as _, DataTypeRef as _, DataTypeMut as _};
         use blockprotocol::url;
         use blockprotocol::{VersionedUrlRef, GenericPropertyError};
-        use error_stack::{Result, ResultExt as _};
+        use error_stack::{Result, Report, ResultExt as _};
 
         #(#imports)*
     }

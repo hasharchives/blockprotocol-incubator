@@ -158,19 +158,35 @@ impl VirtualFolder {
     }
 
     pub(crate) fn normalize_top_level(&mut self, style: Style) {
+        let top_level = quote! {
+            #![no_std]
+
+            extern crate alloc;
+        };
+
         let contents = self.normalize(style);
         if let Some(file) = contents {
             let contents = file.into_contents();
 
-            self.files
-                .insert("lib".to_owned(), VirtualFile::Lib { body: contents });
+            self.files.insert("lib".to_owned(), VirtualFile::Lib {
+                body: quote! {
+                    #top_level
+
+                    #contents
+                },
+            });
         }
 
         if let Some(mod_) = self.files.remove("mod") {
             let contents = mod_.into_contents();
 
-            self.files
-                .insert("lib".to_owned(), VirtualFile::Lib { body: contents });
+            self.files.insert("lib".to_owned(), VirtualFile::Lib {
+                body: quote! {
+                    #top_level
+
+                    #contents
+                },
+            });
         }
     }
 
