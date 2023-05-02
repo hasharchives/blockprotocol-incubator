@@ -28,6 +28,10 @@ const RESERVED: &[&str] = &[
     "TypeRef",
     "PropertyType",
     "PropertyTypeRef",
+    "PropertyTypeMut",
+    "DataType",
+    "DataTypeRef",
+    "DataTypeMut",
     "VersionedUrlRef",
     "GenericPropertyError",
     "Serialize",
@@ -85,7 +89,7 @@ fn generate_use(
         use serde::Serialize;
         use blockprotocol::{Type, TypeRef, TypeMut};
         use blockprotocol::{PropertyType, PropertyTypeRef, PropertyTypeMut};
-        use blockprotocol::{DataType as _, DataTypeRef as _, DataTypeMut as _};
+        use blockprotocol::{DataType, DataTypeRef, DataTypeMut};
         use blockprotocol::url;
         use blockprotocol::{VersionedUrlRef, GenericPropertyError};
         use error_stack::{Result, Report, ResultExt as _};
@@ -181,7 +185,7 @@ fn generate_type(
         .unzip();
 
     let try_from = quote! {
-        let errors: Result<(), GenericPropertyError> = Ok(());
+        let mut errors: Result<(), GenericPropertyError> = Ok(());
 
         #(
             let this = #try_from_variants;
@@ -232,7 +236,7 @@ fn generate_inner(
         impl_try_from_value,
     } = generate_type(id, &name, variant, values, resolver, locations, state);
 
-    let mut value_ref = match variant {
+    let value_ref = match variant {
         Variant::Owned => None,
         Variant::Ref => Some(quote!(&'a)),
         Variant::Mut => Some(quote!(&'a mut)),
@@ -286,8 +290,14 @@ fn generate_contents(
                 name = quote!(<#name as Type>#suffix);
             }
 
+            let cast = match variant {
+                Variant::Owned => quote!(as DataType),
+                Variant::Ref => quote!(as DataTypeRef<'a>),
+                Variant::Mut => quote!(as DataTypeMut<'a>),
+            };
+
             let try_from = quote!({
-                let value = <#name>::try_from_value(value)
+                let value = <#name #cast>::try_from_value(value)
                     .change_context(GenericPropertyError::Data);
 
                 value.map(#type_)
@@ -328,12 +338,17 @@ fn generate_contents(
                 Variant::Ref | Variant::Mut => None,
             };
 
+            let clone = match variant {
+                Variant::Owned => Some(quote!(.clone())),
+                Variant::Ref | Variant::Mut => None,
+            };
+
             (
                 quote!({
                     #(#properties),*
                 }),
                 quote!('variant: {
-                    let serde_json::Value::Object(#mutability properties) = value else {
+                    let serde_json::Value::Object(#mutability properties) = value #clone else {
                         break 'variant Err(Report::new(GenericPropertyError::ExpectedObject))
                     };
 

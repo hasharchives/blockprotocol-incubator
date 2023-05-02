@@ -1,10 +1,13 @@
-use alloc::{collections::BTreeMap, string::String};
+use alloc::{
+    collections::BTreeMap,
+    string::{String, ToString},
+};
 use core::fmt;
 
 use hashbrown::HashMap;
 use serde::{
     de::{value::StrDeserializer, Error},
-    Deserialize, Deserializer,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 use serde_json::Value;
 use time::OffsetDateTime;
@@ -43,6 +46,15 @@ impl<'de> Deserialize<'de> for EntityId {
     }
 }
 
+impl Serialize for EntityId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ProvenanceMetadata {
@@ -64,7 +76,7 @@ pub struct EntityRecordId {
     pub edition_id: Uuid,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EntityLinkOrder {
     #[serde(default, rename = "leftToRightOrder")]
@@ -73,7 +85,7 @@ pub struct EntityLinkOrder {
     pub right_to_left: Option<i32>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct LinkData {
     pub left_entity_id: EntityId,

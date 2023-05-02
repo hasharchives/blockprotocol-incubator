@@ -160,6 +160,9 @@ impl VirtualFolder {
     pub(crate) fn normalize_top_level(&mut self, style: Style) {
         let top_level = quote! {
             #![no_std]
+            #![allow(unsafe_code)]
+            #![allow(clippy::missing_safety_doc)] // present in the code generator
+            #![allow(unused_imports)]
 
             extern crate alloc;
         };

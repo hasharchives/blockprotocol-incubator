@@ -185,10 +185,10 @@ fn generate_type(
 
             (
                 quote!((pub PhantomData<&'a ()>);),
-                quote!(Self(PhantomData)),
+                quote!(Ok(Self(PhantomData))),
             )
         } else {
-            (quote!(;), quote!(Self))
+            (quote!(;), quote!(Ok(Self)))
         }
     } else {
         let try_from_value = generate_properties_try_from_value(variant, properties);

@@ -280,15 +280,25 @@ pub(crate) fn generate_properties_try_from_value(
             };
 
             let apply = match kind {
-                PropertyKind::Array => quote! {
-                    let value = if let serde_json::Value::Array(value) = value {
-                        blockprotocol::fold_iter_reports(
-                            value.into_iter().map(|value| <#type_>::try_from_value(value))
-                        ).change_context(#error::Property(#index))
-                    } else {
-                        Err(Report::new(#error::ExpectedArray(#index)))
+                PropertyKind::Array => {
+                    let suffix = match variant {
+                        Variant::Ref => Some(quote!(.map(|array| array.into_boxed_slice()))),
+                        _ => None,
                     };
-                },
+
+                    quote! {
+                        let value = if let serde_json::Value::Array(value) = value {
+                            blockprotocol::fold_iter_reports(
+                                value.into_iter().map(|value| <#type_>::try_from_value(value))
+                            )
+                                #suffix
+                                .change_context(#error::Property(#index)
+                            )
+                        } else {
+                            Err(Report::new(#error::ExpectedArray(#index)))
+                        };
+                    }
+                }
                 PropertyKind::Plain => quote! {
                     let value = <#type_>::try_from_value(value)
                         .change_context(#error::Property(#index));

@@ -13,9 +13,9 @@ use cargo::{
     core::{SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
-        NewOptions,
+        CompileOptions, FixOptions, NewOptions,
     },
-    util::toml_mut::manifest::DepTable,
+    util::{command_prelude::CompileMode, toml_mut::manifest::DepTable},
 };
 use codegen::AnyTypeRepr;
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
@@ -49,7 +49,7 @@ pub enum Error {
     Format,
 }
 
-fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
+fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(PathBuf, cargo::Config), Error> {
     let root = root.as_ref();
     std::fs::create_dir_all(root)
         .into_report()
@@ -158,7 +158,7 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
         .into_report()
         .change_context(Error::Cargo)?;
 
-    Ok(())
+    Ok((abs_root, cargo_config))
 }
 
 pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
