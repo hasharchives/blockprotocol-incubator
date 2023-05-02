@@ -6,8 +6,8 @@ use std::{
 
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{format_ident, quote, ToTokens};
-use syn::{token::Pub, Token, Visibility};
+use quote::quote;
+use syn::{token::Pub, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
     EntityType, EntityTypeReference,
@@ -16,7 +16,7 @@ use type_system::{
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
-    shared::{generate_mod, generate_property, imports, Import, Property, PropertyKind, Variant},
+    shared::{generate_mod, generate_property, imports, Import, Property, Variant},
 };
 
 const RESERVED: &[&str] = &[
@@ -69,7 +69,7 @@ fn properties<'a>(
 fn generate_use(
     references: &[&VersionedUrl],
     locations: &HashMap<&VersionedUrl, Location>,
-    state: State,
+    state: &State,
 ) -> TokenStream {
     let mut imports: Vec<_> = imports(references, locations).collect();
 
@@ -192,7 +192,6 @@ fn generate_type(
     }
 }
 
-#[allow(clippy::too_many_lines)]
 fn generate_owned(
     entity: &EntityType,
     location: &Location,
@@ -373,9 +372,6 @@ fn generate_mut(
     }
 }
 
-// Reason: most of the lines are just generation code (TODO: we might want to break up in the
-// future?)
-#[allow(clippy::too_many_lines)]
 pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStream {
     let url = entity.id();
 
@@ -429,7 +425,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     let mut_ = generate_mut(&location, &properties, &mut state);
 
     let mod_ = generate_mod(&location.kind, resolver);
-    let use_ = generate_use(&references, &locations, state);
+    let use_ = generate_use(&references, &locations, &state);
 
     quote! {
         #use_

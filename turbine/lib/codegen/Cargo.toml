@@ -14,7 +14,7 @@ thiserror = "1.0.40"
 error-stack = "0.3.1"
 serde = { version = "1.0.160", features = ['derive'] }
 petgraph = "0.6.3"
-tracing = "0.1.38"
+tracing = "0.1.37"
 ciclo = "0.1.0"
 indexmap = "1.9.3"
 heck = "0.4.1"
