@@ -322,11 +322,20 @@ fn generate_contents(
                 )
             });
 
+            let mutability = match variant {
+                Variant::Owned => Some(quote!(mut)),
+                Variant::Ref | Variant::Mut => None,
+            };
+
             (
                 quote!({
                     #(#properties),*
                 }),
-                quote!({
+                quote!('variant: {
+                    let serde_json::Value::Object(#mutability properties) = value else {
+                        break 'variant Err(Report::new(GenericPropertyError::ExpectedObject))
+                    };
+
                     #try_from
                 }),
             )

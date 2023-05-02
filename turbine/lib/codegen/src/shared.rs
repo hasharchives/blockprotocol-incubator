@@ -229,8 +229,8 @@ pub(crate) fn generate_properties_try_from_value(
 
             let type_ = match variant {
                 Variant::Owned => type_.to_token_stream(),
-                Variant::Ref => quote!(#type_::Ref<'a>),
-                Variant::Mut => quote!(#type_::Mut<'a>),
+                Variant::Ref => quote!(<#type_ as Type>::Ref<'a>),
+                Variant::Mut => quote!(<#type_ as Type>::Mut<'a>),
             };
 
             // TODO: keep mutable reference on entity as safeguard
@@ -254,7 +254,7 @@ pub(crate) fn generate_properties_try_from_value(
                         let value = properties.get_mut(#index);
                         let value = value.map(|value| value as *mut _);
 
-                        &mut *value
+                        value.map(|value| &mut *value)
                     };
                 },
             };
@@ -290,12 +290,12 @@ pub(crate) fn generate_properties_try_from_value(
                 },
                 PropertyKind::Plain => quote! {
                     let value = <#type_>::try_from_value(value)
-                        .change_context(Report::new(#error::Property(#index)));
+                        .change_context(#error::Property(#index));
                 },
                 PropertyKind::Boxed => quote! {
                     let value = <#type_>::try_from_value(value)
                         .map(Box::new)
-                        .change_context(Report::new(#error::Property(#index)));
+                        .change_context(#error::Property(#index));
                 },
             };
 

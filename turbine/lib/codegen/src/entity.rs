@@ -34,6 +34,7 @@ const RESERVED: &[&str] = &[
     "PropertiesMut",
     "Report",
     "HashMap",
+    "BaseUrl",
 ];
 
 static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
@@ -95,10 +96,11 @@ fn generate_use(
         use serde::Serialize;
         use blockprotocol::{Type, TypeRef, TypeMut};
         use blockprotocol::{EntityType, EntityTypeRef, EntityTypeMut};
-        use blockprotocol::PropertyType as _;
+        use blockprotocol::{PropertyType as _, PropertyTypeRef as _, PropertyTypeMut as _};
         use blockprotocol::{VersionedUrlRef, GenericEntityError};
         use blockprotocol::entity::Entity;
-        use error_stack::{Result, Report};
+        use blockprotocol::{BaseUrl, url};
+        use error_stack::{Result, Report, ResultExt as _};
         use hashbrown::HashMap;
 
         #(#imports)*
@@ -124,6 +126,11 @@ fn generate_type(
     state: &mut State,
 ) -> TokenStream {
     let lifetime = matches!(variant, Variant::Ref | Variant::Mut).then(|| quote!(<'a>));
+
+    let derive = match variant {
+        Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
+        Variant::Mut => quote!(#[derive(Debug, Serialize)]),
+    };
 
     let name = match variant {
         Variant::Owned => &location.name,
@@ -154,6 +161,11 @@ fn generate_type(
         Variant::Mut => Some(quote!(&'a mut)),
     };
 
+    let mutability = match variant {
+        Variant::Owned => Some(quote!(mut)),
+        Variant::Ref | Variant::Mut => None,
+    };
+
     let mut fields = vec![quote!(pub properties: #properties_name #lifetime)];
 
     if state.is_link {
@@ -171,18 +183,18 @@ fn generate_type(
     });
 
     quote! {
-        #[derive(Debug, Clone, Serialize)]
+        #derive
         pub struct #properties_name #lifetime {
             #(#properties),*
         }
 
-        impl #properties_name #lifetime {
-            fn try_from_value(properties: #reference HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+        impl #lifetime #properties_name #lifetime {
+            fn try_from_value(#mutability properties: #reference HashMap<String, serde_json::Value>) -> Result<Self, GenericEntityError> {
                 #try_from_value
             }
         }
 
-        #[derive(Debug, Clone, Serialize)]
+        #derive
         #[serde(rename_all = "camelCase")]
         pub struct #name #lifetime {
             #(#fields),*
@@ -223,12 +235,12 @@ fn generate_owned(
 
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
-            fn as_ref(&self) -> Self::Ref<'_> {
+            fn as_mut(&mut self) -> Self::Mut<'_> {
                 // TODO!
                 todo!()
             }
 
-            fn as_mut(&mut self) -> Self::Mut<'_> {
+            fn as_ref(&self) -> Self::Ref<'_> {
                 // TODO!
                 todo!()
             }
@@ -238,7 +250,7 @@ fn generate_owned(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-                if Self::ID == *value.id() {
+                if Self::ID == value.metadata.entity_type_id {
                     return None;
                 }
 
@@ -247,14 +259,17 @@ fn generate_owned(
                     .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
                 )*
 
-                let (properties, #(#link_data)*) = blockprotocol::fold_tuple_reports((properties, #(#link_data)*))?;
-
-                let this = Self {
-                    properties,
-                    #(#link_data,)*
-                };
-
-                Ok(this)
+                match blockprotocol::fold_tuple_reports((properties, #(#link_data)*)) {
+                    Err(error) => Some(Err(error)),
+                    Ok((properties, #(#link_data,)*)) => Some(
+                        Ok(
+                            Self {
+                                properties,
+                                #(#link_data,)*
+                            }
+                        )
+                    )
+                }
             }
         }
     }
@@ -293,24 +308,27 @@ fn generate_ref(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-                if Self::ID == *value.id() {
+                if Self::Owned::ID == value.metadata.entity_type_id {
                     return None;
                 }
 
-                let properties = Properties::try_from_value(&value.properties.0);
+                let properties = PropertiesRef::try_from_value(&value.properties.0);
                 #(let #link_data = value.link_data
                     .as_ref()
                     .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
                 )*
 
-                let (properties, #(#link_data)*) = blockprotocol::fold_tuple_reports((properties, #(#link_data)*))?;
-
-                let this = Self {
-                    properties,
-                    #(#link_data,)*
-                };
-
-                Ok(this)
+                match blockprotocol::fold_tuple_reports((properties, #(#link_data)*)) {
+                    Err(error) => Some(Err(error)),
+                    Ok((properties, #(#link_data,)*)) => Some(
+                        Ok(
+                            Self {
+                                properties,
+                                #(#link_data,)*
+                            }
+                        )
+                    )
+                }
             }
         }
     }
@@ -349,24 +367,27 @@ fn generate_mut(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-                if Self::ID == *value.id() {
+                if Self::Owned::ID == value.metadata.entity_type_id {
                     return None;
                 }
 
-                let properties = Properties::try_from_value(&mut value.properties.0);
+                let properties = PropertiesMut::try_from_value(&mut value.properties.0);
                 #(let #link_data = value.link_data
                     .as_mut()
                     .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
                 )*
 
-                let (properties, #(#link_data)*) = blockprotocol::fold_tuple_reports((properties, #(#link_data)*))?;
-
-                let this = Self {
-                    properties,
-                    #(#link_data,)*
-                };
-
-                Ok(this)
+                match blockprotocol::fold_tuple_reports((properties, #(#link_data)*)) {
+                    Err(error) => Some(Err(error)),
+                    Ok((properties, #(#link_data,)*)) => Some(
+                        Ok(
+                            Self {
+                                properties,
+                                #(#link_data,)*
+                            }
+                        )
+                    )
+                }
             }
         }
     }

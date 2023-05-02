@@ -83,11 +83,11 @@ pub struct LinkData {
 }
 
 #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
-pub struct EntityProperties(pub HashMap<BaseUrl, Value>);
+pub struct EntityProperties(pub HashMap<String, Value>);
 
 impl EntityProperties {
     #[must_use]
-    pub const fn properties(&self) -> &HashMap<BaseUrl, Value> {
+    pub const fn properties(&self) -> &HashMap<String, Value> {
         &self.0
     }
 }
@@ -97,7 +97,7 @@ impl EntityProperties {
 pub struct EntityMetadata {
     record_id: EntityRecordId,
     temporal_versioning: EntityTemporalMetadata,
-    entity_type_id: VersionedUrl,
+    pub entity_type_id: VersionedUrl,
     provenance: ProvenanceMetadata,
     archived: bool,
 }
@@ -105,10 +105,10 @@ pub struct EntityMetadata {
 #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Entity {
-    properties: EntityProperties,
+    pub properties: EntityProperties,
     #[serde(default)]
     link_data: Option<LinkData>,
-    metadata: EntityMetadata,
+    pub metadata: EntityMetadata,
 }
 
 // TODO: versions and such, todo: parsing

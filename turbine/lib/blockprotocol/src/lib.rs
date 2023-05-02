@@ -8,16 +8,16 @@ use alloc::borrow::ToOwned;
 
 use error_stack::{Context, Result};
 use serde::Serialize;
-use type_system::url::{BaseUrl, VersionedUrl};
+pub use type_system::url::{BaseUrl, VersionedUrl};
 
-use crate::entity::{Entity, EntityId};
+use crate::entity::Entity;
 
 pub mod entity;
 mod error;
 mod polyfill;
 pub mod types;
 
-pub use error::GenericPropertyError;
+pub use error::{GenericEntityError, GenericPropertyError};
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
 #[derive(Debug, Copy, Clone)]
@@ -169,7 +169,7 @@ pub trait EntityTypeRef<'a>: Serialize + TypeRef {
 pub trait EntityTypeMut<'a>: Serialize + TypeMut {
     type Error: Context;
 
-    fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>>;
+    fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>>;
 }
 
 // TODO: this is a bit more complicated <3
