@@ -33,7 +33,41 @@ impl PropertyType for FullEmail {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let primary_email = 'property: {
+                let value = properties
+                    .remove("http://localhost:3000/@alice/types/property-type/primaryEmail/");
+                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/primaryEmail/"))) ; } ;
+                let value = <PrimaryEmail>::try_from_value(value).change_context(Report::new(
+                    GenericPropertyError::Property(
+                        "http://localhost:3000/@alice/types/property-type/primaryEmail/",
+                    ),
+                ));
+                value
+            };
+            let secondary_email = 'property: {
+                let value = properties
+                    .remove("http://localhost:3000/@alice/types/property-type/secondaryEmail/");
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <SecondaryEmail>::try_from_value(value).change_context(Report::new(
+                    GenericPropertyError::Property(
+                        "http://localhost:3000/@alice/types/property-type/secondaryEmail/",
+                    ),
+                ));
+                value.map(Some)
+            };
+            let __report0 = blockprotocol::fold_tuple_reports((primary_email, secondary_email));
+            let ((primary_email, secondary_email),) =
+                blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self {
+                primary_email,
+                secondary_email,
+            };
+            Ok(this)
+        }
     }
 }
 pub type FullEmailV1<'a> = FullEmail<'a>;
@@ -55,7 +89,41 @@ impl<'a> PropertyTypeRef<'a> for FullEmailRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let primary_email = 'property: {
+                let value = properties
+                    .get("http://localhost:3000/@alice/types/property-type/primaryEmail/");
+                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/primaryEmail/"))) ; } ;
+                let value = <PrimaryEmail::Ref<'a>>::try_from_value(value).change_context(
+                    Report::new(GenericPropertyError::Property(
+                        "http://localhost:3000/@alice/types/property-type/primaryEmail/",
+                    )),
+                );
+                value
+            };
+            let secondary_email = 'property: {
+                let value = properties
+                    .get("http://localhost:3000/@alice/types/property-type/secondaryEmail/");
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <SecondaryEmail::Ref<'a>>::try_from_value(value).change_context(
+                    Report::new(GenericPropertyError::Property(
+                        "http://localhost:3000/@alice/types/property-type/secondaryEmail/",
+                    )),
+                );
+                value.map(Some)
+            };
+            let __report0 = blockprotocol::fold_tuple_reports((primary_email, secondary_email));
+            let ((primary_email, secondary_email),) =
+                blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self {
+                primary_email,
+                secondary_email,
+            };
+            Ok(this)
+        }
     }
 }
 pub type FullEmailV1Ref<'a> = FullEmailRef<'a>;
@@ -77,7 +145,50 @@ impl<'a> PropertyTypeMut<'a> for FullEmailMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let primary_email = 'property: {
+                let value = unsafe {
+                    let value = properties
+                        .get_mut("http://localhost:3000/@alice/types/property-type/primaryEmail/");
+                    let value = value.map(|value| value as *mut _);
+                    &mut *value
+                };
+                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/primaryEmail/"))) ; } ;
+                let value = <PrimaryEmail::Mut<'a>>::try_from_value(value).change_context(
+                    Report::new(GenericPropertyError::Property(
+                        "http://localhost:3000/@alice/types/property-type/primaryEmail/",
+                    )),
+                );
+                value
+            };
+            let secondary_email = 'property: {
+                let value = unsafe {
+                    let value = properties.get_mut(
+                        "http://localhost:3000/@alice/types/property-type/secondaryEmail/",
+                    );
+                    let value = value.map(|value| value as *mut _);
+                    &mut *value
+                };
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <SecondaryEmail::Mut<'a>>::try_from_value(value).change_context(
+                    Report::new(GenericPropertyError::Property(
+                        "http://localhost:3000/@alice/types/property-type/secondaryEmail/",
+                    )),
+                );
+                value.map(Some)
+            };
+            let __report0 = blockprotocol::fold_tuple_reports((primary_email, secondary_email));
+            let ((primary_email, secondary_email),) =
+                blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self {
+                primary_email,
+                secondary_email,
+            };
+            Ok(this)
+        }
     }
 }
 pub type FullEmailV1Mut<'a> = FullEmailMut<'a>;
@@ -111,7 +222,10 @@ impl PropertyType for PrimaryEmail {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type PrimaryEmailV1<'a> = PrimaryEmail<'a>;
@@ -128,7 +242,11 @@ impl<'a> PropertyTypeRef<'a> for PrimaryEmailRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type PrimaryEmailV1Ref<'a> = PrimaryEmailRef<'a>;
@@ -145,7 +263,11 @@ impl<'a> PropertyTypeMut<'a> for PrimaryEmailMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type PrimaryEmailV1Mut<'a> = PrimaryEmailMut<'a>;
@@ -179,7 +301,10 @@ impl PropertyType for SecondaryEmail {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type SecondaryEmailV1<'a> = SecondaryEmail<'a>;
@@ -196,7 +321,11 @@ impl<'a> PropertyTypeRef<'a> for SecondaryEmailRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type SecondaryEmailV1Ref<'a> = SecondaryEmailRef<'a>;
@@ -213,7 +342,11 @@ impl<'a> PropertyTypeMut<'a> for SecondaryEmailMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type SecondaryEmailV1Mut<'a> = SecondaryEmailMut<'a>;

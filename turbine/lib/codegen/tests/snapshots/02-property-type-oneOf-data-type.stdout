@@ -29,7 +29,31 @@ impl PropertyType for UserId {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            let value = <Number>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant1)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type UserIdV1<'a> = UserId<'a>;
@@ -50,7 +74,33 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value =
+                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            let value =
+                <Number::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant1)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type UserIdV1Ref<'a> = UserIdRef<'a>;
@@ -71,7 +121,33 @@ impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value =
+                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            let value =
+                <Number::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant1)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type UserIdV1Mut<'a> = UserIdMut<'a>;

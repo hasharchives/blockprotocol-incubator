@@ -24,7 +24,10 @@ impl PropertyType for Text {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value = <Text0>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type TextV1<'a> = Text<'a>;
@@ -41,7 +44,11 @@ impl<'a> PropertyTypeRef<'a> for TextRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text0::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type TextV1Ref<'a> = TextRef<'a>;
@@ -58,7 +65,11 @@ impl<'a> PropertyTypeMut<'a> for TextMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text0::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type TextV1Mut<'a> = TextMut<'a>;
@@ -101,7 +112,47 @@ impl PropertyType for UserId {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value = <Text1>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            let text = 'property: {
+                let value =
+                    properties.remove("https://blockprotocol.org/@alice/types/property-type/text/");
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <Text0>::try_from_value(value).change_context(Report::new(
+                    GenericPropertyError::Property(
+                        "https://blockprotocol.org/@alice/types/property-type/text/",
+                    ),
+                ));
+                value.map(Some)
+            };
+            let __report0 = blockprotocol::fold_tuple_reports((text,));
+            let ((text,),) = blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self::Variant1 { text };
+            Ok(this)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type UserIdV1<'a> = UserId<'a>;
@@ -125,7 +176,48 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value =
+                <Text1::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            let text = 'property: {
+                let value =
+                    properties.get("https://blockprotocol.org/@alice/types/property-type/text/");
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <Text0::Ref<'a>>::try_from_value(value).change_context(Report::new(
+                    GenericPropertyError::Property(
+                        "https://blockprotocol.org/@alice/types/property-type/text/",
+                    ),
+                ));
+                value.map(Some)
+            };
+            let __report0 = blockprotocol::fold_tuple_reports((text,));
+            let ((text,),) = blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self::Variant1 { text };
+            Ok(this)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type UserIdV1Ref<'a> = UserIdRef<'a>;
@@ -149,7 +241,52 @@ impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value =
+                <Text1::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            let text = 'property: {
+                let value = unsafe {
+                    let value = properties
+                        .get_mut("https://blockprotocol.org/@alice/types/property-type/text/");
+                    let value = value.map(|value| value as *mut _);
+                    &mut *value
+                };
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <Text0::Mut<'a>>::try_from_value(value).change_context(Report::new(
+                    GenericPropertyError::Property(
+                        "https://blockprotocol.org/@alice/types/property-type/text/",
+                    ),
+                ));
+                value.map(Some)
+            };
+            let __report0 = blockprotocol::fold_tuple_reports((text,));
+            let ((text,),) = blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self::Variant1 { text };
+            Ok(this)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type UserIdV1Mut<'a> = UserIdMut<'a>;

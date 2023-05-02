@@ -92,6 +92,12 @@ fn generate_use(
     }
 }
 
+struct Type {
+    def: TokenStream,
+    impl_ty: TokenStream,
+    impl_try_from_value: TokenStream,
+}
+
 fn generate_type(
     id: &VersionedUrl,
     name: &Ident,
@@ -100,7 +106,7 @@ fn generate_type(
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
     state: &mut State,
-) -> TokenStream {
+) -> Type {
     let derive = match variant {
         Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
         Variant::Mut => quote!(#[derive(Debug, Serialize)]),
@@ -132,50 +138,78 @@ fn generate_type(
         // TODO: as_ref, as_mut, into_owned (tho they should be relatively easy)
         //  TODO: do these only after we're done with project bootstrapping!
 
-        return quote! {
-            // TODO: try_from_value (depending on variant)
+        let def = quote! {
             #derive
             pub struct #name #lifetime #body #semicolon
+        };
 
-            // impl #name #lifetime {
-            //     // TODO: needs special thing from Type (and reference) (and maybe just different name?)
-            //     // TODO: maybe just output the body and then they can do whatever they want
-            //     fn try_from_value(value: serde_json::Value) -> Result<Self, GenericPropertyError> {
-            //         #try_from
-            //     }
-            // }
+        return Type {
+            def,
+            impl_ty: quote!(#name #lifetime),
+            impl_try_from_value: try_from,
         };
     }
 
     // TODO: basically do the same as untagged, just run it through try and if none fit just return
     //  all errors
-
     // we cannot hoist and therefore need to create an enum
-    let body = values.iter().enumerate().map(|(index, value)| {
-        let name = format_ident!("Variant{index}");
-        let (body, try_from) = generate_contents(
-            (id, variant),
-            value,
-            resolver,
-            locations,
-            false,
-            &quote!(Self::#name),
-            state,
-        );
+    let (body, try_from_variants): (Vec<_>, Vec<_>) = values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            let name = format_ident!("Variant{index}");
+            let (body, try_from) = generate_contents(
+                (id, variant),
+                value,
+                resolver,
+                locations,
+                false,
+                &quote!(Self::#name),
+                state,
+            );
 
-        // TODO: try_from_value
-        quote! {
-            #name #body
-        }
-    });
+            // TODO: try_from_value
+            (
+                quote! {
+                    #name #body
+                },
+                try_from,
+            )
+        })
+        .unzip();
 
-    // TODO: try_from_value
-    quote! {
+    let try_from = quote! {
+        let errors: Result<(), GenericPropertyError> = Ok(());
+
+        #(
+            let this = #try_from_variants;
+
+            match this {
+                Ok(this) => return Ok(this),
+                Err(error) => match &mut errors {
+                    Err(errors) => errors.extend_one(error),
+                    errors => *errors = Err(error)
+                }
+            }
+        )*
+
+        errors?;
+
+        unreachable!();
+    };
+
+    let def = quote! {
         #derive
         #[serde(untagged)]
         pub enum #name #lifetime {
             #(#body),*
         }
+    };
+
+    Type {
+        def,
+        impl_ty: quote!(#name #lifetime),
+        impl_try_from_value: try_from,
     }
 }
 
@@ -190,11 +224,29 @@ fn generate_inner(
     let n = state.inner.len();
     let name = format_ident!("{}{n}", state.inner_name);
 
-    let type_ = generate_type(id, &name, variant, values, resolver, locations, state);
+    let Type {
+        def,
+        impl_ty,
+        impl_try_from_value,
+    } = generate_type(id, &name, variant, values, resolver, locations, state);
+
+    let mut value_ref = match variant {
+        Variant::Owned => None,
+        Variant::Ref => Some(quote!(&'a)),
+        Variant::Mut => Some(quote!(&'a mut)),
+    };
 
     state.inner.push(Inner {
         name: name.clone(),
-        stream: type_,
+        stream: quote!(
+            #def
+
+            impl #impl_ty {
+                fn try_from_value(value: #value_ref serde_json::Value) -> Result<Self, GenericPropertError> {
+                    #impl_try_from_value
+                }
+            }
+        ),
     });
 
     name
@@ -228,10 +280,9 @@ fn generate_contents(
                 .unwrap_or(&location.name.value);
             let name = Ident::new(name, Span::call_site());
 
-            let index = reference.url().base_url.as_str();
             let try_from = quote!({
                 let value = <#name #suffix>::try_from_value(value)
-                    .change_context(GenericPropertyError::Data(#index));
+                    .change_context(GenericPropertyError::Data);
 
                 value.map(#type_)
             });
@@ -267,12 +318,12 @@ fn generate_contents(
             });
 
             (
-                quote! {
-                    {
-                        #(#properties),*
-                    }
-                },
-                try_from,
+                quote!({
+                    #(#properties),*
+                }),
+                quote!({
+                    #try_from
+                }),
             )
         }
         // TODO: automatically flatten, different modes?, inner data-type reference should just be a
@@ -289,11 +340,19 @@ fn generate_contents(
                 Variant::Owned => None,
             };
 
+            let suffix = match variant {
+                Variant::Ref => Some(quote!(.map(|array| array.into_boxed_slice()))),
+                _ => None,
+            };
+
             let try_from = quote!({
-                let value = match value {
+                match value {
                     serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
                         array.into_iter().map(|value| <#inner #lifetime>::try_from_value(value))
-                    ).change_context(GenericPropertyError::Array),
+                    )
+                    #suffix
+                    .map(#type_)
+                    .change_context(GenericPropertyError::Array),
                     _ => Err(Report::new(GenericPropertyError::ExpectedArray))
                 }
             });
@@ -323,7 +382,11 @@ fn generate_owned(
         quote!(pub type #alias<'a> = #name<'a>;)
     });
 
-    let type_ = generate_type(
+    let Type {
+        def,
+        impl_try_from_value,
+        ..
+    } = generate_type(
         property.id(),
         &name,
         Variant::Owned,
@@ -334,7 +397,7 @@ fn generate_owned(
     );
 
     quote! {
-        #type_
+        #def
 
         impl Type for #name {
             type Mut<'a> = #name_mut<'a> where Self: 'a;
@@ -355,8 +418,7 @@ fn generate_owned(
             type Error = GenericPropertyError;
 
             fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-                // TODO
-                todo!()
+                #impl_try_from_value
             }
         }
 
@@ -380,7 +442,11 @@ fn generate_ref(
         quote!(pub type #alias<'a> = #name_ref<'a>;)
     });
 
-    let type_ = generate_type(
+    let Type {
+        def,
+        impl_try_from_value,
+        ..
+    } = generate_type(
         property.id(),
         &name_ref,
         Variant::Ref,
@@ -391,7 +457,7 @@ fn generate_ref(
     );
 
     quote! {
-        #type_
+        #def
 
         impl TypeRef for #name_ref<'_> {
             type Owned = #name;
@@ -406,8 +472,7 @@ fn generate_ref(
             type Error = GenericPropertyError;
 
             fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-                // TODO
-                todo!()
+                #impl_try_from_value
             }
         }
 
@@ -431,7 +496,11 @@ fn generate_mut(
         quote!(pub type #alias<'a> = #name_mut<'a>;)
     });
 
-    let type_ = generate_type(
+    let Type {
+        def,
+        impl_try_from_value,
+        ..
+    } = generate_type(
         property.id(),
         &name_mut,
         Variant::Mut,
@@ -442,7 +511,7 @@ fn generate_mut(
     );
 
     quote! {
-        #type_
+        #def
 
         impl TypeMut for #name_mut<'_> {
             type Owned = #name;
@@ -457,8 +526,7 @@ fn generate_mut(
             type Error = GenericPropertyError;
 
             fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-                // TODO
-                todo!()
+                #impl_try_from_value
             }
         }
 

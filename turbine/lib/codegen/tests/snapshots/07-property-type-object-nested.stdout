@@ -24,7 +24,10 @@ impl PropertyType for FavoriteFilm {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type FavoriteFilmV1<'a> = FavoriteFilm<'a>;
@@ -41,7 +44,11 @@ impl<'a> PropertyTypeRef<'a> for FavoriteFilmRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type FavoriteFilmV1Ref<'a> = FavoriteFilmRef<'a>;
@@ -58,7 +65,11 @@ impl<'a> PropertyTypeMut<'a> for FavoriteFilmMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type FavoriteFilmV1Mut<'a> = FavoriteFilmMut<'a>;
@@ -92,7 +103,10 @@ impl PropertyType for FavoriteSong {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type FavoriteSongV1<'a> = FavoriteSong<'a>;
@@ -109,7 +123,11 @@ impl<'a> PropertyTypeRef<'a> for FavoriteSongRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type FavoriteSongV1Ref<'a> = FavoriteSongRef<'a>;
@@ -126,7 +144,11 @@ impl<'a> PropertyTypeMut<'a> for FavoriteSongMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type FavoriteSongV1Mut<'a> = FavoriteSongMut<'a>;
@@ -160,7 +182,10 @@ impl PropertyType for Hobby {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type HobbyV1<'a> = Hobby<'a>;
@@ -177,7 +202,11 @@ impl<'a> PropertyTypeRef<'a> for HobbyRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type HobbyV1Ref<'a> = HobbyRef<'a>;
@@ -194,7 +223,11 @@ impl<'a> PropertyTypeMut<'a> for HobbyMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let value =
+                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
     }
 }
 pub type HobbyV1Mut<'a> = HobbyMut<'a>;
@@ -245,7 +278,69 @@ impl PropertyType for Interests {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let favorite_film = 'property: {
+                let value = properties.remove(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
+                );
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <FavoriteFilm>::try_from_value(value)
+                    .change_context(Report::new(GenericPropertyError::Property(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
+                )));
+                value.map(Some)
+            };
+            let favorite_song = 'property: {
+                let value = properties.remove(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
+                );
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <FavoriteSong>::try_from_value(value)
+                    .change_context(Report::new(GenericPropertyError::Property(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
+                )));
+                value.map(Some)
+            };
+            let hobby = 'property: {
+                let value = properties
+                    .remove("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/");
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = if let serde_json::Value::Array(value) = value {
+                    blockprotocol::fold_iter_reports(
+                        value
+                            .into_iter()
+                            .map(|value| <Hobby>::try_from_value(value)),
+                    )
+                    .change_context(GenericPropertyError::Property(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
+                    ))
+                } else {
+                    Err(Report::new(GenericPropertyError::ExpectedArray(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
+                    )))
+                };
+                value.map(Some)
+            };
+            let __report0 =
+                blockprotocol::fold_tuple_reports((favorite_film, favorite_song, hobby));
+            let ((favorite_film, favorite_song, hobby),) =
+                blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self {
+                favorite_film,
+                favorite_song,
+                hobby,
+            };
+            Ok(this)
+        }
     }
 }
 pub type InterestsV1<'a> = Interests<'a>;
@@ -273,7 +368,69 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let favorite_film = 'property: {
+                let value = properties.get(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
+                );
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <FavoriteFilm::Ref<'a>>::try_from_value(value)
+                    .change_context(Report::new(GenericPropertyError::Property(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
+                )));
+                value.map(Some)
+            };
+            let favorite_song = 'property: {
+                let value = properties.get(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
+                );
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <FavoriteSong::Ref<'a>>::try_from_value(value)
+                    .change_context(Report::new(GenericPropertyError::Property(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
+                )));
+                value.map(Some)
+            };
+            let hobby = 'property: {
+                let value = properties
+                    .get("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/");
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = if let serde_json::Value::Array(value) = value {
+                    blockprotocol::fold_iter_reports(
+                        value
+                            .into_iter()
+                            .map(|value| <Hobby::Ref<'a>>::try_from_value(value)),
+                    )
+                    .change_context(GenericPropertyError::Property(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
+                    ))
+                } else {
+                    Err(Report::new(GenericPropertyError::ExpectedArray(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
+                    )))
+                };
+                value.map(Some)
+            };
+            let __report0 =
+                blockprotocol::fold_tuple_reports((favorite_film, favorite_song, hobby));
+            let ((favorite_film, favorite_song, hobby),) =
+                blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self {
+                favorite_film,
+                favorite_song,
+                hobby,
+            };
+            Ok(this)
+        }
     }
 }
 pub type InterestsV1Ref<'a> = InterestsRef<'a>;
@@ -301,7 +458,78 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        {
+            let favorite_film = 'property: {
+                let value = unsafe {
+                    let value = properties . get_mut ("https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/") ;
+                    let value = value.map(|value| value as *mut _);
+                    &mut *value
+                };
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <FavoriteFilm::Mut<'a>>::try_from_value(value)
+                    .change_context(Report::new(GenericPropertyError::Property(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
+                )));
+                value.map(Some)
+            };
+            let favorite_song = 'property: {
+                let value = unsafe {
+                    let value = properties . get_mut ("https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/") ;
+                    let value = value.map(|value| value as *mut _);
+                    &mut *value
+                };
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = <FavoriteSong::Mut<'a>>::try_from_value(value)
+                    .change_context(Report::new(GenericPropertyError::Property(
+                    "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
+                )));
+                value.map(Some)
+            };
+            let hobby = 'property: {
+                let value = unsafe {
+                    let value = properties.get_mut(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
+                    );
+                    let value = value.map(|value| value as *mut _);
+                    &mut *value
+                };
+                let Some (value) = value else { break 'property Ok (None) ; } ;
+                if value.is_null() {
+                    break 'property Ok(None);
+                };
+                let value = if let serde_json::Value::Array(value) = value {
+                    blockprotocol::fold_iter_reports(
+                        value
+                            .into_iter()
+                            .map(|value| <Hobby::Mut<'a>>::try_from_value(value)),
+                    )
+                    .change_context(GenericPropertyError::Property(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
+                    ))
+                } else {
+                    Err(Report::new(GenericPropertyError::ExpectedArray(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
+                    )))
+                };
+                value.map(Some)
+            };
+            let __report0 =
+                blockprotocol::fold_tuple_reports((favorite_film, favorite_song, hobby));
+            let ((favorite_film, favorite_song, hobby),) =
+                blockprotocol::fold_tuple_reports((__report0,))?;
+            let this = Self {
+                favorite_film,
+                favorite_song,
+                hobby,
+            };
+            Ok(this)
+        }
     }
 }
 pub type InterestsV1Mut<'a> = InterestsMut<'a>;

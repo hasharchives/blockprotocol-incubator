@@ -10,10 +10,36 @@ use error_stack::Result;
 use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Inner0(pub Number);
+impl Inner0 {
+    fn try_from_value(value: serde_json::Value) -> Result<Self, GenericPropertError> {
+        {
+            let value = <Number>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct Inner1<'a>(pub Number::Ref<'a>);
+impl Inner1<'a> {
+    fn try_from_value(value: &'a serde_json::Value) -> Result<Self, GenericPropertError> {
+        {
+            let value =
+                <Number::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
+    }
+}
 #[derive(Debug, Serialize)]
 pub struct Inner2<'a>(pub Number::Mut<'a>);
+impl Inner2<'a> {
+    fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, GenericPropertError> {
+        {
+            let value =
+                <Number::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self)
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum ContrivedProperty {
@@ -36,7 +62,39 @@ impl PropertyType for ContrivedProperty {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value = <Number>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            match value {
+                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                    array
+                        .into_iter()
+                        .map(|value| <Inner0>::try_from_value(value)),
+                )
+                .map(Self::Variant1)
+                .change_context(GenericPropertyError::Array),
+                _ => Err(Report::new(GenericPropertyError::ExpectedArray)),
+            }
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type ContrivedPropertyV1<'a> = ContrivedProperty<'a>;
@@ -57,7 +115,41 @@ impl<'a> PropertyTypeRef<'a> for ContrivedPropertyRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value =
+                <Number::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            match value {
+                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                    array
+                        .into_iter()
+                        .map(|value| <Inner1<'a>>::try_from_value(value)),
+                )
+                .map(|array| array.into_boxed_slice())
+                .map(Self::Variant1)
+                .change_context(GenericPropertyError::Array),
+                _ => Err(Report::new(GenericPropertyError::ExpectedArray)),
+            }
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type ContrivedPropertyV1Ref<'a> = ContrivedPropertyRef<'a>;
@@ -78,7 +170,40 @@ impl<'a> PropertyTypeMut<'a> for ContrivedPropertyMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        todo!()
+        let errors: Result<(), GenericPropertyError> = Ok(());
+        let this = {
+            let value =
+                <Number::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            value.map(Self::Variant0)
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        let this = {
+            match value {
+                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                    array
+                        .into_iter()
+                        .map(|value| <Inner2<'a>>::try_from_value(value)),
+                )
+                .map(Self::Variant1)
+                .change_context(GenericPropertyError::Array),
+                _ => Err(Report::new(GenericPropertyError::ExpectedArray)),
+            }
+        };
+        match this {
+            Ok(this) => return Ok(this),
+            Err(error) => match &mut errors {
+                Err(errors) => errors.extend_one(error),
+                errors => *errors = Err(error),
+            },
+        }
+        errors?;
+        unreachable!();
     }
 }
 pub type ContrivedPropertyV1Mut<'a> = ContrivedPropertyMut<'a>;
