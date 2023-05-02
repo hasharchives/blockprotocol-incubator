@@ -24,8 +24,15 @@ pub(crate) enum ModuleFlavor {
 pub struct Directory(String);
 
 impl Directory {
-    pub(crate) fn name(&self) -> &str {
+    #[must_use]
+    pub fn name(&self) -> &str {
         &self.0
+    }
+
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn into_name(self) -> String {
+        self.0
     }
 }
 
@@ -37,11 +44,18 @@ impl File {
         &self.0
     }
 
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn into_name(self) -> String {
+        self.0
+    }
+
     pub(crate) fn fs_name(&self) -> String {
         format!("{}.rs", self.0)
     }
 
-    pub(crate) fn is_mod(&self) -> bool {
+    #[must_use]
+    pub fn is_mod(&self) -> bool {
         self.0 == "mod"
     }
 }
@@ -58,6 +72,12 @@ impl Path {
     #[must_use]
     pub const fn file(&self) -> &File {
         &self.1
+    }
+
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn into_parts(self) -> (Vec<Directory>, File) {
+        (self.0, self.1)
     }
 }
 

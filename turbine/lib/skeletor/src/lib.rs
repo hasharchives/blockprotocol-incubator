@@ -2,18 +2,24 @@
 
 mod vfs;
 
-use std::path::{Path, PathBuf};
+use std::{
+    collections::VecDeque,
+    path::{Path, PathBuf},
+};
 
 use cargo::{
-    core::{Dependency, Shell, SourceId, Workspace},
+    core::{Shell, SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
         NewOptions,
     },
+    util::toml_mut::manifest::DepTable,
 };
 use codegen::AnyTypeRepr;
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
 use onlyerror::Error;
+
+use crate::vfs::VirtualFolder;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Style {
@@ -121,7 +127,7 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(), Error> {
                 tag: None,
             },
         ],
-        section: Default::default(),
+        section: DepTable::default(),
         dry_run: false,
     };
 
@@ -136,6 +142,14 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
     let types = codegen::process(types).change_context(Error::Codegen)?;
 
     setup(&config.root, config.name)?;
+
+    let mut folder = VirtualFolder::new("src".to_owned());
+
+    for (path, contents) in types {
+        let (directories, file) = path.typed.into_parts();
+
+        folder.insert(VecDeque::from(directories), file, contents);
+    }
 
     // TODO: generate the intermediate `mod.rs` and `module.rs` files, put all files onto the fs
     // TODO: rustfmt

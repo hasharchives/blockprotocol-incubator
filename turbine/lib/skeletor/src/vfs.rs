@@ -1,11 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
-use codegen::{File, Path};
+use codegen::{Directory, File, Path};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 
 use crate::Style;
 
+#[derive(Debug)]
 pub enum VirtualFile {
     Mod { body: TokenStream },
     Rust { name: String, body: TokenStream },
@@ -20,6 +21,7 @@ impl VirtualFile {
     }
 }
 
+#[derive(Debug)]
 pub struct VirtualFolder {
     name: String,
 
@@ -28,6 +30,14 @@ pub struct VirtualFolder {
 }
 
 impl VirtualFolder {
+    pub(crate) fn new(name: String) -> Self {
+        Self {
+            name,
+            files: HashMap::new(),
+            folders: HashMap::new(),
+        }
+    }
+
     pub(crate) fn generate_body(&self) -> TokenStream {
         let files = self.files.values().filter_map(|file| match file {
             VirtualFile::Mod { .. } => None,
@@ -107,7 +117,7 @@ impl VirtualFolder {
             .folders
             .iter()
             .filter(|(_, value)| value.should_normalize(self, style))
-            .map(|(key, _)| key.to_owned())
+            .map(|(key, _)| key.clone())
             .collect();
 
         for (name, folder) in &mut self.folders {
@@ -125,7 +135,36 @@ impl VirtualFolder {
         result
     }
 
-    pub fn insert(&mut self, path: Path) {
-        todo!()
+    pub(crate) fn insert(
+        &mut self,
+        mut directories: VecDeque<Directory>,
+        file: File,
+        contents: TokenStream,
+    ) {
+        let directory = directories.pop_front();
+
+        if let Some(directory) = directory {
+            let name = directory.into_name();
+
+            let folder = self
+                .folders
+                .entry(name.clone())
+                .or_insert_with(|| Self::new(name));
+
+            folder.insert(directories, file, contents);
+        } else {
+            // we're at the bottom, create the file
+            if file.is_mod() {
+                self.files
+                    .insert("mod".to_owned(), VirtualFile::Mod { body: contents });
+            } else {
+                let name = file.into_name();
+
+                self.files.insert(name.clone(), VirtualFile::Rust {
+                    name,
+                    body: contents,
+                });
+            }
+        }
     }
 }
