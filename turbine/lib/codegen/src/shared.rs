@@ -355,8 +355,8 @@ pub(crate) fn generate_property(
 
     let type_ = match variant {
         Variant::Owned => type_.to_token_stream(),
-        Variant::Ref => quote!(#type_::Ref<'a>),
-        Variant::Mut => quote!(#type_::Mut<'a>),
+        Variant::Ref => quote!(<#type_ as Type>::Ref<'a>),
+        Variant::Mut => quote!(<#type_ as Type>::Mut<'a>),
     };
 
     let mut type_ = match kind {
