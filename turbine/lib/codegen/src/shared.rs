@@ -180,7 +180,7 @@ fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
     // in theory we could merge even more, currently "just" 16 fields are batched together
     for chunk in &mut chunks {
         let result = format_ident!("__report{index}");
-        fold.push(quote!(let #result = blockprotocol::fold_tuple_reports((#(#chunk,)*))));
+        fold.push(quote!(let #result = turbine::fold_tuple_reports((#(#chunk,)*))));
         unfold.push((quote!((#(#chunk,)*)), result));
         index += 1;
     }
@@ -189,7 +189,7 @@ fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
         let result = format_ident!("__report{index}");
         let chunk: Vec<_> = remainder.collect();
 
-        fold.push(quote!(let #result = blockprotocol::fold_tuple_reports((#(#chunk,)*))));
+        fold.push(quote!(let #result = turbine::fold_tuple_reports((#(#chunk,)*))));
         unfold.push((quote!((#(#chunk,)*)), result));
     }
 
@@ -200,7 +200,7 @@ fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
     quote! {
         #(#fold;)*
 
-        let (#(#unfold_lhs,)*) = blockprotocol::fold_tuple_reports((#(#unfold_rhs,)*))?;
+        let (#(#unfold_lhs,)*) = turbine::fold_tuple_reports((#(#unfold_rhs,)*))?;
     }
 }
 
@@ -212,7 +212,7 @@ pub(crate) fn generate_properties_try_from_value(
 ) -> TokenStream {
     // fundamentally we have 3 phases:
     // 1) get all values (as Result)
-    // 2) merge them together using `blockprotocol::fold_tuple_reports`
+    // 2) merge them together using `turbine::fold_tuple_reports`
     // 3) merge all values together
 
     // makes use of labelled breaks in blocks (introduced in 1.65)
@@ -288,7 +288,7 @@ pub(crate) fn generate_properties_try_from_value(
 
                     quote! {
                         let value = if let serde_json::Value::Array(value) = value {
-                            blockprotocol::fold_iter_reports(
+                            turbine::fold_iter_reports(
                                 value.into_iter().map(|value| <#type_>::try_from_value(value))
                             )
                                 #suffix
