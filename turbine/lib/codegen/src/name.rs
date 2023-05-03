@@ -91,7 +91,7 @@ impl From<Path> for PathBuf {
             .chain(once(file.fs_name()))
             .collect();
 
-        PathBuf::from(path.join("/"))
+        Self::from(path.join("/"))
     }
 }
 
@@ -130,11 +130,6 @@ pub(crate) struct Location<'a> {
     pub(crate) kind: LocationKind<'a>,
 }
 
-// BP: https://blockprotocol.org/@blockprotocol/types/data-type/text/v/1
-// HASH: http://localhost:3000/@alice/types/property-type/cbrsUuid/v/1
-// I'VE LIVED A LIE FOR MONTHS
-// TODO: rename blockprotocol/blockprotocol to just blockprotocol?
-
 /// Pattern matching mode
 ///
 /// We only match path and host/protocol, everything else is stripped
@@ -158,7 +153,7 @@ impl Mode {
             Self::MatchPath => {
                 // we do not check for extra groups, as they might be used, this is mostly just to
                 // encourage future checks
-                let mut optional: HashSet<_> = std::iter::once("namespace").collect();
+                let mut optional: HashSet<_> = once("namespace").collect();
                 let mut required: HashSet<_> = ["kind", "id"].into_iter().collect();
 
                 for name in regex.capture_names().flatten() {
@@ -172,7 +167,7 @@ impl Mode {
                 );
             }
             Self::MatchAll => {
-                let mut optional: HashSet<_> = std::iter::once("namespace").collect();
+                let mut optional: HashSet<_> = once("namespace").collect();
                 let mut required: HashSet<_> = ["origin", "kind", "id"].into_iter().collect();
 
                 for name in regex.capture_names().flatten() {
@@ -623,8 +618,6 @@ impl<'a> NameResolver<'a> {
 
         self.determine_name(url, parts.as_ref(), &versions)
     }
-
-    // TODO: inner (cannot by done by the name resolver)
 
     /// Returns the name for the accessor or property for the specified URL
     pub(crate) fn property_name(&self, url: &VersionedUrl) -> PropertyName {

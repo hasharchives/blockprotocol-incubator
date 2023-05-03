@@ -77,13 +77,11 @@ impl From<LibOrigin> for Origin {
 }
 
 #[derive(Debug, Copy, Clone, Error)]
-pub enum Error {
+pub(crate) enum Error {
     #[error("unable to join URL with path")]
     Url,
     #[error("unable to send request to remote")]
     Http,
-    #[error("unable to traverse the result")]
-    Traverse,
     #[error("io error")]
     Io,
     #[error("unable to deserialize into type")]
