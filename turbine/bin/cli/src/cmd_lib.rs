@@ -6,13 +6,18 @@ use std::{
 use clap::{Args, ValueEnum, ValueHint};
 use codegen::{AnyTypeRepr, Flavor, Override};
 use error_stack::{IntoReport, Result, ResultExt};
+use figment::{
+    providers::{Env, Format, Toml},
+    Figment,
+};
 use reqwest::blocking::Client;
 use serde_json::{json, Value};
-use skeletor::{Config, Style};
+use skeletor::Style;
 use thiserror::Error;
 use url::Url;
 
-#[derive(ValueEnum, Copy, Clone, Debug)]
+#[derive(ValueEnum, Copy, Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum LibStyle {
     Mod,
     Module,
@@ -37,7 +42,7 @@ impl From<LibStyle> for Style {
 }
 
 #[derive(Args, Debug)]
-#[group(required = true)]
+#[group(required = false)]
 pub(crate) struct LibOrigin {
     #[arg(long)]
     remote: Option<Url>,
@@ -49,32 +54,33 @@ pub(crate) struct LibOrigin {
 #[derive(Args, Debug)]
 pub(crate) struct Lib {
     #[arg(value_hint = ValueHint::DirPath)]
-    root: PathBuf,
+    root: Option<PathBuf>,
 
     #[command(flatten)]
     origin: LibOrigin,
 
-    #[arg(long, default_value_t = LibStyle::Mod)]
-    style: LibStyle,
+    #[arg(long)]
+    style: Option<LibStyle>,
 
     #[arg(long)]
     name: Option<String>,
-
-    #[arg(long, value_hint = ValueHint::FilePath)]
-    config: Option<PathBuf>,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(tag = "type", content = "value")]
 enum Origin {
     Remote(Url),
     Local(PathBuf),
 }
 
-impl From<LibOrigin> for Origin {
-    fn from(value: LibOrigin) -> Self {
+impl TryFrom<LibOrigin> for Origin {
+    type Error = ();
+
+    fn try_from(value: LibOrigin) -> core::result::Result<Self, Self::Error> {
         match (value.remote, value.local) {
-            (Some(remote), None) => Self::Remote(remote),
-            (None, Some(local)) => Self::Local(local),
-            _ => unreachable!(),
+            (Some(remote), None) => Ok(Self::Remote(remote)),
+            (None, Some(local)) => Ok(Self::Local(local)),
+            _ => Err(()),
         }
     }
 }
@@ -91,9 +97,11 @@ pub(crate) enum Error {
     Serde,
     #[error("unable to create new project")]
     Skeletor,
+    #[error("unable to load config")]
+    Config,
 }
 
-fn call_remote(url: Url) -> Result<Vec<AnyTypeRepr>, Error> {
+fn call_remote(url: &Url) -> Result<Vec<AnyTypeRepr>, Error> {
     let url = url
         .join("entity-types/query")
         .into_report()
@@ -177,16 +185,57 @@ fn call_remote(url: Url) -> Result<Vec<AnyTypeRepr>, Error> {
 }
 
 #[derive(serde::Deserialize)]
-pub(crate) struct FileConfig {
+pub(crate) struct Config {
+    root: PathBuf,
+
+    name: Option<String>,
+    style: LibStyle,
+
+    origin: Origin,
+
     overrides: Vec<Override>,
     flavors: Vec<Flavor>,
 }
 
-pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
-    let origin = Origin::from(lib.origin);
+pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Error> {
+    let Lib {
+        root,
+        origin,
+        style,
+        name,
+    } = lib;
 
-    let types = match origin {
-        Origin::Remote(remote) => call_remote(remote)?,
+    let mut figment = Figment::new()
+        .merge(Toml::file("turbine.toml"))
+        .merge(Toml::file(".turbine.toml"))
+        .merge(Env::prefixed("TURBINE_"));
+
+    if let Some(root) = root {
+        figment = figment.merge(("root".to_owned(), figment::value::Value::serialize(root)?));
+    }
+    if let Ok(origin) = Origin::try_from(origin) {
+        figment = figment.merge((
+            "origin".to_owned(),
+            figment::value::Value::serialize(origin)?,
+        ))
+    }
+    if let Some(style) = style {
+        figment = figment.merge(("style".to_owned(), figment::value::Value::serialize(style)?));
+    }
+    if let Some(name) = name {
+        figment = figment.merge((name.to_owned(), figment::value::Value::serialize(name)?));
+    }
+
+    figment.extract()
+}
+
+pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
+    let config = load_config(lib)
+        .into_report()
+        .change_context(Error::Config)?;
+
+    let types = match config.origin {
+        Origin::Remote(remote) => call_remote(&remote)?,
         Origin::Local(local) => {
             let types = std::fs::read_to_string(local)
                 .into_report()
@@ -198,26 +247,13 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
         }
     };
 
-    let (overrides, flavors) = if let Some(config) = lib.config {
-        let config = std::fs::read_to_string(config)
-            .into_report()
-            .change_context(Error::Io)?;
-        let config: FileConfig = toml::from_str(&config)
-            .into_report()
-            .change_context(Error::Serde)?;
+    skeletor::generate(types, skeletor::Config {
+        root: config.root,
+        style: config.style.into(),
+        name: config.name,
 
-        (config.overrides, config.flavors)
-    } else {
-        (vec![], vec![])
-    };
-
-    skeletor::generate(types, Config {
-        root: lib.root,
-        style: lib.style.into(),
-        name: lib.name,
-
-        overrides,
-        flavors,
+        overrides: config.overrides,
+        flavors: config.flavors,
     })
     .change_context(Error::Skeletor)
 }
