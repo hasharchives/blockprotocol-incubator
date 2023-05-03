@@ -72,6 +72,10 @@ fn johnson_cycle_search(
             continue;
         }
 
+        // Reason: we resume the iterator in the next phase after some time,
+        //  this means we do not consume the iterator and we also do not want to hold
+        //  a mutable reference to the iterator while iterating through
+        #[allow(clippy::while_let_on_iterator)]
         while let Some(node) = neighbours.next() {
             if node == start {
                 let mut circuit = path.clone();
