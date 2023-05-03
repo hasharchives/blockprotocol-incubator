@@ -4,7 +4,7 @@ use std::{
 };
 
 use clap::{Args, ValueEnum, ValueHint};
-use codegen::AnyTypeRepr;
+use codegen::{AnyTypeRepr, Flavor, Override};
 use error_stack::{IntoReport, Result, ResultExt};
 use reqwest::blocking::Client;
 use serde_json::{json, Value};
@@ -21,8 +21,8 @@ pub enum LibStyle {
 impl Display for LibStyle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            LibStyle::Mod => f.write_str("mod"),
-            LibStyle::Module => f.write_str("module"),
+            Self::Mod => f.write_str("mod"),
+            Self::Module => f.write_str("module"),
         }
     }
 }
@@ -38,7 +38,7 @@ impl From<LibStyle> for Style {
 
 #[derive(Args, Debug)]
 #[group(required = true)]
-pub struct LibOrigin {
+pub(crate) struct LibOrigin {
     #[arg(long)]
     remote: Option<Url>,
 
@@ -59,6 +59,9 @@ pub(crate) struct Lib {
 
     #[arg(long)]
     name: Option<String>,
+
+    #[arg(long, value_hint = ValueHint::FilePath)]
+    config: Option<PathBuf>,
 }
 
 enum Origin {
@@ -173,6 +176,12 @@ fn call_remote(url: Url) -> Result<Vec<AnyTypeRepr>, Error> {
     Ok(types)
 }
 
+#[derive(serde::Deserialize)]
+pub(crate) struct FileConfig {
+    overrides: Vec<Override>,
+    flavors: Vec<Flavor>,
+}
+
 pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
     let origin = Origin::from(lib.origin);
 
@@ -189,13 +198,26 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
         }
     };
 
+    let (overrides, flavors) = if let Some(config) = lib.config {
+        let config = std::fs::read_to_string(config)
+            .into_report()
+            .change_context(Error::Io)?;
+        let config: FileConfig = toml::from_str(&config)
+            .into_report()
+            .change_context(Error::Serde)?;
+
+        (config.overrides, config.flavors)
+    } else {
+        (vec![], vec![])
+    };
+
     skeletor::generate(types, Config {
         root: lib.root,
         style: lib.style.into(),
         name: lib.name,
 
-        overrides: vec![],
-        flavors: vec![],
+        overrides,
+        flavors,
     })
     .change_context(Error::Skeletor)
 }

@@ -13,6 +13,7 @@ serde_json = "1.0.96"
 thiserror = "1.0.40"
 error-stack = "0.3.1"
 serde = { version = "1.0.160", features = ['derive'] }
+serde_regex = "1.1.0"
 petgraph = "0.6.3"
 tracing = "0.1.37"
 ciclo = "0.1.0"

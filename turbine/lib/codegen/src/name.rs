@@ -133,7 +133,7 @@ pub(crate) struct Location<'a> {
 /// Pattern matching mode
 ///
 /// We only match path and host/protocol, everything else is stripped
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 pub enum Mode {
     MatchPath,
     MatchAll,
@@ -184,9 +184,11 @@ impl Mode {
     }
 }
 
+#[derive(Debug, serde::Deserialize)]
 pub struct Flavor {
-    name: &'static str,
+    pub name: Cow<'static, str>,
     mode: Mode,
+    #[serde(with = "serde_regex")]
     pattern: Regex,
 }
 
@@ -199,7 +201,7 @@ impl Flavor {
         mode.verify_pattern(&pattern);
 
         Self {
-            name,
+            name: Cow::Borrowed(name),
             mode,
             pattern,
         }
@@ -249,7 +251,7 @@ struct UrlParts<'a> {
     id: &'a str,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct OverrideAction {
     matches: Cow<'static, str>,
     replacement: Cow<'static, str>,
@@ -271,7 +273,7 @@ impl OverrideAction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct Override {
     origin: Option<OverrideAction>,
     namespace: Option<OverrideAction>,
