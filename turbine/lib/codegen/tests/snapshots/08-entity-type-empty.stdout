@@ -1,20 +1,23 @@
 localhost_3000/alice/entity/country.rs
 
-use blockprotocol::{
-    entity::Entity, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
-    PropertyType as _, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::{Report, Result};
+use alloc::string::String;
+use core::marker::PhantomData;
+
+use error_stack::{Report, Result, ResultExt as _};
 use hashbrown::HashMap;
 use serde::Serialize;
+use turbine::{
+    entity::Entity, url, BaseUrl, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
+    PropertyType as _, PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef,
+    VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
-pub struct Properties {}
+pub struct Properties;
 impl Properties {
-    fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-        let __report0 = blockprotocol::fold_tuple_reports(());
-        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
-        let this = Self {};
-        Ok(this)
+    fn try_from_value(
+        mut properties: HashMap<String, serde_json::Value>,
+    ) -> Result<Self, GenericEntityError> {
+        Ok(Self)
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -30,11 +33,11 @@ impl Type for Country {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 
-    fn as_ref(&self) -> Self::Ref<'_> {
+    fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
     }
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
+    fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
     }
 }
@@ -42,23 +45,23 @@ impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::ID == value.metadata.entity_type_id {
             return None;
         }
         let properties = Properties::try_from_value(value.properties.0);
-        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
-        let this = Self { properties };
-        Ok(this)
+        match turbine::fold_tuple_reports((properties,)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties,)) => Some(Ok(Self { properties })),
+        }
     }
 }
 #[derive(Debug, Clone, Serialize)]
-pub struct PropertiesRef<'a> {}
-impl PropertiesRef<'a> {
-    fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-        let __report0 = blockprotocol::fold_tuple_reports(());
-        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
-        let this = Self {};
-        Ok(this)
+pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
+impl<'a> PropertiesRef<'a> {
+    fn try_from_value(
+        properties: &'a HashMap<String, serde_json::Value>,
+    ) -> Result<Self, GenericEntityError> {
+        Ok(Self(PhantomData))
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -78,28 +81,26 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::Owned::ID == value.metadata.entity_type_id {
             return None;
         }
-        let properties = Properties::try_from_value(&value.properties.0);
-        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
-        let this = Self { properties };
-        Ok(this)
+        let properties = PropertiesRef::try_from_value(&value.properties.0);
+        match turbine::fold_tuple_reports((properties,)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties,)) => Some(Ok(Self { properties })),
+        }
     }
 }
-#[derive(Debug, Clone, Serialize)]
-pub struct PropertiesMut<'a> {}
-impl PropertiesMut<'a> {
+#[derive(Debug, Serialize)]
+pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
+impl<'a> PropertiesMut<'a> {
     fn try_from_value(
-        properties: &'a mut HashMap<BaseUrl, Value>,
+        properties: &'a mut HashMap<String, serde_json::Value>,
     ) -> Result<Self, GenericEntityError> {
-        let __report0 = blockprotocol::fold_tuple_reports(());
-        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
-        let this = Self {};
-        Ok(this)
+        Ok(Self(PhantomData))
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -116,12 +117,13 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::Owned::ID == value.metadata.entity_type_id {
             return None;
         }
-        let properties = Properties::try_from_value(&mut value.properties.0);
-        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
-        let this = Self { properties };
-        Ok(this)
+        let properties = PropertiesMut::try_from_value(&mut value.properties.0);
+        match turbine::fold_tuple_reports((properties,)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties,)) => Some(Ok(Self { properties })),
+        }
     }
 }

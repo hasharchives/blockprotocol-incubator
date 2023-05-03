@@ -1,16 +1,20 @@
 blockprotocol/blockprotocol/property/favorite_film.rs
 
-use blockprotocol::{
-    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilm(pub Text);
 impl Type for FavoriteFilm {
     type Mut < 'a > = FavoriteFilmMut < 'a > where Self : 'a ;
     type Ref < 'a > = FavoriteFilmRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> = url!(
+        "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
+    );
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -25,14 +29,15 @@ impl PropertyType for FavoriteFilm {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Text as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
-pub type FavoriteFilmV1<'a> = FavoriteFilm<'a>;
+pub type FavoriteFilmV1 = FavoriteFilm;
 #[derive(Debug, Clone, Serialize)]
-pub struct FavoriteFilmRef<'a>(pub Text::Ref<'a>);
+pub struct FavoriteFilmRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for FavoriteFilmRef<'_> {
     type Owned = FavoriteFilm;
 
@@ -45,15 +50,15 @@ impl<'a> PropertyTypeRef<'a> for FavoriteFilmRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 pub type FavoriteFilmV1Ref<'a> = FavoriteFilmRef<'a>;
 #[derive(Debug, Serialize)]
-pub struct FavoriteFilmMut<'a>(pub Text::Mut<'a>);
+pub struct FavoriteFilmMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for FavoriteFilmMut<'_> {
     type Owned = FavoriteFilm;
 
@@ -66,8 +71,8 @@ impl<'a> PropertyTypeMut<'a> for FavoriteFilmMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
@@ -79,17 +84,21 @@ pub type FavoriteFilmV1Mut<'a> = FavoriteFilmMut<'a>;
 
 blockprotocol/blockprotocol/property/favorite_song.rs
 
-use blockprotocol::{
-    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSong(pub Text);
 impl Type for FavoriteSong {
     type Mut < 'a > = FavoriteSongMut < 'a > where Self : 'a ;
     type Ref < 'a > = FavoriteSongRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> = url!(
+        "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
+    );
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -104,14 +113,15 @@ impl PropertyType for FavoriteSong {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Text as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
-pub type FavoriteSongV1<'a> = FavoriteSong<'a>;
+pub type FavoriteSongV1 = FavoriteSong;
 #[derive(Debug, Clone, Serialize)]
-pub struct FavoriteSongRef<'a>(pub Text::Ref<'a>);
+pub struct FavoriteSongRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for FavoriteSongRef<'_> {
     type Owned = FavoriteSong;
 
@@ -124,15 +134,15 @@ impl<'a> PropertyTypeRef<'a> for FavoriteSongRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 pub type FavoriteSongV1Ref<'a> = FavoriteSongRef<'a>;
 #[derive(Debug, Serialize)]
-pub struct FavoriteSongMut<'a>(pub Text::Mut<'a>);
+pub struct FavoriteSongMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for FavoriteSongMut<'_> {
     type Owned = FavoriteSong;
 
@@ -145,8 +155,8 @@ impl<'a> PropertyTypeMut<'a> for FavoriteSongMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
@@ -158,17 +168,20 @@ pub type FavoriteSongV1Mut<'a> = FavoriteSongMut<'a>;
 
 blockprotocol/blockprotocol/property/hobby.rs
 
-use blockprotocol::{
-    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct Hobby(pub Text);
 impl Type for Hobby {
     type Mut < 'a > = HobbyMut < 'a > where Self : 'a ;
     type Ref < 'a > = HobbyRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -183,14 +196,15 @@ impl PropertyType for Hobby {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Text as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
-pub type HobbyV1<'a> = Hobby<'a>;
+pub type HobbyV1 = Hobby;
 #[derive(Debug, Clone, Serialize)]
-pub struct HobbyRef<'a>(pub Text::Ref<'a>);
+pub struct HobbyRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for HobbyRef<'_> {
     type Owned = Hobby;
 
@@ -203,15 +217,15 @@ impl<'a> PropertyTypeRef<'a> for HobbyRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 pub type HobbyV1Ref<'a> = HobbyRef<'a>;
 #[derive(Debug, Serialize)]
-pub struct HobbyMut<'a>(pub Text::Mut<'a>);
+pub struct HobbyMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for HobbyMut<'_> {
     type Owned = Hobby;
 
@@ -224,8 +238,8 @@ impl<'a> PropertyTypeMut<'a> for HobbyMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
@@ -239,12 +253,12 @@ https_blockprotocol_org_alice_property_type_interests.rs
 
 use alloc::{boxed::Box, vec::Vec};
 
-use blockprotocol::{
-    DataType as _, GenericEntityError, PropertyType, PropertyTypeMut, PropertyTypeRef, Type,
-    TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType, PropertyTypeMut,
+    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 
 use crate::blockprotocol::blockprotocol::property::{
     favorite_film::FavoriteFilm, favorite_song::FavoriteSong, hobby::Hobby,
@@ -266,6 +280,9 @@ impl Type for Interests {
     type Mut < 'a > = InterestsMut < 'a > where Self : 'a ;
     type Ref < 'a > = InterestsRef < 'a > where Self : 'a ;
 
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
+
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
     }
@@ -278,7 +295,8 @@ impl PropertyType for Interests {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        {
+        'variant: {
+            let serde_json :: Value :: Object (mut properties) = value . clone () else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
             let favorite_film = 'property: {
                 let value = properties.remove(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
@@ -288,9 +306,9 @@ impl PropertyType for Interests {
                     break 'property Ok(None);
                 };
                 let value = <FavoriteFilm>::try_from_value(value)
-                    .change_context(Report::new(GenericPropertyError::Property(
+                    .change_context(GenericPropertyError::Property(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
-                )));
+                ));
                 value.map(Some)
             };
             let favorite_song = 'property: {
@@ -302,9 +320,9 @@ impl PropertyType for Interests {
                     break 'property Ok(None);
                 };
                 let value = <FavoriteSong>::try_from_value(value)
-                    .change_context(Report::new(GenericPropertyError::Property(
+                    .change_context(GenericPropertyError::Property(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
-                )));
+                ));
                 value.map(Some)
             };
             let hobby = 'property: {
@@ -343,19 +361,19 @@ impl PropertyType for Interests {
         }
     }
 }
-pub type InterestsV1<'a> = Interests<'a>;
+pub type InterestsV1 = Interests;
 #[derive(Debug, Clone, Serialize)]
 pub struct InterestsRef<'a> {
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
     )]
-    pub favorite_film: Option<FavoriteFilm::Ref<'a>>,
+    pub favorite_film: Option<<FavoriteFilm as Type>::Ref<'a>>,
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/"
     )]
-    pub favorite_song: Option<FavoriteSong::Ref<'a>>,
+    pub favorite_song: Option<<FavoriteSong as Type>::Ref<'a>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
-    pub hobby: Option<Box<[Hobby::Ref<'a>]>>,
+    pub hobby: Option<Box<[<Hobby as Type>::Ref<'a>]>>,
 }
 impl TypeRef for InterestsRef<'_> {
     type Owned = Interests;
@@ -368,7 +386,8 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        {
+        'variant: {
+            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
             let favorite_film = 'property: {
                 let value = properties.get(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
@@ -377,10 +396,10 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
                 if value.is_null() {
                     break 'property Ok(None);
                 };
-                let value = <FavoriteFilm::Ref<'a>>::try_from_value(value)
-                    .change_context(Report::new(GenericPropertyError::Property(
+                let value = <<FavoriteFilm as Type>::Ref<'a>>::try_from_value(value)
+                    .change_context(GenericPropertyError::Property(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
-                )));
+                ));
                 value.map(Some)
             };
             let favorite_song = 'property: {
@@ -391,10 +410,10 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
                 if value.is_null() {
                     break 'property Ok(None);
                 };
-                let value = <FavoriteSong::Ref<'a>>::try_from_value(value)
-                    .change_context(Report::new(GenericPropertyError::Property(
+                let value = <<FavoriteSong as Type>::Ref<'a>>::try_from_value(value)
+                    .change_context(GenericPropertyError::Property(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
-                )));
+                ));
                 value.map(Some)
             };
             let hobby = 'property: {
@@ -408,8 +427,9 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
                     blockprotocol::fold_iter_reports(
                         value
                             .into_iter()
-                            .map(|value| <Hobby::Ref<'a>>::try_from_value(value)),
+                            .map(|value| <<Hobby as Type>::Ref<'a>>::try_from_value(value)),
                     )
+                    .map(|array| array.into_boxed_slice())
                     .change_context(GenericPropertyError::Property(
                         "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
                     ))
@@ -439,13 +459,13 @@ pub struct InterestsMut<'a> {
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
     )]
-    pub favorite_film: Option<FavoriteFilm::Mut<'a>>,
+    pub favorite_film: Option<<FavoriteFilm as Type>::Mut<'a>>,
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/"
     )]
-    pub favorite_song: Option<FavoriteSong::Mut<'a>>,
+    pub favorite_song: Option<<FavoriteSong as Type>::Mut<'a>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
-    pub hobby: Option<Vec<Hobby::Mut<'a>>>,
+    pub hobby: Option<Vec<<Hobby as Type>::Mut<'a>>>,
 }
 impl TypeMut for InterestsMut<'_> {
     type Owned = Interests;
@@ -458,37 +478,38 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        {
+        'variant: {
+            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
             let favorite_film = 'property: {
                 let value = unsafe {
                     let value = properties . get_mut ("https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/") ;
                     let value = value.map(|value| value as *mut _);
-                    &mut *value
+                    value.map(|value: *mut serde_json::Value| &mut *value)
                 };
                 let Some (value) = value else { break 'property Ok (None) ; } ;
                 if value.is_null() {
                     break 'property Ok(None);
                 };
-                let value = <FavoriteFilm::Mut<'a>>::try_from_value(value)
-                    .change_context(Report::new(GenericPropertyError::Property(
+                let value = <<FavoriteFilm as Type>::Mut<'a>>::try_from_value(value)
+                    .change_context(GenericPropertyError::Property(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
-                )));
+                ));
                 value.map(Some)
             };
             let favorite_song = 'property: {
                 let value = unsafe {
                     let value = properties . get_mut ("https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/") ;
                     let value = value.map(|value| value as *mut _);
-                    &mut *value
+                    value.map(|value: *mut serde_json::Value| &mut *value)
                 };
                 let Some (value) = value else { break 'property Ok (None) ; } ;
                 if value.is_null() {
                     break 'property Ok(None);
                 };
-                let value = <FavoriteSong::Mut<'a>>::try_from_value(value)
-                    .change_context(Report::new(GenericPropertyError::Property(
+                let value = <<FavoriteSong as Type>::Mut<'a>>::try_from_value(value)
+                    .change_context(GenericPropertyError::Property(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
-                )));
+                ));
                 value.map(Some)
             };
             let hobby = 'property: {
@@ -497,7 +518,7 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
                         "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",
                     );
                     let value = value.map(|value| value as *mut _);
-                    &mut *value
+                    value.map(|value: *mut serde_json::Value| &mut *value)
                 };
                 let Some (value) = value else { break 'property Ok (None) ; } ;
                 if value.is_null() {
@@ -507,7 +528,7 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
                     blockprotocol::fold_iter_reports(
                         value
                             .into_iter()
-                            .map(|value| <Hobby::Mut<'a>>::try_from_value(value)),
+                            .map(|value| <<Hobby as Type>::Mut<'a>>::try_from_value(value)),
                     )
                     .change_context(GenericPropertyError::Property(
                         "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/",

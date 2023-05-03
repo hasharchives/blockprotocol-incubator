@@ -1,16 +1,19 @@
 localhost_3000/alice/property/country_code.rs
 
-use blockprotocol::{
-    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
 impl Type for CountryCode {
     type Mut < 'a > = CountryCodeMut < 'a > where Self : 'a ;
     type Ref < 'a > = CountryCodeRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -25,14 +28,15 @@ impl PropertyType for CountryCode {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Text as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
-pub type CountryCodeV1<'a> = CountryCode<'a>;
+pub type CountryCodeV1 = CountryCode;
 #[derive(Debug, Clone, Serialize)]
-pub struct CountryCodeRef<'a>(pub Text::Ref<'a>);
+pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for CountryCodeRef<'_> {
     type Owned = CountryCode;
 
@@ -45,15 +49,15 @@ impl<'a> PropertyTypeRef<'a> for CountryCodeRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 pub type CountryCodeV1Ref<'a> = CountryCodeRef<'a>;
 #[derive(Debug, Serialize)]
-pub struct CountryCodeMut<'a>(pub Text::Mut<'a>);
+pub struct CountryCodeMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for CountryCodeMut<'_> {
     type Owned = CountryCode;
 
@@ -66,8 +70,8 @@ impl<'a> PropertyTypeMut<'a> for CountryCodeMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }

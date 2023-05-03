@@ -1,16 +1,19 @@
 https_blockprotocol_org_alice_property_type_user_id/mod.rs
 
-use blockprotocol::{
-    types::data::Number, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Number, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
+    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct UserId(pub Number);
 impl Type for UserId {
     type Mut < 'a > = UserIdMut < 'a > where Self : 'a ;
     type Ref < 'a > = UserIdRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -25,14 +28,15 @@ impl PropertyType for UserId {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value = <Number>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Number as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
-pub type UserIdV2<'a> = UserId<'a>;
+pub type UserIdV2 = UserId;
 #[derive(Debug, Clone, Serialize)]
-pub struct UserIdRef<'a>(pub Number::Ref<'a>);
+pub struct UserIdRef<'a>(pub <Number as Type>::Ref<'a>);
 impl TypeRef for UserIdRef<'_> {
     type Owned = UserId;
 
@@ -45,15 +49,15 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Number::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Number as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 pub type UserIdV2Ref<'a> = UserIdRef<'a>;
 #[derive(Debug, Serialize)]
-pub struct UserIdMut<'a>(pub Number::Mut<'a>);
+pub struct UserIdMut<'a>(pub <Number as Type>::Mut<'a>);
 impl TypeMut for UserIdMut<'_> {
     type Owned = UserId;
 
@@ -66,8 +70,8 @@ impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Number::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Number as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
@@ -81,17 +85,20 @@ pub use v1::UserIdV1;
 
 https_blockprotocol_org_alice_property_type_user_id/v1.rs
 
-use blockprotocol::{
-    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct UserIdV1(pub Text);
 impl Type for UserIdV1 {
     type Mut < 'a > = UserIdV1Mut < 'a > where Self : 'a ;
     type Ref < 'a > = UserIdV1Ref < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -106,13 +113,14 @@ impl PropertyType for UserIdV1 {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Text as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 #[derive(Debug, Clone, Serialize)]
-pub struct UserIdV1Ref<'a>(pub Text::Ref<'a>);
+pub struct UserIdV1Ref<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for UserIdV1Ref<'_> {
     type Owned = UserIdV1;
 
@@ -125,14 +133,14 @@ impl<'a> PropertyTypeRef<'a> for UserIdV1Ref<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 #[derive(Debug, Serialize)]
-pub struct UserIdV1Mut<'a>(pub Text::Mut<'a>);
+pub struct UserIdV1Mut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for UserIdV1Mut<'_> {
     type Owned = UserIdV1;
 
@@ -145,8 +153,8 @@ impl<'a> PropertyTypeMut<'a> for UserIdV1Mut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }

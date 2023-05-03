@@ -9,12 +9,12 @@ https_blockprotocol_org_alice_property_type_user_id.rs
 
 use alloc::vec::Vec;
 
-use blockprotocol::{
-    types::data::Number, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Number, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
+    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 
 use crate::blockprotocol::blockprotocol::data::inner::Inner;
 #[derive(Debug, Clone, Serialize)]
@@ -22,29 +22,30 @@ pub struct _Inner0(pub Number);
 impl _Inner0 {
     fn try_from_value(value: serde_json::Value) -> Result<Self, GenericPropertError> {
         {
-            let value = <Number>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Number as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 #[derive(Debug, Clone, Serialize)]
-pub struct _Inner1<'a>(pub Number::Ref<'a>);
+pub struct _Inner1<'a>(pub <Number as Type>::Ref<'a>);
 impl _Inner1<'a> {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, GenericPropertError> {
         {
-            let value =
-                <Number::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Number as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 #[derive(Debug, Serialize)]
-pub struct _Inner2<'a>(pub Number::Mut<'a>);
+pub struct _Inner2<'a>(pub <Number as Type>::Mut<'a>);
 impl _Inner2<'a> {
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, GenericPropertError> {
         {
-            let value =
-                <Number::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Number as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
@@ -59,6 +60,9 @@ impl Type for UserId {
     type Mut < 'a > = UserIdMut < 'a > where Self : 'a ;
     type Ref < 'a > = UserIdRef < 'a > where Self : 'a ;
 
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
     }
@@ -71,9 +75,10 @@ impl PropertyType for UserId {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
-        let errors: Result<(), GenericPropertyError> = Ok(());
+        let mut errors: Result<(), GenericPropertyError> = Ok(());
         let this = {
-            let value = <Inner>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Inner as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self::Variant0)
         };
         match this {
@@ -85,7 +90,7 @@ impl PropertyType for UserId {
         }
         let this = {
             match value {
-                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                serde_json::Value::Array(array) => turbine::fold_iter_reports(
                     array
                         .into_iter()
                         .map(|value| <_Inner0>::try_from_value(value)),
@@ -106,11 +111,11 @@ impl PropertyType for UserId {
         unreachable!();
     }
 }
-pub type UserIdV1<'a> = UserId<'a>;
+pub type UserIdV1 = UserId;
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
-    Variant0(Inner::Ref<'a>),
+    Variant0(<Inner as Type>::Ref<'a>),
     Variant1(Vec<_Inner1<'a>>),
 }
 impl TypeRef for UserIdRef<'_> {
@@ -124,10 +129,10 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
-        let errors: Result<(), GenericPropertyError> = Ok(());
+        let mut errors: Result<(), GenericPropertyError> = Ok(());
         let this = {
-            let value =
-                <Inner::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Inner as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self::Variant0)
         };
         match this {
@@ -139,7 +144,7 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
         }
         let this = {
             match value {
-                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                serde_json::Value::Array(array) => turbine::fold_iter_reports(
                     array
                         .into_iter()
                         .map(|value| <_Inner1<'a>>::try_from_value(value)),
@@ -165,7 +170,7 @@ pub type UserIdV1Ref<'a> = UserIdRef<'a>;
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum UserIdMut<'a> {
-    Variant0(Inner::Mut<'a>),
+    Variant0(<Inner as Type>::Mut<'a>),
     Variant1(Vec<_Inner2<'a>>),
 }
 impl TypeMut for UserIdMut<'_> {
@@ -179,10 +184,10 @@ impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
     type Error = GenericPropertyError;
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
-        let errors: Result<(), GenericPropertyError> = Ok(());
+        let mut errors: Result<(), GenericPropertyError> = Ok(());
         let this = {
-            let value =
-                <Inner::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Inner as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self::Variant0)
         };
         match this {
@@ -194,7 +199,7 @@ impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
         }
         let this = {
             match value {
-                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                serde_json::Value::Array(array) => turbine::fold_iter_reports(
                     array
                         .into_iter()
                         .map(|value| <_Inner2<'a>>::try_from_value(value)),

@@ -1,12 +1,15 @@
 localhost_3000/alice/entity/country.rs
 
-use blockprotocol::{
-    entity::Entity, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
-    PropertyType as _, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::{Report, Result};
+use alloc::string::String;
+
+use error_stack::{Report, Result, ResultExt as _};
 use hashbrown::HashMap;
 use serde::Serialize;
+use turbine::{
+    entity::Entity, url, BaseUrl, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
+    PropertyType as _, PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef,
+    VersionedUrlRef,
+};
 
 use crate::localhost_3000::alice::property::name::Name;
 #[derive(Debug, Clone, Serialize)]
@@ -15,17 +18,17 @@ pub struct Properties {
     pub name: Option<Name>,
 }
 impl Properties {
-    fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+    fn try_from_value(
+        mut properties: HashMap<String, serde_json::Value>,
+    ) -> Result<Self, GenericEntityError> {
         let name = 'property: {
             let value = properties.remove("http://localhost:3000/@alice/types/property-type/name/");
             let Some (value) = value else { break 'property Ok (None) ; } ;
             if value.is_null() {
                 break 'property Ok(None);
             };
-            let value = <Name>::try_from_value(value).change_context(Report::new(
-                GenericEntityError::Property(
-                    "http://localhost:3000/@alice/types/property-type/name/",
-                ),
+            let value = <Name>::try_from_value(value).change_context(GenericEntityError::Property(
+                "http://localhost:3000/@alice/types/property-type/name/",
             ));
             value.map(Some)
         };
@@ -48,11 +51,11 @@ impl Type for Country {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 
-    fn as_ref(&self) -> Self::Ref<'_> {
+    fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
     }
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
+    fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
     }
 }
@@ -60,33 +63,36 @@ impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::ID == value.metadata.entity_type_id {
             return None;
         }
         let properties = Properties::try_from_value(value.properties.0);
-        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
-        let this = Self { properties };
-        Ok(this)
+        match turbine::fold_tuple_reports((properties,)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties,)) => Some(Ok(Self { properties })),
+        }
     }
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
-    pub name: Option<Name::Ref<'a>>,
+    pub name: Option<<Name as Type>::Ref<'a>>,
 }
-impl PropertiesRef<'a> {
-    fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
+impl<'a> PropertiesRef<'a> {
+    fn try_from_value(
+        properties: &'a HashMap<String, serde_json::Value>,
+    ) -> Result<Self, GenericEntityError> {
         let name = 'property: {
             let value = properties.get("http://localhost:3000/@alice/types/property-type/name/");
             let Some (value) = value else { break 'property Ok (None) ; } ;
             if value.is_null() {
                 break 'property Ok(None);
             };
-            let value = <Name::Ref<'a>>::try_from_value(value).change_context(Report::new(
+            let value = <<Name as Type>::Ref<'a>>::try_from_value(value).change_context(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),
-            ));
+            );
             value.map(Some)
         };
         let __report0 = blockprotocol::fold_tuple_reports((name,));
@@ -112,40 +118,41 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::Owned::ID == value.metadata.entity_type_id {
             return None;
         }
-        let properties = Properties::try_from_value(&value.properties.0);
-        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
-        let this = Self { properties };
-        Ok(this)
+        let properties = PropertiesRef::try_from_value(&value.properties.0);
+        match turbine::fold_tuple_reports((properties,)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties,)) => Some(Ok(Self { properties })),
+        }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/name/")]
-    pub name: Option<Name::Mut<'a>>,
+    pub name: Option<<Name as Type>::Mut<'a>>,
 }
-impl PropertiesMut<'a> {
+impl<'a> PropertiesMut<'a> {
     fn try_from_value(
-        properties: &'a mut HashMap<BaseUrl, Value>,
+        properties: &'a mut HashMap<String, serde_json::Value>,
     ) -> Result<Self, GenericEntityError> {
         let name = 'property: {
             let value = unsafe {
                 let value =
                     properties.get_mut("http://localhost:3000/@alice/types/property-type/name/");
                 let value = value.map(|value| value as *mut _);
-                &mut *value
+                value.map(|value: *mut serde_json::Value| &mut *value)
             };
             let Some (value) = value else { break 'property Ok (None) ; } ;
             if value.is_null() {
                 break 'property Ok(None);
             };
-            let value = <Name::Mut<'a>>::try_from_value(value).change_context(Report::new(
+            let value = <<Name as Type>::Mut<'a>>::try_from_value(value).change_context(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/name/",
                 ),
-            ));
+            );
             value.map(Some)
         };
         let __report0 = blockprotocol::fold_tuple_reports((name,));
@@ -154,7 +161,7 @@ impl PropertiesMut<'a> {
         Ok(this)
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -171,13 +178,14 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::Owned::ID == value.metadata.entity_type_id {
             return None;
         }
-        let properties = Properties::try_from_value(&mut value.properties.0);
-        let (properties,) = blockprotocol::fold_tuple_reports((properties,))?;
-        let this = Self { properties };
-        Ok(this)
+        let properties = PropertiesMut::try_from_value(&mut value.properties.0);
+        match turbine::fold_tuple_reports((properties,)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties,)) => Some(Ok(Self { properties })),
+        }
     }
 }
 
@@ -186,17 +194,20 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
 
 localhost_3000/alice/property/name.rs
 
-use blockprotocol::{
-    types::data::Text, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct Name(pub Text);
 impl Type for Name {
     type Mut < 'a > = NameMut < 'a > where Self : 'a ;
     type Ref < 'a > = NameRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/name/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -211,14 +222,15 @@ impl PropertyType for Name {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value = <Text>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Text as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
-pub type NameV1<'a> = Name<'a>;
+pub type NameV1 = Name;
 #[derive(Debug, Clone, Serialize)]
-pub struct NameRef<'a>(pub Text::Ref<'a>);
+pub struct NameRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for NameRef<'_> {
     type Owned = Name;
 
@@ -231,15 +243,15 @@ impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 pub type NameV1Ref<'a> = NameRef<'a>;
 #[derive(Debug, Serialize)]
-pub struct NameMut<'a>(pub Text::Mut<'a>);
+pub struct NameMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for NameMut<'_> {
     type Owned = Name;
 
@@ -252,8 +264,8 @@ impl<'a> PropertyTypeMut<'a> for NameMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
-            let value =
-                <Text::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Text as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }

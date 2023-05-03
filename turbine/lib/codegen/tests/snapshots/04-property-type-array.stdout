@@ -2,40 +2,41 @@ https_blockprotocol_org_alice_property_type_contrived_property.rs
 
 use alloc::vec::Vec;
 
-use blockprotocol::{
-    types::data::Number, DataType as _, GenericEntityError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
-};
-use error_stack::Result;
+use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
+use turbine::{
+    types::data::Number, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
+    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct Inner0(pub Number);
 impl Inner0 {
     fn try_from_value(value: serde_json::Value) -> Result<Self, GenericPropertError> {
         {
-            let value = <Number>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <Number as DataType>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 #[derive(Debug, Clone, Serialize)]
-pub struct Inner1<'a>(pub Number::Ref<'a>);
+pub struct Inner1<'a>(pub <Number as Type>::Ref<'a>);
 impl Inner1<'a> {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, GenericPropertError> {
         {
-            let value =
-                <Number::Ref<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Number as Type>::Ref<'a> as DataTypeRef<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
 }
 #[derive(Debug, Serialize)]
-pub struct Inner2<'a>(pub Number::Mut<'a>);
+pub struct Inner2<'a>(pub <Number as Type>::Mut<'a>);
 impl Inner2<'a> {
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, GenericPropertError> {
         {
-            let value =
-                <Number::Mut<'a>>::try_from_value(value).change_context(GenericPropertyError::Data);
+            let value = <<Number as Type>::Mut<'a> as DataTypeMut<'a>>::try_from_value(value)
+                .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
     }
@@ -45,6 +46,9 @@ pub struct ContrivedProperty(pub Vec<Inner0>);
 impl Type for ContrivedProperty {
     type Mut < 'a > = ContrivedPropertyMut < 'a > where Self : 'a ;
     type Ref < 'a > = ContrivedPropertyRef < 'a > where Self : 'a ;
+
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
@@ -60,7 +64,7 @@ impl PropertyType for ContrivedProperty {
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         {
             match value {
-                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                serde_json::Value::Array(array) => turbine::fold_iter_reports(
                     array
                         .into_iter()
                         .map(|value| <Inner0>::try_from_value(value)),
@@ -72,7 +76,7 @@ impl PropertyType for ContrivedProperty {
         }
     }
 }
-pub type ContrivedPropertyV1<'a> = ContrivedProperty<'a>;
+pub type ContrivedPropertyV1 = ContrivedProperty;
 #[derive(Debug, Clone, Serialize)]
 pub struct ContrivedPropertyRef<'a>(pub Vec<Inner1<'a>>);
 impl TypeRef for ContrivedPropertyRef<'_> {
@@ -88,7 +92,7 @@ impl<'a> PropertyTypeRef<'a> for ContrivedPropertyRef<'a> {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         {
             match value {
-                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                serde_json::Value::Array(array) => turbine::fold_iter_reports(
                     array
                         .into_iter()
                         .map(|value| <Inner1<'a>>::try_from_value(value)),
@@ -117,7 +121,7 @@ impl<'a> PropertyTypeMut<'a> for ContrivedPropertyMut<'a> {
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         {
             match value {
-                serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                serde_json::Value::Array(array) => turbine::fold_iter_reports(
                     array
                         .into_iter()
                         .map(|value| <Inner2<'a>>::try_from_value(value)),

@@ -1,21 +1,23 @@
 localhost_3000/alice/entity/part_of.rs
 
-use blockprotocol::{
-    entity::{Entity, LinkData},
-    EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError, PropertyType as _, Type, TypeMut,
-    TypeRef, VersionedUrlRef,
-};
-use error_stack::{Report, Result};
+use alloc::string::String;
+use core::marker::PhantomData;
+
+use error_stack::{Report, Result, ResultExt as _};
 use hashbrown::HashMap;
 use serde::Serialize;
+use turbine::{
+    entity::{Entity, LinkData},
+    url, BaseUrl, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError, PropertyType as _,
+    PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
+};
 #[derive(Debug, Clone, Serialize)]
-pub struct Properties {}
+pub struct Properties;
 impl Properties {
-    fn try_from_value(properties: HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-        let __report0 = blockprotocol::fold_tuple_reports(());
-        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
-        let this = Self {};
-        Ok(this)
+    fn try_from_value(
+        mut properties: HashMap<String, serde_json::Value>,
+    ) -> Result<Self, GenericEntityError> {
+        Ok(Self)
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -32,11 +34,11 @@ impl Type for PartOf {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
 
-    fn as_ref(&self) -> Self::Ref<'_> {
+    fn as_mut(&mut self) -> Self::Mut<'_> {
         todo!()
     }
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
+    fn as_ref(&self) -> Self::Ref<'_> {
         todo!()
     }
 }
@@ -44,29 +46,29 @@ impl EntityType for PartOf {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::ID == value.metadata.entity_type_id {
             return None;
         }
         let properties = Properties::try_from_value(value.properties.0);
         let link_data = value
             .link_data
             .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
-        let (properties, link_data) = blockprotocol::fold_tuple_reports((properties, link_data))?;
-        let this = Self {
-            properties,
-            link_data,
-        };
-        Ok(this)
+        match turbine::fold_tuple_reports((properties, link_data)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties, link_data)) => Some(Ok(Self {
+                properties,
+                link_data,
+            })),
+        }
     }
 }
 #[derive(Debug, Clone, Serialize)]
-pub struct PropertiesRef<'a> {}
-impl PropertiesRef<'a> {
-    fn try_from_value(properties: &'a HashMap<BaseUrl, Value>) -> Result<Self, GenericEntityError> {
-        let __report0 = blockprotocol::fold_tuple_reports(());
-        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
-        let this = Self {};
-        Ok(this)
+pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
+impl<'a> PropertiesRef<'a> {
+    fn try_from_value(
+        properties: &'a HashMap<String, serde_json::Value>,
+    ) -> Result<Self, GenericEntityError> {
+        Ok(Self(PhantomData))
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -87,35 +89,33 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::Owned::ID == value.metadata.entity_type_id {
             return None;
         }
-        let properties = Properties::try_from_value(&value.properties.0);
+        let properties = PropertiesRef::try_from_value(&value.properties.0);
         let link_data = value
             .link_data
             .as_ref()
             .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
-        let (properties, link_data) = blockprotocol::fold_tuple_reports((properties, link_data))?;
-        let this = Self {
-            properties,
-            link_data,
-        };
-        Ok(this)
+        match turbine::fold_tuple_reports((properties, link_data)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties, link_data)) => Some(Ok(Self {
+                properties,
+                link_data,
+            })),
+        }
     }
 }
-#[derive(Debug, Clone, Serialize)]
-pub struct PropertiesMut<'a> {}
-impl PropertiesMut<'a> {
+#[derive(Debug, Serialize)]
+pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
+impl<'a> PropertiesMut<'a> {
     fn try_from_value(
-        properties: &'a mut HashMap<BaseUrl, Value>,
+        properties: &'a mut HashMap<String, serde_json::Value>,
     ) -> Result<Self, GenericEntityError> {
-        let __report0 = blockprotocol::fold_tuple_reports(());
-        let ((),) = blockprotocol::fold_tuple_reports((__report0,))?;
-        let this = Self {};
-        Ok(this)
+        Ok(Self(PhantomData))
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfMut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -133,19 +133,20 @@ impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == *value.id() {
+        if Self::Owned::ID == value.metadata.entity_type_id {
             return None;
         }
-        let properties = Properties::try_from_value(&mut value.properties.0);
+        let properties = PropertiesMut::try_from_value(&mut value.properties.0);
         let link_data = value
             .link_data
             .as_mut()
             .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
-        let (properties, link_data) = blockprotocol::fold_tuple_reports((properties, link_data))?;
-        let this = Self {
-            properties,
-            link_data,
-        };
-        Ok(this)
+        match turbine::fold_tuple_reports((properties, link_data)) {
+            Err(error) => Some(Err(error)),
+            Ok((properties, link_data)) => Some(Ok(Self {
+                properties,
+                link_data,
+            })),
+        }
     }
 }
