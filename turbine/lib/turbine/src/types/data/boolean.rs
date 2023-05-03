@@ -16,6 +16,13 @@ pub enum BooleanError {
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct Boolean(bool);
 
+impl Boolean {
+    #[must_use]
+    pub const fn new(value: bool) -> Self {
+        Self(value)
+    }
+}
+
 impl Deref for Boolean {
     type Target = bool;
 

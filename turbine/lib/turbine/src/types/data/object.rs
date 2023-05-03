@@ -17,6 +17,22 @@ pub enum ObjectError {
 #[derive(Debug, Clone, Serialize)]
 pub struct Object(serde_json::Map<String, Value>);
 
+impl Object {
+    #[must_use]
+    pub const fn new(value: serde_json::Map<String, Value>) -> Self {
+        Self(value)
+    }
+}
+
+impl FromIterator<(String, Value)> for Object {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = (String, Value)>,
+    {
+        Self(serde_json::Map::from_iter(iter))
+    }
+}
+
 impl Deref for Object {
     type Target = serde_json::Map<String, Value>;
 

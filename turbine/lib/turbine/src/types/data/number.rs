@@ -16,6 +16,13 @@ pub enum NumberError {
 #[derive(Debug, Clone, Serialize)]
 pub struct Number(serde_json::Number);
 
+impl Number {
+    #[must_use]
+    pub fn new(value: impl Into<serde_json::Number>) -> Self {
+        Self(value.into())
+    }
+}
+
 impl Deref for Number {
     type Target = serde_json::Number;
 

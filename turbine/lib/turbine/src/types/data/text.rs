@@ -17,6 +17,13 @@ pub enum TextError {
 #[derive(Debug, Clone, Serialize)]
 pub struct Text(String);
 
+impl Text {
+    #[must_use]
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+}
+
 impl Deref for Text {
     type Target = str;
 
