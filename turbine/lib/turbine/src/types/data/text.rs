@@ -24,6 +24,15 @@ impl Text {
     }
 }
 
+impl<T> From<T> for Text
+where
+    T: Into<String>,
+{
+    fn from(value: T) -> Self {
+        Self(value.into())
+    }
+}
+
 impl Deref for Text {
     type Target = str;
 

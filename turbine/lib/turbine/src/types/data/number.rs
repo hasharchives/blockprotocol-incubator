@@ -23,6 +23,15 @@ impl Number {
     }
 }
 
+impl<T> From<T> for Number
+where
+    T: Into<serde_json::Number>,
+{
+    fn from(value: T) -> Self {
+        Self(value.into())
+    }
+}
+
 impl Deref for Number {
     type Target = serde_json::Number;
 
