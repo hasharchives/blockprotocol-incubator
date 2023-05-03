@@ -67,7 +67,7 @@ pub(crate) struct Lib {
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
-#[serde(tag = "type", content = "value")]
+#[serde(tag = "type", content = "value", rename_all = "kebab-case")]
 enum Origin {
     Remote(Url),
     Local(PathBuf),
@@ -217,13 +217,13 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         figment = figment.merge((
             "origin".to_owned(),
             figment::value::Value::serialize(origin)?,
-        ))
+        ));
     }
     if let Some(style) = style {
         figment = figment.merge(("style".to_owned(), figment::value::Value::serialize(style)?));
     }
     if let Some(name) = name {
-        figment = figment.merge((name.to_owned(), figment::value::Value::serialize(name)?));
+        figment = figment.merge(("name", figment::value::Value::serialize(name)?));
     }
 
     figment.extract()

@@ -13,7 +13,7 @@ use cargo::{
     core::{SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
-        NewOptions,
+        NewOptions, VersionControl,
     },
     util::toml_mut::manifest::DepTable,
 };
@@ -61,6 +61,7 @@ pub enum Error {
     Format,
 }
 
+#[allow(clippy::too_many_lines)]
 fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(PathBuf, cargo::Config), Error> {
     let root = root.as_ref();
     std::fs::create_dir_all(root)
@@ -70,9 +71,17 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(PathBuf, cargo
         .into_report()
         .change_context(Error::Path)?;
 
-    let cargo_init = NewOptions::new(None, false, true, root.to_owned(), name, None, None)
-        .into_report()
-        .change_context(Error::Cargo)?;
+    let cargo_init = NewOptions::new(
+        Some(VersionControl::NoVcs),
+        false,
+        true,
+        abs_root.clone(),
+        name,
+        None,
+        None,
+    )
+    .into_report()
+    .change_context(Error::Cargo)?;
     let cargo_config = cargo::Config::default()
         .into_report()
         .change_context(Error::Cargo)?;
