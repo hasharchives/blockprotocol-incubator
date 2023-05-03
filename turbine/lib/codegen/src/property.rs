@@ -14,7 +14,7 @@ use type_system::{
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
-    shared::{generate_mod, generate_property, imports, Import, Property, PropertyKind, Variant},
+    shared::{generate_mod, generate_property, imports, Import, Property, Variant},
 };
 
 struct State {

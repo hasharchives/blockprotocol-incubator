@@ -15,7 +15,7 @@ use type_system::url::VersionedUrl;
 use crate::{analysis::DependencyAnalyzer, AnyType};
 
 #[derive(Debug, Copy, Clone)]
-pub(crate) enum ModuleFlavor {
+pub enum ModuleFlavor {
     ModRs,
     ModuleRs,
 }
@@ -112,7 +112,7 @@ pub(crate) enum LocationKind<'a> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Alias {
+pub(crate) struct Alias {
     pub(crate) value: Option<String>,
     pub(crate) value_ref: Option<String>,
     pub(crate) value_mut: Option<String>,
@@ -189,14 +189,14 @@ impl Mode {
     }
 }
 
-pub(crate) struct Flavor {
+pub struct Flavor {
     name: &'static str,
     mode: Mode,
     pattern: Regex,
 }
 
 impl Flavor {
-    pub(crate) fn new(name: &'static str, mode: Mode, pattern: Regex) -> Self {
+    pub fn new(name: &'static str, mode: Mode, pattern: Regex) -> Self {
         mode.verify_pattern(&pattern);
 
         Self {
@@ -248,13 +248,13 @@ struct UrlParts<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct OverrideAction {
+pub struct OverrideAction {
     matches: Cow<'static, str>,
     replacement: Cow<'static, str>,
 }
 
 impl OverrideAction {
-    pub(crate) fn new(matches: impl Into<String>, replacement: impl Into<String>) -> Self {
+    pub fn new(matches: impl Into<String>, replacement: impl Into<String>) -> Self {
         Self {
             matches: Cow::Owned(matches.into()),
             replacement: Cow::Owned(replacement.into()),
@@ -270,12 +270,13 @@ impl OverrideAction {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Override {
+pub struct Override {
     origin: Option<OverrideAction>,
 }
 
 impl Override {
-    pub(crate) const fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self { origin: None }
     }
 
@@ -284,7 +285,8 @@ impl Override {
     }
 
     #[allow(clippy::missing_const_for_fn)]
-    pub(crate) fn with_origin(mut self, origin: OverrideAction) -> Self {
+    #[must_use]
+    pub fn with_origin(mut self, origin: OverrideAction) -> Self {
         self.origin = Some(origin);
 
         self

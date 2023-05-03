@@ -1,6 +1,5 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    marker::PhantomData,
     ops::Deref,
     str::FromStr,
 };

@@ -7,6 +7,7 @@ use std::{
     time::SystemTime,
 };
 
+use codegen::Config;
 use similar_asserts::assert_eq;
 
 #[test]
@@ -42,7 +43,12 @@ fn snapshots() {
         let contents = serde_json::from_str(&snapshot).expect("snapshot is invalid JSON");
 
         let now = SystemTime::now();
-        let output = codegen::process(contents).expect("able to generate valid rust");
+        let output = codegen::process(contents, Config {
+            module: None,
+            overrides: vec![],
+            flavors: vec![],
+        })
+        .expect("able to generate valid rust");
         println!("Elapsed: {:?}", now.elapsed().unwrap());
 
         let output = output

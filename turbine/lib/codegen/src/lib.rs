@@ -21,7 +21,7 @@ use quote::__private::TokenStream;
 use thiserror::Error;
 use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
 
-pub use crate::name::{Directory, File, Path};
+pub use crate::name::{Directory, File, Flavor, ModuleFlavor, Override, OverrideAction, Path};
 use crate::{analysis::DependencyAnalyzer, name::NameResolver};
 
 // what we need to do:
@@ -137,10 +137,19 @@ impl AnyType {
     }
 }
 
+pub struct Config {
+    pub module: Option<ModuleFlavor>,
+    pub overrides: Vec<Override>,
+    pub flavors: Vec<Flavor>,
+}
+
 /// ## Errors
 ///
 /// if `AnyTypeRepr` is malformed, or an error occurred while generating code
-pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<OutputPath, TokenStream>, Error> {
+pub fn process(
+    values: Vec<AnyTypeRepr>,
+    config: Config,
+) -> Result<BTreeMap<OutputPath, TokenStream>, Error> {
     let values: Result<Vec<_>, _> = values
         .into_iter()
         .map(|any| match any {
@@ -167,7 +176,16 @@ pub fn process(values: Vec<AnyTypeRepr>) -> Result<BTreeMap<OutputPath, TokenStr
     let analyzer =
         DependencyAnalyzer::new(lookup.values()).change_context(Error::DependencyAnalysis)?;
 
-    let names = NameResolver::new(&lookup, &analyzer);
+    let mut names = NameResolver::new(&lookup, &analyzer);
+    for value in config.overrides {
+        names.with_override(value);
+    }
+    for flavor in config.flavors {
+        names.with_flavor(flavor);
+    }
+    if let Some(module) = config.module {
+        names.with_module_flavor(module);
+    }
 
     let mut output = BTreeMap::new();
 

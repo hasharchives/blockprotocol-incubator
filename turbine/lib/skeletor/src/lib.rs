@@ -17,7 +17,7 @@ use cargo::{
     },
     util::toml_mut::manifest::DepTable,
 };
-use codegen::AnyTypeRepr;
+use codegen::{AnyTypeRepr, Flavor, ModuleFlavor, Override};
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
 use onlyerror::Error;
 
@@ -29,10 +29,22 @@ pub enum Style {
     Module,
 }
 
+impl From<Style> for ModuleFlavor {
+    fn from(value: Style) -> Self {
+        match value {
+            Style::Mod => Self::ModRs,
+            Style::Module => Self::ModuleRs,
+        }
+    }
+}
+
 pub struct Config {
     pub root: PathBuf,
     pub style: Style,
     pub name: Option<String>,
+
+    pub overrides: Vec<Override>,
+    pub flavors: Vec<Flavor>,
 }
 
 #[derive(Debug, Copy, Clone, Error)]
@@ -162,7 +174,12 @@ fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(PathBuf, cargo
 }
 
 pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
-    let types = codegen::process(types).change_context(Error::Codegen)?;
+    let types = codegen::process(types, codegen::Config {
+        module: Some(config.style.into()),
+        overrides: config.overrides,
+        flavors: config.flavors,
+    })
+    .change_context(Error::Codegen)?;
 
     setup(&config.root, config.name)?;
 
