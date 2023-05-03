@@ -139,7 +139,7 @@ pub(crate) struct Location<'a> {
 ///
 /// We only match path and host/protocol, everything else is stripped
 #[derive(Debug, Copy, Clone)]
-pub(crate) enum Mode {
+pub enum Mode {
     MatchPath,
     MatchAll,
 }
@@ -196,6 +196,10 @@ pub struct Flavor {
 }
 
 impl Flavor {
+    /// ## Panics
+    ///
+    /// If the regex pattern is incomplete or does not have the required capture groups
+    #[must_use]
     pub fn new(name: &'static str, mode: Mode, pattern: Regex) -> Self {
         mode.verify_pattern(&pattern);
 
@@ -218,10 +222,13 @@ static BLOCKPROTOCOL_FLAVOR: Lazy<Flavor> = Lazy::new(|| {
 
 static BUILTIN_FLAVORS: &[&Lazy<Flavor>] = &[&BLOCKPROTOCOL_FLAVOR];
 
-const BUILTIN_OVERRIDES: &[Override] = &[Override::from_parts(Some(OverrideAction::new_static(
-    "blockprotocol.org",
-    "blockprotocol",
-)))];
+const BUILTIN_OVERRIDES: &[Override] = &[Override::from_parts(
+    Some(OverrideAction::new_static(
+        "blockprotocol.org",
+        "blockprotocol",
+    )),
+    None,
+)];
 
 #[derive(Debug, Copy, Clone)]
 enum Kind {
@@ -242,7 +249,7 @@ impl Display for Kind {
 
 struct UrlParts<'a> {
     origin: String,
-    namespace: Option<&'a str>,
+    namespace: Option<Cow<'a, str>>,
     kind: Kind,
     id: &'a str,
 }
@@ -272,16 +279,20 @@ impl OverrideAction {
 #[derive(Debug, Clone)]
 pub struct Override {
     origin: Option<OverrideAction>,
+    namespace: Option<OverrideAction>,
 }
 
 impl Override {
     #[must_use]
     pub const fn new() -> Self {
-        Self { origin: None }
+        Self {
+            origin: None,
+            namespace: None,
+        }
     }
 
-    const fn from_parts(origin: Option<OverrideAction>) -> Self {
-        Self { origin }
+    const fn from_parts(origin: Option<OverrideAction>, namespace: Option<OverrideAction>) -> Self {
+        Self { origin, namespace }
     }
 
     #[allow(clippy::missing_const_for_fn)]
@@ -292,10 +303,24 @@ impl Override {
         self
     }
 
+    #[allow(clippy::missing_const_for_fn)]
+    #[must_use]
+    pub fn with_namespace(mut self, namespace: OverrideAction) -> Self {
+        self.namespace = Some(namespace);
+
+        self
+    }
+
     fn apply(&self, url: &mut UrlParts) {
         if let Some(origin) = &self.origin {
             if url.origin == origin.matches {
                 url.origin = origin.replacement.clone().into_owned();
+            }
+
+            if let Some(namespace) = &self.namespace {
+                if url.namespace.as_ref() == Some(&namespace.matches) {
+                    url.namespace = Some(origin.replacement.clone());
+                }
             }
         }
     }
@@ -378,7 +403,10 @@ impl<'a> NameResolver<'a> {
                     .to_owned(),
             };
 
-            let namespace = captures.name("namespace").map(|m| m.as_str());
+            let namespace = captures
+                .name("namespace")
+                .map(|m| m.as_str())
+                .map(Cow::Borrowed);
 
             let kind = captures
                 .name("kind")

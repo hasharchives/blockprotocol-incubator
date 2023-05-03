@@ -195,6 +195,9 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
         root: lib.root,
         style: lib.style.into(),
         name: lib.name,
+
+        overrides: vec![],
+        flavors: vec![],
     })
     .change_context(Error::Skeletor)
 }
