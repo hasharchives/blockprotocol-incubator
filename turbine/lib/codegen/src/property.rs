@@ -87,11 +87,11 @@ fn generate_use(
 
     quote! {
         use serde::Serialize;
-        use blockprotocol::{Type, TypeRef, TypeMut};
-        use blockprotocol::{PropertyType, PropertyTypeRef, PropertyTypeMut};
-        use blockprotocol::{DataType, DataTypeRef, DataTypeMut};
-        use blockprotocol::url;
-        use blockprotocol::{VersionedUrlRef, GenericPropertyError};
+        use turbine::{Type, TypeRef, TypeMut};
+        use turbine::{PropertyType, PropertyTypeRef, PropertyTypeMut};
+        use turbine::{DataType, DataTypeRef, DataTypeMut};
+        use turbine::url;
+        use turbine::{VersionedUrlRef, GenericPropertyError};
         use error_stack::{Result, Report, ResultExt as _};
 
         #(#imports)*
@@ -372,7 +372,7 @@ fn generate_contents(
 
             let try_from = quote!({
                 match value {
-                    serde_json::Value::Array(array) => blockprotocol::fold_iter_reports(
+                    serde_json::Value::Array(array) => turbine::fold_iter_reports(
                         array.into_iter().map(|value| <#inner #lifetime>::try_from_value(value))
                     )
                     #suffix

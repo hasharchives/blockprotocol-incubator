@@ -21,27 +21,27 @@ impl ToTokens for Builtin {
 const ALLOW_LIST: &[Builtin] = &[
     Builtin {
         url: "https://blockprotocol.org/@blockprotocol/types/data-type/null/",
-        use_: "use blockprotocol::types::data::Null",
+        use_: "use turbine::types::data::Null",
     },
     Builtin {
         url: "https://blockprotocol.org/@blockprotocol/types/data-type/text/",
-        use_: "use blockprotocol::types::data::Text",
+        use_: "use turbine::types::data::Text",
     },
     Builtin {
         url: "https://blockprotocol.org/@blockprotocol/types/data-type/number/",
-        use_: "use blockprotocol::types::data::Number",
+        use_: "use turbine::types::data::Number",
     },
     Builtin {
         url: "https://blockprotocol.org/@blockprotocol/types/data-type/object/",
-        use_: "use blockprotocol::types::data::Object",
+        use_: "use turbine::types::data::Object",
     },
     Builtin {
         url: "https://blockprotocol.org/@blockprotocol/types/data-type/boolean/",
-        use_: "use blockprotocol::types::data::Boolean",
+        use_: "use turbine::types::data::Boolean",
     },
     Builtin {
         url: "https://blockprotocol.org/@blockprotocol/types/data-type/emptyList/",
-        use_: "use blockprotocol::types::data::EmptyList",
+        use_: "use turbine::types::data::EmptyList",
     },
 ];
 

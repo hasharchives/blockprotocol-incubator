@@ -78,7 +78,7 @@ fn generate_use(
 
     if state.is_link {
         imports.push(quote!(
-            use blockprotocol::entity::LinkData;
+            use turbine::entity::LinkData;
         ));
     }
 
@@ -102,12 +102,12 @@ fn generate_use(
 
     quote! {
         use serde::Serialize;
-        use blockprotocol::{Type, TypeRef, TypeMut};
-        use blockprotocol::{EntityType, EntityTypeRef, EntityTypeMut};
-        use blockprotocol::{PropertyType as _, PropertyTypeRef as _, PropertyTypeMut as _};
-        use blockprotocol::{VersionedUrlRef, GenericEntityError};
-        use blockprotocol::entity::Entity;
-        use blockprotocol::{BaseUrl, url};
+        use turbine::{Type, TypeRef, TypeMut};
+        use turbine::{EntityType, EntityTypeRef, EntityTypeMut};
+        use turbine::{PropertyType as _, PropertyTypeRef as _, PropertyTypeMut as _};
+        use turbine::{VersionedUrlRef, GenericEntityError};
+        use turbine::entity::Entity;
+        use turbine::{BaseUrl, url};
         use error_stack::{Result, Report, ResultExt as _};
         use hashbrown::HashMap;
         use alloc::string::String;
@@ -286,7 +286,7 @@ fn generate_owned(
                     .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
                 )*
 
-                match blockprotocol::fold_tuple_reports((properties, #(#link_data)*)) {
+                match turbine::fold_tuple_reports((properties, #(#link_data)*)) {
                     Err(error) => Some(Err(error)),
                     Ok((properties, #(#link_data,)*)) => Some(
                         Ok(
@@ -345,7 +345,7 @@ fn generate_ref(
                     .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
                 )*
 
-                match blockprotocol::fold_tuple_reports((properties, #(#link_data)*)) {
+                match turbine::fold_tuple_reports((properties, #(#link_data)*)) {
                     Err(error) => Some(Err(error)),
                     Ok((properties, #(#link_data,)*)) => Some(
                         Ok(
@@ -404,7 +404,7 @@ fn generate_mut(
                     .ok_or_else(|| Report::new(GenericEntityError::ExpectedLinkData));
                 )*
 
-                match blockprotocol::fold_tuple_reports((properties, #(#link_data)*)) {
+                match turbine::fold_tuple_reports((properties, #(#link_data)*)) {
                     Err(error) => Some(Err(error)),
                     Ok((properties, #(#link_data,)*)) => Some(
                         Ok(
