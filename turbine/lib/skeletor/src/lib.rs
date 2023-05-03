@@ -200,6 +200,9 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
 
     let mut child = Command::new("cargo-fmt")
         .arg("--all")
+        .arg("--")
+        .arg("--config")
+        .arg("normalize_doc_attributes=true")
         .current_dir(&config.root)
         .spawn()
         .into_report()

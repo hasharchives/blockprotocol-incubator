@@ -62,7 +62,7 @@ fn snapshots() {
                     .stdin(Stdio::piped())
                     .stdout(Stdio::piped())
                     .spawn()
-                    .expect("able to spawn rustfmt");
+                    .expect("unable to spawn rustfmt");
 
                 command
                     .stdin
