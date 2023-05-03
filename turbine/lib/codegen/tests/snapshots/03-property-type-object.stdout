@@ -10,6 +10,7 @@ use turbine::{
 use crate::localhost_3000::alice::property::{
     primary_email::PrimaryEmail, secondary_email::SecondaryEmail,
 };
+///Full Email
 #[derive(Debug, Clone, Serialize)]
 pub struct FullEmail {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
@@ -75,6 +76,7 @@ impl PropertyType for FullEmail {
     }
 }
 pub type FullEmailV1 = FullEmail;
+///Full Email
 #[derive(Debug, Clone, Serialize)]
 pub struct FullEmailRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
@@ -130,6 +132,7 @@ impl<'a> PropertyTypeRef<'a> for FullEmailRef<'a> {
     }
 }
 pub type FullEmailV1Ref<'a> = FullEmailRef<'a>;
+///Full Email
 #[derive(Debug, Serialize)]
 pub struct FullEmailMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
@@ -206,6 +209,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Primary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmail(pub Text);
 impl Type for PrimaryEmail {
@@ -235,6 +239,7 @@ impl PropertyType for PrimaryEmail {
     }
 }
 pub type PrimaryEmailV1 = PrimaryEmail;
+///Primary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for PrimaryEmailRef<'_> {
@@ -256,6 +261,7 @@ impl<'a> PropertyTypeRef<'a> for PrimaryEmailRef<'a> {
     }
 }
 pub type PrimaryEmailV1Ref<'a> = PrimaryEmailRef<'a>;
+///Primary E-Mail
 #[derive(Debug, Serialize)]
 pub struct PrimaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for PrimaryEmailMut<'_> {
@@ -289,6 +295,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Secondary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmail(pub Text);
 impl Type for SecondaryEmail {
@@ -318,6 +325,7 @@ impl PropertyType for SecondaryEmail {
     }
 }
 pub type SecondaryEmailV1 = SecondaryEmail;
+///Secondary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for SecondaryEmailRef<'_> {
@@ -339,6 +347,7 @@ impl<'a> PropertyTypeRef<'a> for SecondaryEmailRef<'a> {
     }
 }
 pub type SecondaryEmailV1Ref<'a> = SecondaryEmailRef<'a>;
+///Secondary E-Mail
 #[derive(Debug, Serialize)]
 pub struct SecondaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for SecondaryEmailMut<'_> {

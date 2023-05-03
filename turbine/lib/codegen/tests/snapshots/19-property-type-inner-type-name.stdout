@@ -50,6 +50,7 @@ impl _Inner2<'a> {
         }
     }
 }
+///User ID
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserId {
@@ -112,6 +113,7 @@ impl PropertyType for UserId {
     }
 }
 pub type UserIdV1 = UserId;
+///User ID
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
@@ -167,6 +169,7 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
     }
 }
 pub type UserIdV1Ref<'a> = UserIdRef<'a>;
+///User ID
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum UserIdMut<'a> {

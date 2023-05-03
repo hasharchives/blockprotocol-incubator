@@ -57,6 +57,8 @@ fn snapshots() {
                 let mut command = Command::new("rustfmt")
                     .arg("--emit")
                     .arg("stdout")
+                    .arg("--config")
+                    .arg("normalize_doc_attributes=true")
                     .stdin(Stdio::piped())
                     .stdout(Stdio::piped())
                     .spawn()

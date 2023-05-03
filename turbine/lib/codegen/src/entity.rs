@@ -230,6 +230,20 @@ fn generate_type(
     }
 }
 
+fn generate_doc(entity: &EntityType) -> TokenStream {
+    let title = entity.title();
+    // mimic #()?
+    let description = entity.description().into_iter();
+
+    quote!(
+        #[doc = #title]
+        #(
+            #[doc = ""]
+            #[doc = #description]
+        )*
+    )
+}
+
 fn generate_owned(
     entity: &EntityType,
     location: &Location,
@@ -243,6 +257,7 @@ fn generate_owned(
     let base_url = entity.id().base_url.as_str();
     let version = entity.id().version;
 
+    let doc = generate_doc(entity);
     let def = generate_type(Variant::Owned, location, properties, state);
 
     // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
@@ -253,6 +268,7 @@ fn generate_owned(
         .collect();
 
     quote! {
+        #doc
         #def
 
         impl Type for #name {
@@ -302,6 +318,7 @@ fn generate_owned(
 }
 
 fn generate_ref(
+    entity: &EntityType,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
@@ -309,6 +326,7 @@ fn generate_ref(
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
 
+    let doc = generate_doc(entity);
     let def = generate_type(Variant::Ref, location, properties, state);
 
     // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
@@ -319,6 +337,7 @@ fn generate_ref(
         .collect();
 
     quote! {
+        #doc
         #def
 
         impl TypeRef for #name_ref<'_> {
@@ -361,6 +380,7 @@ fn generate_ref(
 }
 
 fn generate_mut(
+    entity: &EntityType,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
@@ -368,6 +388,7 @@ fn generate_mut(
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
 
+    let doc = generate_doc(entity);
     let def = generate_type(Variant::Mut, location, properties, state);
 
     // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
@@ -378,6 +399,7 @@ fn generate_mut(
         .collect();
 
     quote! {
+        #doc
         #def
 
         impl TypeMut for #name_mut<'_> {
@@ -469,8 +491,8 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
     };
 
     let owned = generate_owned(entity, &location, &properties, &mut state);
-    let ref_ = generate_ref(&location, &properties, &mut state);
-    let mut_ = generate_mut(&location, &properties, &mut state);
+    let ref_ = generate_ref(entity, &location, &properties, &mut state);
+    let mut_ = generate_mut(entity, &location, &properties, &mut state);
 
     let mod_ = generate_mod(&location.kind, resolver);
     let use_ = generate_use(&references, &locations, &state);

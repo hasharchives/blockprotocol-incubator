@@ -41,6 +41,7 @@ impl Inner2<'a> {
         }
     }
 }
+///Contrived Property
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum ContrivedProperty {
@@ -103,6 +104,7 @@ impl PropertyType for ContrivedProperty {
     }
 }
 pub type ContrivedPropertyV1 = ContrivedProperty;
+///Contrived Property
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum ContrivedPropertyRef<'a> {
@@ -158,6 +160,7 @@ impl<'a> PropertyTypeRef<'a> for ContrivedPropertyRef<'a> {
     }
 }
 pub type ContrivedPropertyV1Ref<'a> = ContrivedPropertyRef<'a>;
+///Contrived Property
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum ContrivedPropertyMut<'a> {

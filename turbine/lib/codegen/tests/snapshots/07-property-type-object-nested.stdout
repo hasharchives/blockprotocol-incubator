@@ -6,6 +6,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Favorite Film
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilm(pub Text);
 impl Type for FavoriteFilm {
@@ -36,6 +37,7 @@ impl PropertyType for FavoriteFilm {
     }
 }
 pub type FavoriteFilmV1 = FavoriteFilm;
+///Favorite Film
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilmRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for FavoriteFilmRef<'_> {
@@ -57,6 +59,7 @@ impl<'a> PropertyTypeRef<'a> for FavoriteFilmRef<'a> {
     }
 }
 pub type FavoriteFilmV1Ref<'a> = FavoriteFilmRef<'a>;
+///Favorite Film
 #[derive(Debug, Serialize)]
 pub struct FavoriteFilmMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for FavoriteFilmMut<'_> {
@@ -90,6 +93,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Favorite Song
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSong(pub Text);
 impl Type for FavoriteSong {
@@ -120,6 +124,7 @@ impl PropertyType for FavoriteSong {
     }
 }
 pub type FavoriteSongV1 = FavoriteSong;
+///Favorite Song
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSongRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for FavoriteSongRef<'_> {
@@ -141,6 +146,7 @@ impl<'a> PropertyTypeRef<'a> for FavoriteSongRef<'a> {
     }
 }
 pub type FavoriteSongV1Ref<'a> = FavoriteSongRef<'a>;
+///Favorite Song
 #[derive(Debug, Serialize)]
 pub struct FavoriteSongMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for FavoriteSongMut<'_> {
@@ -174,6 +180,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Hobby
 #[derive(Debug, Clone, Serialize)]
 pub struct Hobby(pub Text);
 impl Type for Hobby {
@@ -203,6 +210,7 @@ impl PropertyType for Hobby {
     }
 }
 pub type HobbyV1 = Hobby;
+///Hobby
 #[derive(Debug, Clone, Serialize)]
 pub struct HobbyRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for HobbyRef<'_> {
@@ -224,6 +232,7 @@ impl<'a> PropertyTypeRef<'a> for HobbyRef<'a> {
     }
 }
 pub type HobbyV1Ref<'a> = HobbyRef<'a>;
+///Hobby
 #[derive(Debug, Serialize)]
 pub struct HobbyMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for HobbyMut<'_> {
@@ -263,6 +272,7 @@ use turbine::{
 use crate::blockprotocol::blockprotocol::property::{
     favorite_film::FavoriteFilm, favorite_song::FavoriteSong, hobby::Hobby,
 };
+///Interests
 #[derive(Debug, Clone, Serialize)]
 pub struct Interests {
     #[serde(
@@ -362,6 +372,7 @@ impl PropertyType for Interests {
     }
 }
 pub type InterestsV1 = Interests;
+///Interests
 #[derive(Debug, Clone, Serialize)]
 pub struct InterestsRef<'a> {
     #[serde(
@@ -454,6 +465,7 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
     }
 }
 pub type InterestsV1Ref<'a> = InterestsRef<'a>;
+///Interests
 #[derive(Debug, Serialize)]
 pub struct InterestsMut<'a> {
     #[serde(

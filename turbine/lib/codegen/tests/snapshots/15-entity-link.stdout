@@ -11,6 +11,7 @@ use turbine::{
     url, BaseUrl, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError, PropertyType as _,
     PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Part Of
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties;
 impl Properties {
@@ -62,6 +63,7 @@ impl EntityType for PartOf {
         }
     }
 }
+///Part Of
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
 impl<'a> PropertiesRef<'a> {
@@ -106,6 +108,7 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
         }
     }
 }
+///Part Of
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
 impl<'a> PropertiesMut<'a> {

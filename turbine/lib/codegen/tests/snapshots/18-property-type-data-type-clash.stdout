@@ -6,6 +6,7 @@ use turbine::{
     types::data::Text as Text0, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
     PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct Text(pub Text0);
 impl Type for Text {
@@ -35,6 +36,7 @@ impl PropertyType for Text {
     }
 }
 pub type TextV1 = Text;
+///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct TextRef<'a>(pub <Text0 as Type>::Ref<'a>);
 impl TypeRef for TextRef<'_> {
@@ -56,6 +58,7 @@ impl<'a> PropertyTypeRef<'a> for TextRef<'a> {
     }
 }
 pub type TextV1Ref<'a> = TextRef<'a>;
+///User ID
 #[derive(Debug, Serialize)]
 pub struct TextMut<'a>(pub <Text0 as Type>::Mut<'a>);
 impl TypeMut for TextMut<'_> {
@@ -91,6 +94,7 @@ use turbine::{
 };
 
 use crate::blockprotocol::alice::property::text::Text as Text0;
+///User ID
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserId {
@@ -164,6 +168,7 @@ impl PropertyType for UserId {
     }
 }
 pub type UserIdV1 = UserId;
+///User ID
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
@@ -230,6 +235,7 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
     }
 }
 pub type UserIdV1Ref<'a> = UserIdRef<'a>;
+///User ID
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum UserIdMut<'a> {

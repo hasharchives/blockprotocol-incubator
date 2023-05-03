@@ -6,6 +6,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Primary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct Email(pub Text);
 impl Type for Email {
@@ -35,6 +36,7 @@ impl PropertyType for Email {
     }
 }
 pub type EmailV1 = Email;
+///Primary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct EmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for EmailRef<'_> {
@@ -56,6 +58,7 @@ impl<'a> PropertyTypeRef<'a> for EmailRef<'a> {
     }
 }
 pub type EmailV1Ref<'a> = EmailRef<'a>;
+///Primary E-Mail
 #[derive(Debug, Serialize)]
 pub struct EmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for EmailMut<'_> {
@@ -96,6 +99,7 @@ use crate::{
     blockprotocol::blockprotocol::property::email::Email,
     https_blockprotocol_org_alice_property_type_contact_information::ContactInformation as ContactInformation0,
 };
+///Contact Information
 #[derive(Debug, Clone, Serialize)]
 pub struct ContactInformation {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
@@ -159,6 +163,7 @@ impl PropertyType for ContactInformation {
     }
 }
 pub type ContactInformationV1 = ContactInformation;
+///Contact Information
 #[derive(Debug, Clone, Serialize)]
 pub struct ContactInformationRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
@@ -215,6 +220,7 @@ impl<'a> PropertyTypeRef<'a> for ContactInformationRef<'a> {
     }
 }
 pub type ContactInformationV1Ref<'a> = ContactInformationRef<'a>;
+///Contact Information
 #[derive(Debug, Serialize)]
 pub struct ContactInformationMut<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]

@@ -11,6 +11,7 @@ use turbine::{
     PropertyType as _, PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef,
     VersionedUrlRef,
 };
+///Country
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties;
 impl Properties {
@@ -55,6 +56,7 @@ impl EntityType for Country {
         }
     }
 }
+///Country
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
 impl<'a> PropertiesRef<'a> {
@@ -91,6 +93,7 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
         }
     }
 }
+///Country
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
 impl<'a> PropertiesMut<'a> {

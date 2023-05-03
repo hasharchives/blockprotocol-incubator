@@ -6,6 +6,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Country Code (ISO 3166-1 alpha-2)
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
 impl Type for CountryCode {
@@ -35,6 +36,7 @@ impl PropertyType for CountryCode {
     }
 }
 pub type CountryCodeV1 = CountryCode;
+///Country Code (ISO 3166-1 alpha-2)
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for CountryCodeRef<'_> {
@@ -56,6 +58,7 @@ impl<'a> PropertyTypeRef<'a> for CountryCodeRef<'a> {
     }
 }
 pub type CountryCodeV1Ref<'a> = CountryCodeRef<'a>;
+///Country Code (ISO 3166-1 alpha-2)
 #[derive(Debug, Serialize)]
 pub struct CountryCodeMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for CountryCodeMut<'_> {

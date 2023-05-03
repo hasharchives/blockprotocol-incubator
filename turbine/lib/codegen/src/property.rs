@@ -390,6 +390,20 @@ fn generate_contents(
     }
 }
 
+fn generate_doc(property: &PropertyType) -> TokenStream {
+    let title = property.title();
+    // mimic #()?
+    let description = property.description().into_iter();
+
+    quote!(
+        #[doc = #title]
+        #(
+            #[doc = ""]
+            #[doc = #description]
+        )*
+    )
+}
+
 fn generate_owned(
     property: &PropertyType,
     location: &Location,
@@ -410,6 +424,8 @@ fn generate_owned(
         quote!(pub type #alias = #name;)
     });
 
+    let doc = generate_doc(property);
+
     let Type {
         def,
         impl_try_from_value,
@@ -425,6 +441,7 @@ fn generate_owned(
     );
 
     quote! {
+        #doc
         #def
 
         impl Type for #name {
@@ -472,6 +489,8 @@ fn generate_ref(
         quote!(pub type #alias<'a> = #name_ref<'a>;)
     });
 
+    let doc = generate_doc(property);
+
     let Type {
         def,
         impl_try_from_value,
@@ -487,6 +506,7 @@ fn generate_ref(
     );
 
     quote! {
+        #doc
         #def
 
         impl TypeRef for #name_ref<'_> {
@@ -526,6 +546,8 @@ fn generate_mut(
         quote!(pub type #alias<'a> = #name_mut<'a>;)
     });
 
+    let doc = generate_doc(property);
+
     let Type {
         def,
         impl_try_from_value,
@@ -541,6 +563,7 @@ fn generate_mut(
     );
 
     quote! {
+        #doc
         #def
 
         impl TypeMut for #name_mut<'_> {

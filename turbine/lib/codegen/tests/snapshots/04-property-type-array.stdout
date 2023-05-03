@@ -41,6 +41,7 @@ impl Inner2<'a> {
         }
     }
 }
+///Contrived Property
 #[derive(Debug, Clone, Serialize)]
 pub struct ContrivedProperty(pub Vec<Inner0>);
 impl Type for ContrivedProperty {
@@ -77,6 +78,7 @@ impl PropertyType for ContrivedProperty {
     }
 }
 pub type ContrivedPropertyV1 = ContrivedProperty;
+///Contrived Property
 #[derive(Debug, Clone, Serialize)]
 pub struct ContrivedPropertyRef<'a>(pub Vec<Inner1<'a>>);
 impl TypeRef for ContrivedPropertyRef<'_> {
@@ -106,6 +108,7 @@ impl<'a> PropertyTypeRef<'a> for ContrivedPropertyRef<'a> {
     }
 }
 pub type ContrivedPropertyV1Ref<'a> = ContrivedPropertyRef<'a>;
+///Contrived Property
 #[derive(Debug, Serialize)]
 pub struct ContrivedPropertyMut<'a>(pub Vec<Inner2<'a>>);
 impl TypeMut for ContrivedPropertyMut<'_> {

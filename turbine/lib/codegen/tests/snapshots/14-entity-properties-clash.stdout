@@ -12,6 +12,7 @@ use turbine::{
 };
 
 use crate::localhost_3000::alice::property::properties::Properties as Properties0;
+///Country
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
@@ -72,6 +73,7 @@ impl EntityType for Country {
         }
     }
 }
+///Country
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
@@ -125,6 +127,7 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
         }
     }
 }
+///Country
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
@@ -194,6 +197,7 @@ use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
+///Name
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties(pub Text);
 impl Type for Properties {
@@ -223,6 +227,7 @@ impl PropertyType for Properties {
     }
 }
 pub type PropertiesV1 = Properties;
+///Name
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for PropertiesRef<'_> {
@@ -244,6 +249,7 @@ impl<'a> PropertyTypeRef<'a> for PropertiesRef<'a> {
     }
 }
 pub type PropertiesV1Ref<'a> = PropertiesRef<'a>;
+///Name
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for PropertiesMut<'_> {
