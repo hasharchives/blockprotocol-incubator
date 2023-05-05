@@ -64,9 +64,8 @@ impl PropertyType for FullEmail {
                 );
                 value.map(Some)
             };
-            let __report0 = blockprotocol::fold_tuple_reports((primary_email, secondary_email));
-            let ((primary_email, secondary_email),) =
-                blockprotocol::fold_tuple_reports((__report0,))?;
+            let __report0 = turbine::fold_tuple_reports((primary_email, secondary_email));
+            let ((primary_email, secondary_email),) = turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 primary_email,
                 secondary_email,
@@ -120,9 +119,8 @@ impl<'a> PropertyTypeRef<'a> for FullEmailRef<'a> {
                     ));
                 value.map(Some)
             };
-            let __report0 = blockprotocol::fold_tuple_reports((primary_email, secondary_email));
-            let ((primary_email, secondary_email),) =
-                blockprotocol::fold_tuple_reports((__report0,))?;
+            let __report0 = turbine::fold_tuple_reports((primary_email, secondary_email));
+            let ((primary_email, secondary_email),) = turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 primary_email,
                 secondary_email,
@@ -185,9 +183,8 @@ impl<'a> PropertyTypeMut<'a> for FullEmailMut<'a> {
                     ));
                 value.map(Some)
             };
-            let __report0 = blockprotocol::fold_tuple_reports((primary_email, secondary_email));
-            let ((primary_email, secondary_email),) =
-                blockprotocol::fold_tuple_reports((__report0,))?;
+            let __report0 = turbine::fold_tuple_reports((primary_email, secondary_email));
+            let ((primary_email, secondary_email),) = turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 primary_email,
                 secondary_email,

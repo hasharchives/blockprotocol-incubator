@@ -30,8 +30,8 @@ impl Properties {
             ));
             value
         };
-        let __report0 = blockprotocol::fold_tuple_reports((name,));
-        let ((name,),) = blockprotocol::fold_tuple_reports((__report0,))?;
+        let __report0 = turbine::fold_tuple_reports((name,));
+        let ((name,),) = turbine::fold_tuple_reports((__report0,))?;
         let this = Self { name };
         Ok(this)
     }
@@ -50,11 +50,15 @@ impl Type for Country {
         url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+        CountryMut {
+            properties: self.properties.as_mut(),
+        }
     }
 
     fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+        CountryRef {
+            properties: self.properties.as_ref(),
+        }
     }
 }
 impl EntityType for Country {
@@ -91,8 +95,8 @@ impl<'a> PropertiesRef<'a> {
             );
             value
         };
-        let __report0 = blockprotocol::fold_tuple_reports((name,));
-        let ((name,),) = blockprotocol::fold_tuple_reports((__report0,))?;
+        let __report0 = turbine::fold_tuple_reports((name,));
+        let ((name,),) = turbine::fold_tuple_reports((__report0,))?;
         let this = Self { name };
         Ok(this)
     }
@@ -107,7 +111,9 @@ impl TypeRef for CountryRef<'_> {
     type Owned = Country;
 
     fn into_owned(self) -> Self::Owned {
-        todo!();
+        Country {
+            properties: self.properties.into_owned(),
+        }
     }
 }
 impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
@@ -149,8 +155,8 @@ impl<'a> PropertiesMut<'a> {
             );
             value
         };
-        let __report0 = blockprotocol::fold_tuple_reports((name,));
-        let ((name,),) = blockprotocol::fold_tuple_reports((__report0,))?;
+        let __report0 = turbine::fold_tuple_reports((name,));
+        let ((name,),) = turbine::fold_tuple_reports((__report0,))?;
         let this = Self { name };
         Ok(this)
     }
@@ -165,7 +171,9 @@ impl TypeMut for CountryMut<'_> {
     type Owned = Country;
 
     fn into_owned(self) -> Self::Owned {
-        todo!();
+        Country {
+            properties: self.properties.into_owned(),
+        }
     }
 }
 impl<'a> EntityTypeMut<'a> for CountryMut<'a> {

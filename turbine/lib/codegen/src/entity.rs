@@ -137,12 +137,12 @@ fn generate_type(
 
     let mut derives = vec![format_ident!("Debug")];
 
-    if !properties.is_empty() {
-        derives.push(format_ident!("Serialize"));
-    }
-
     if variant == Variant::Owned || variant == Variant::Ref {
         derives.push(format_ident!("Clone"));
+    }
+
+    if !properties.is_empty() {
+        derives.push(format_ident!("Serialize"));
     }
 
     let derive = quote!(#[derive(#(#derives),*)]);

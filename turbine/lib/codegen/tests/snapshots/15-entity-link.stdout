@@ -12,8 +12,9 @@ use turbine::{
     PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
 ///Part Of
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Properties;
+turbine::serialize_compat!(Properties);
 impl Properties {
     fn try_from_value(
         mut properties: HashMap<String, serde_json::Value>,
@@ -21,7 +22,7 @@ impl Properties {
         Ok(Self)
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOf {
     pub properties: Properties,
@@ -36,11 +37,17 @@ impl Type for PartOf {
         url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+        PartOfMut {
+            properties: self.properties.as_mut(),
+            link_data: &mut self.link_data,
+        }
     }
 
     fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+        PartOfRef {
+            properties: self.properties.as_ref(),
+            link_data: &self.link_data,
+        }
     }
 }
 impl EntityType for PartOf {
@@ -64,8 +71,9 @@ impl EntityType for PartOf {
     }
 }
 ///Part Of
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
+turbine::serialize_compat!(PropertiesRef<'a>);
 impl<'a> PropertiesRef<'a> {
     fn try_from_value(
         properties: &'a HashMap<String, serde_json::Value>,
@@ -73,7 +81,7 @@ impl<'a> PropertiesRef<'a> {
         Ok(Self(PhantomData))
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfRef<'a> {
     pub properties: PropertiesRef<'a>,
@@ -84,7 +92,10 @@ impl TypeRef for PartOfRef<'_> {
     type Owned = PartOf;
 
     fn into_owned(self) -> Self::Owned {
-        todo!();
+        PartOf {
+            properties: self.properties.into_owned(),
+            link_data: self.link_data.clone(),
+        }
     }
 }
 impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
@@ -109,8 +120,9 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
     }
 }
 ///Part Of
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
+turbine::serialize_compat!(PropertiesMut<'a>);
 impl<'a> PropertiesMut<'a> {
     fn try_from_value(
         properties: &'a mut HashMap<String, serde_json::Value>,
@@ -118,7 +130,7 @@ impl<'a> PropertiesMut<'a> {
         Ok(Self(PhantomData))
     }
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfMut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -129,7 +141,10 @@ impl TypeMut for PartOfMut<'_> {
     type Owned = PartOf;
 
     fn into_owned(self) -> Self::Owned {
-        todo!();
+        PartOf {
+            properties: self.properties.into_owned(),
+            link_data: self.link_data.clone(),
+        }
     }
 }
 impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {

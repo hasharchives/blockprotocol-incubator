@@ -152,8 +152,8 @@ impl PropertyType for ContactInformation {
                     ));
                 value
             };
-            let __report0 = blockprotocol::fold_tuple_reports((contact_information, email));
-            let ((contact_information, email),) = blockprotocol::fold_tuple_reports((__report0,))?;
+            let __report0 = turbine::fold_tuple_reports((contact_information, email));
+            let ((contact_information, email),) = turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 contact_information,
                 email,
@@ -209,8 +209,8 @@ impl<'a> PropertyTypeRef<'a> for ContactInformationRef<'a> {
                 );
                 value
             };
-            let __report0 = blockprotocol::fold_tuple_reports((contact_information, email));
-            let ((contact_information, email),) = blockprotocol::fold_tuple_reports((__report0,))?;
+            let __report0 = turbine::fold_tuple_reports((contact_information, email));
+            let ((contact_information, email),) = turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 contact_information,
                 email,
@@ -276,8 +276,8 @@ impl<'a> PropertyTypeMut<'a> for ContactInformationMut<'a> {
                 );
                 value
             };
-            let __report0 = blockprotocol::fold_tuple_reports((contact_information, email));
-            let ((contact_information, email),) = blockprotocol::fold_tuple_reports((__report0,))?;
+            let __report0 = turbine::fold_tuple_reports((contact_information, email));
+            let ((contact_information, email),) = turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 contact_information,
                 email,

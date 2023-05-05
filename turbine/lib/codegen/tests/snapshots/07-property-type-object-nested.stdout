@@ -343,7 +343,7 @@ impl PropertyType for Interests {
                     break 'property Ok(None);
                 };
                 let value = if let serde_json::Value::Array(value) = value {
-                    blockprotocol::fold_iter_reports(
+                    turbine::fold_iter_reports(
                         value
                             .into_iter()
                             .map(|value| <Hobby>::try_from_value(value)),
@@ -358,10 +358,9 @@ impl PropertyType for Interests {
                 };
                 value.map(Some)
             };
-            let __report0 =
-                blockprotocol::fold_tuple_reports((favorite_film, favorite_song, hobby));
+            let __report0 = turbine::fold_tuple_reports((favorite_film, favorite_song, hobby));
             let ((favorite_film, favorite_song, hobby),) =
-                blockprotocol::fold_tuple_reports((__report0,))?;
+                turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 favorite_film,
                 favorite_song,
@@ -435,7 +434,7 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
                     break 'property Ok(None);
                 };
                 let value = if let serde_json::Value::Array(value) = value {
-                    blockprotocol::fold_iter_reports(
+                    turbine::fold_iter_reports(
                         value
                             .into_iter()
                             .map(|value| <<Hobby as Type>::Ref<'a>>::try_from_value(value)),
@@ -451,10 +450,9 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
                 };
                 value.map(Some)
             };
-            let __report0 =
-                blockprotocol::fold_tuple_reports((favorite_film, favorite_song, hobby));
+            let __report0 = turbine::fold_tuple_reports((favorite_film, favorite_song, hobby));
             let ((favorite_film, favorite_song, hobby),) =
-                blockprotocol::fold_tuple_reports((__report0,))?;
+                turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 favorite_film,
                 favorite_song,
@@ -537,7 +535,7 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
                     break 'property Ok(None);
                 };
                 let value = if let serde_json::Value::Array(value) = value {
-                    blockprotocol::fold_iter_reports(
+                    turbine::fold_iter_reports(
                         value
                             .into_iter()
                             .map(|value| <<Hobby as Type>::Mut<'a>>::try_from_value(value)),
@@ -552,10 +550,9 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
                 };
                 value.map(Some)
             };
-            let __report0 =
-                blockprotocol::fold_tuple_reports((favorite_film, favorite_song, hobby));
+            let __report0 = turbine::fold_tuple_reports((favorite_film, favorite_song, hobby));
             let ((favorite_film, favorite_song, hobby),) =
-                blockprotocol::fold_tuple_reports((__report0,))?;
+                turbine::fold_tuple_reports((__report0,))?;
             let this = Self {
                 favorite_film,
                 favorite_song,

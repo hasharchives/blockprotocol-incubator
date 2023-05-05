@@ -12,8 +12,9 @@ use turbine::{
     VersionedUrlRef,
 };
 ///Country
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Properties;
+turbine::serialize_compat!(Properties);
 impl Properties {
     fn try_from_value(
         mut properties: HashMap<String, serde_json::Value>,
@@ -21,7 +22,7 @@ impl Properties {
         Ok(Self)
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Country {
     pub properties: Properties,
@@ -35,11 +36,15 @@ impl Type for Country {
         url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+        CountryMut {
+            properties: self.properties.as_mut(),
+        }
     }
 
     fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+        CountryRef {
+            properties: self.properties.as_ref(),
+        }
     }
 }
 impl EntityType for Country {
@@ -57,8 +62,9 @@ impl EntityType for Country {
     }
 }
 ///Country
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
+turbine::serialize_compat!(PropertiesRef<'a>);
 impl<'a> PropertiesRef<'a> {
     fn try_from_value(
         properties: &'a HashMap<String, serde_json::Value>,
@@ -66,7 +72,7 @@ impl<'a> PropertiesRef<'a> {
         Ok(Self(PhantomData))
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     pub properties: PropertiesRef<'a>,
@@ -76,7 +82,9 @@ impl TypeRef for CountryRef<'_> {
     type Owned = Country;
 
     fn into_owned(self) -> Self::Owned {
-        todo!();
+        Country {
+            properties: self.properties.into_owned(),
+        }
     }
 }
 impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
@@ -94,8 +102,9 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     }
 }
 ///Country
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
+turbine::serialize_compat!(PropertiesMut<'a>);
 impl<'a> PropertiesMut<'a> {
     fn try_from_value(
         properties: &'a mut HashMap<String, serde_json::Value>,
@@ -103,7 +112,7 @@ impl<'a> PropertiesMut<'a> {
         Ok(Self(PhantomData))
     }
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -113,7 +122,9 @@ impl TypeMut for CountryMut<'_> {
     type Owned = Country;
 
     fn into_owned(self) -> Self::Owned {
-        todo!();
+        Country {
+            properties: self.properties.into_owned(),
+        }
     }
 }
 impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
