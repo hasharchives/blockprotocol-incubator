@@ -541,6 +541,8 @@ fn generate_body_object(
     //  1) we do not know what we do at this stage (do we destruct or are we an arm)
     //  2) we do not know what to generate
     //  3) we do not know what `Inner` does (who is the `Mut` variant)
+    //      We need a path lookup which we trail (in state) and once `Inner` is accessed we
+    //      generate it, we can then simply reference which one we need!
     //  The current approach is lacking, what we need to do instead is depending on the `self_type`
     //  either create a match_arm or destruct, how we destruct depends on what we are trying to
     //  achieve. `as_ref` is `&`, `as_mut` is `&mut`, `into_owned` is nothing. We then return a
