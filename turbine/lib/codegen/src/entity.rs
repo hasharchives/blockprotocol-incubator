@@ -7,7 +7,7 @@ use std::{
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::{token::Pub, Visibility};
+use syn::{token::Pub, Lifetime, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
     EntityType, EntityTypeReference,
@@ -197,7 +197,7 @@ fn generate_type(
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
 ) -> TokenStream {
-    let lifetime = matches!(variant, Variant::Ref | Variant::Mut).then(|| quote!(<'a>));
+    let lifetime = variant.into_lifetime().map(|lifetime| quote!(<#lifetime>));
 
     let mut derives = vec![format_ident!("Debug")];
 
@@ -232,11 +232,7 @@ fn generate_type(
         Variant::Mut => Ident::new("PropertiesMut", Span::call_site()),
     };
 
-    let reference = match variant {
-        Variant::Owned => None,
-        Variant::Ref => Some(quote!(&'a)),
-        Variant::Mut => Some(quote!(&'a mut)),
-    };
+    let reference = variant.into_reference(true);
 
     let mutability = match variant {
         Variant::Owned => Some(quote!(mut)),

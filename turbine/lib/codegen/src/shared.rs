@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use syn::Visibility;
+use syn::{Lifetime, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
     PropertyTypeReference, ValueOrArray,
@@ -158,6 +158,33 @@ pub(crate) enum Variant {
     Owned,
     Ref,
     Mut,
+}
+
+impl Variant {
+    pub(crate) fn into_reference(self, with_lifetime: bool) -> Option<TokenStream> {
+        let lifetime = with_lifetime.then(|| self.into_lifetime()).flatten();
+
+        match self {
+            Self::Owned => None,
+            Self::Ref => Some(quote!(& #lifetime)),
+            Self::Mut => Some(quote!(& #lifetime mut)),
+        }
+    }
+
+    pub(crate) fn into_lifetime(self) -> Option<Lifetime> {
+        match self {
+            Self::Owned => None,
+            Self::Ref | Self::Mut => Some(Lifetime::new("'a", Span::call_site())),
+        }
+    }
+
+    fn into_keyword(self) -> Option<TokenStream> {
+        match self {
+            Self::Owned => None,
+            Self::Ref => Some(quote!(ref)),
+            Self::Mut => Some(quote!(mut)),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]

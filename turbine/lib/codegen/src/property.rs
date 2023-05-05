@@ -280,6 +280,14 @@ struct SelfType<'a> {
 }
 
 impl<'a> SelfType<'a> {
+    fn hoist(&self) -> bool {
+        self.variant.is_none()
+    }
+
+    fn hoisted_visibility(&self) -> Option<Visibility> {
+        self.hoist().then_some(Visibility::Public(Pub::default()))
+    }
+
     fn enum_(name: &'a TokenStream) -> Self {
         SelfType {
             variant: Some(SelfVariant(name)),
@@ -298,11 +306,18 @@ impl ToTokens for SelfType<'_> {
     }
 }
 
+struct Conversion {
+    into_owned: TokenStream,
+    as_ref: TokenStream,
+    as_mut: TokenStream,
+    match_arm: TokenStream,
+    destruct: TokenStream,
+}
+
 struct Body {
     def: TokenStream,
     try_from: TokenStream,
-    conversion: TokenStream,
-    conversion_match_arm: TokenStream,
+    conversion: Conversion,
 }
 
 fn generate_body_data_type(
@@ -313,17 +328,17 @@ fn generate_body_data_type(
     suffix: Option<TokenStream>,
 ) -> Body {
     let location = &locations[reference.url()];
-    let vis = self_type.variant.is_none().then_some(quote!(pub));
+    let vis = self_type.hoisted_visibility();
 
-    let name = location
+    let type_name = location
         .alias
         .value
         .as_ref()
         .unwrap_or(&location.name.value);
-    let mut name = Ident::new(name, Span::call_site()).to_token_stream();
+    let mut type_name = Ident::new(type_name, Span::call_site()).to_token_stream();
 
     if let Some(suffix) = suffix {
-        name = quote!(<#name as Type>#suffix);
+        type_name = quote!(<#type_name as Type>#suffix);
     }
 
     let cast = match variant {
@@ -333,25 +348,35 @@ fn generate_body_data_type(
     };
 
     let try_from = quote!({
-        let value = <#name #cast>::try_from_value(value)
+        let value = <#type_name #cast>::try_from_value(value)
             .change_context(GenericPropertyError::Data);
 
         value.map(#self_type)
     });
 
-    // TODO: the problem here are the different match arms, we somehow need to bind
-    // variables
-    // TODO: problem, we have multiple variables :/
+    let reference = variant.into_reference(false);
 
-    let conversion_match_arm = quote!(#self_type(value) =>);
+    let variant = self_type.variant;
+    let into_owned =
+        quote!(<<Self as Type>::Owned> #variant (<#type_name #cast>::into_owned(value)));
+    let as_ref = quote!(<<Self as Type>::Ref> #variant (<#type_name #cast>::as_ref(value)));
+    let as_mut = quote!(<<Self as Type>::Mut> #variant (<#type_name #cast>::as_mut(value)));
 
-    // TODO: here we need the name :/ we should make out if we hoise not on the self_type
-    //  but if a variant is present in `Self`
-    let into_owned = quote!(#self_type(<#name #cast>::into_owned(value)));
+    // we can either be called if we're hoisted (`destruct`) or we're in a match arm (`match_arm`),
+    // either way the conversion code stays the same, but how we get to value is a bit different
+    let match_arm = quote!(#self_type(value) =>);
+    let destruct = quote!(let Self(value) = #reference self);
 
     Body {
-        def: quote!((#vis #name)),
+        def: quote!((#vis #type_name)),
         try_from,
+        conversion: Conversion {
+            into_owned,
+            as_ref,
+            as_mut,
+            match_arm,
+            destruct,
+        },
     }
 }
 
@@ -379,10 +404,7 @@ fn generate_body_object(
         &self_type.to_token_stream(),
     );
 
-    let visibility = self_type
-        .variant
-        .is_none()
-        .then(|| Visibility::Public(Pub::default()));
+    let visibility = self_type.hoisted_visibility();
     let properties = properties.iter().map(|(base, property)| {
         generate_property(
             base,
@@ -429,12 +451,9 @@ fn generate_body_array(
     let items = array.items();
     let inner = generate_inner(id, variant, items.one_of(), resolver, locations, state);
 
-    let vis = self_type.variant.is_none().then_some(quote!(pub));
+    let vis = self_type.hoisted_visibility();
 
-    let lifetime = match variant {
-        Variant::Ref | Variant::Mut => Some(quote!(<'a>)),
-        Variant::Owned => None,
-    };
+    let lifetime = variant.into_lifetime().map(|lifetime| quote!(<#lifetime>));
 
     let suffix = match variant {
         Variant::Ref => Some(quote!(.map(|array| array.into_boxed_slice()))),
