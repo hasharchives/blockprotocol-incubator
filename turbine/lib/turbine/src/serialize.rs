@@ -1,4 +1,4 @@
-//! Polyfill for serde when serializing ZSTs and tuple types (which are just markers)
+//! Polyfill for serde when serializing ZSTs and tuple types (which are just markers) into objects
 
 #[macro_export]
 macro_rules! serialize_compat {

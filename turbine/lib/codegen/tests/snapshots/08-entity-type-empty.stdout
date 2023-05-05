@@ -21,6 +21,14 @@ impl Properties {
     ) -> Result<Self, GenericEntityError> {
         Ok(Self)
     }
+
+    fn as_ref(&self) -> PropertiesRef<'_> {
+        PropertiesRef(PhantomData)
+    }
+
+    fn as_mut(&mut self) -> PropertiesMut<'_> {
+        PropertiesMut(PhantomData)
+    }
 }
 #[derive(Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -71,6 +79,10 @@ impl<'a> PropertiesRef<'a> {
     ) -> Result<Self, GenericEntityError> {
         Ok(Self(PhantomData))
     }
+
+    fn into_owned(self) -> Properties {
+        Properties(PhantomData)
+    }
 }
 #[derive(Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -110,6 +122,10 @@ impl<'a> PropertiesMut<'a> {
         properties: &'a mut HashMap<String, serde_json::Value>,
     ) -> Result<Self, GenericEntityError> {
         Ok(Self(PhantomData))
+    }
+
+    fn into_owned(self) -> Properties {
+        Properties(PhantomData)
     }
 }
 #[derive(Debug)]

@@ -127,6 +127,70 @@ fn generate_properties_try_from_value(
     )
 }
 
+fn generate_properties_convert(
+    variant: Variant,
+    properties: &BTreeMap<&BaseUrl, Property>,
+) -> TokenStream {
+    if properties.is_empty() {
+        match variant {
+            Variant::Owned => {
+                // inner type is guaranteed to be `PhantomData`, so we can just create the type
+                // directly
+                quote! {
+                    fn as_mut(&mut self) -> PropertiesMut<'_> {
+                        PropertiesMut(PhantomData)
+                    }
+
+                    fn as_ref(&self) -> PropertiesRef<'_> {
+                        PropertiesRef(PhantomData)
+                    }
+                }
+            }
+            _ => {
+                // guaranteed to be a ZST, just create it
+                quote! {
+                    fn into_owned(self) -> Properties {
+                        Properties
+                    }
+                }
+            }
+        }
+    } else {
+        let name: Vec<_> = properties
+            .values()
+            .map(|Property { name, .. }| name)
+            .collect();
+
+        match variant {
+            Variant::Owned => {
+                quote! {
+                    fn as_mut(&mut self) -> PropertiesMut<'_> {
+                        PropertiesRef {
+                            #(#name: self.#name.as_mut()),*
+                        }
+                    }
+
+                    fn as_ref(&self) -> PropertiesRef<'_> {
+                        PropertiesRef {
+                            #(#name: self.#name.as_ref()),*
+                        }
+                    }
+                }
+            }
+            _ => {
+                quote! {
+                    fn into_owned(self) -> Properties {
+                        Properties {
+                            #(#name: self.#name.into_owned()),*
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_lines)]
 fn generate_type(
     variant: Variant,
     location: &Location,
@@ -221,6 +285,8 @@ fn generate_type(
         .is_empty()
         .then(|| quote!(turbine::serialize_compat!(#properties_name #lifetime);));
 
+    let conversion = generate_properties_convert(variant, properties);
+
     quote! {
         #derive
         pub struct #properties_name #lifetime #body
@@ -231,6 +297,8 @@ fn generate_type(
             fn try_from_value(#mutability properties: #reference HashMap<String, serde_json::Value>) -> Result<Self, GenericEntityError> {
                 #try_from_value
             }
+
+            #conversion
         }
 
         #derive

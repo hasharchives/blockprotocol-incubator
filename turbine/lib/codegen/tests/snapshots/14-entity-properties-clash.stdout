@@ -37,6 +37,18 @@ impl Properties {
         let this = Self { properties };
         Ok(this)
     }
+
+    fn as_ref(&self) -> PropertiesRef<'_> {
+        PropertiesRef {
+            properties: self.properties.as_ref(),
+        }
+    }
+
+    fn as_mut(&mut self) -> PropertiesMut<'_> {
+        PropertiesRef {
+            properties: self.properties.as_mut(),
+        }
+    }
 }
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -103,6 +115,12 @@ impl<'a> PropertiesRef<'a> {
         let this = Self { properties };
         Ok(this)
     }
+
+    fn into_owned(self) -> Properties {
+        Properties {
+            properties: self.properties.into_owned(),
+        }
+    }
 }
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -162,6 +180,12 @@ impl<'a> PropertiesMut<'a> {
         let ((properties,),) = turbine::fold_tuple_reports((__report0,))?;
         let this = Self { properties };
         Ok(this)
+    }
+
+    fn into_owned(self) -> Properties {
+        Properties {
+            properties: self.properties.into_owned(),
+        }
     }
 }
 #[derive(Debug, Serialize)]
