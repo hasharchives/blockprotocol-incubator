@@ -5,7 +5,6 @@ use std::{
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use serde_json::Value;
 use syn::{token::Pub, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
@@ -138,6 +137,7 @@ fn generate_type(
         let Body {
             def: body,
             try_from,
+            conversion,
         } = generate_body(
             (id, variant),
             value,
@@ -171,6 +171,7 @@ fn generate_type(
             let Body {
                 def: body,
                 try_from,
+                conversion,
             } = generate_body(
                 (id, variant),
                 value,
@@ -613,6 +614,7 @@ fn generate_owned(
     let Type {
         def,
         impl_try_from_value,
+        impl_conversion,
         ..
     } = generate_type(
         property.id(),
@@ -634,15 +636,7 @@ fn generate_owned(
 
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
-            fn as_mut(&mut self) -> Self::Mut<'_> {
-                // TODO!
-                todo!()
-            }
-
-            fn as_ref(&self) -> Self::Ref<'_> {
-                // TODO!
-                todo!()
-            }
+            #impl_conversion
         }
 
         impl PropertyType for #name {
@@ -678,6 +672,7 @@ fn generate_ref(
     let Type {
         def,
         impl_try_from_value,
+        impl_conversion,
         ..
     } = generate_type(
         property.id(),
@@ -696,10 +691,7 @@ fn generate_ref(
         impl TypeRef for #name_ref<'_> {
             type Owned = #name;
 
-            fn into_owned(self) -> Self::Owned {
-                // TODO
-                todo!();
-            }
+            #impl_conversion
         }
 
         impl<'a> PropertyTypeRef<'a> for #name_ref<'a> {
@@ -735,6 +727,7 @@ fn generate_mut(
     let Type {
         def,
         impl_try_from_value,
+        impl_conversion,
         ..
     } = generate_type(
         property.id(),
@@ -753,10 +746,7 @@ fn generate_mut(
         impl TypeMut for #name_mut<'_> {
             type Owned = #name;
 
-            fn into_owned(self) -> Self::Owned {
-                // TODO
-                todo!();
-            }
+            #impl_conversion
         }
 
         impl<'a> PropertyTypeMut<'a> for #name_mut<'a> {
