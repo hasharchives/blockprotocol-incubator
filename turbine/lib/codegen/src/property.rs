@@ -3,6 +3,7 @@ use std::{
     ops::Deref,
 };
 
+use itertools::Itertools;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{token::Pub, Visibility};
@@ -108,6 +109,7 @@ struct Type {
     impl_conversion: TokenStream,
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_type(
     id: &VersionedUrl,
     name: &Ident,
@@ -137,33 +139,65 @@ fn generate_type(
         let Body {
             def: body,
             try_from,
-            conversion,
+            conversion:
+                Conversion {
+                    into_owned,
+                    as_ref,
+                    as_mut,
+                    destruct,
+                    ..
+                },
         } = generate_body(
             (id, variant),
             value,
             resolver,
             locations,
-            &SelfType::struct_(),
+            SelfType::struct_(),
             state,
         );
         let semicolon = semicolon.then_some(quote!(;));
-
-        // TODO: as_ref, as_mut, into_owned (tho they should be relatively easy)
 
         let def = quote! {
             #derive
             pub struct #name #lifetime #body #semicolon
         };
 
+        let conversion = match variant {
+            Variant::Owned => quote! {
+                fn as_ref(&self) -> Self::Ref<'_> {
+                    #destruct;
+
+                    #as_ref
+                }
+
+                fn as_mut(&self) -> Self::Mut<'_> {
+                    #destruct;
+
+                    #as_mut
+                }
+            },
+            Variant::Ref | Variant::Mut => {
+                quote! {
+                    fn into_owned(self) -> Self::Owned {
+                        #destruct;
+
+                        #into_owned
+                    }
+                }
+            }
+        };
+
         return Type {
             def,
             impl_ty: quote!(#name #lifetime),
             impl_try_from_value: try_from,
+            impl_conversion: conversion,
         };
     }
 
     // we cannot hoist and therefore need to create an enum
-    let (body, try_from_variants): (Vec<_>, Vec<_>) = values
+
+    let (body, try_from_variants, conversion): (Vec<_>, Vec<_>, Vec<_>) = values
         .iter()
         .enumerate()
         .map(|(index, value)| {
@@ -177,7 +211,7 @@ fn generate_type(
                 value,
                 resolver,
                 locations,
-                &SelfType::enum_(&name.to_token_stream()),
+                SelfType::enum_(&name.to_token_stream()),
                 state,
             );
 
@@ -186,9 +220,10 @@ fn generate_type(
                     #name #body
                 },
                 try_from,
+                conversion,
             )
         })
-        .unzip();
+        .multiunzip();
 
     let try_from = quote! {
         let mut errors: Result<(), GenericPropertyError> = Ok(());
@@ -218,10 +253,60 @@ fn generate_type(
         }
     };
 
+    // TODO: this breaks down on inner, where things do not have a `Self::Owned` partner
+    // TODO: for every inner type we need to record their `Owned`, `Ref` and `Mut` counterpart ~>
+    //  lookup is needed of some sort :/ ~> state with a path of some sorts
+    let conversion = match variant {
+        Variant::Owned => {
+            let as_ref = conversion.iter().map(
+                |Conversion {
+                     as_ref, match_arm, ..
+                 }| quote!(#match_arm, #as_ref),
+            );
+            let as_mut = conversion.iter().map(
+                |Conversion {
+                     as_mut, match_arm, ..
+                 }| quote!(#match_arm, #as_mut),
+            );
+
+            quote! {
+                fn as_ref(&self) -> Self::Ref<'_> {
+                    match &self {
+                        #(#as_ref),*
+                    }
+                }
+
+                fn as_mut(&mut self) -> Self::Mut<'_> {
+                    match &mut self {
+                        #(#as_mut),*
+                    }
+                }
+            }
+        }
+        Variant::Ref | Variant::Mut => {
+            let match_arms = conversion.into_iter().map(
+                |Conversion {
+                     into_owned,
+                     match_arm,
+                     ..
+                 }| quote!(#match_arm #into_owned),
+            );
+
+            quote! {
+                fn into_owned(self) -> Self::Owned {
+                    match self {
+                        #(#match_arms),*
+                    }
+                }
+            }
+        }
+    };
+
     Type {
         def,
         impl_ty: quote!(#name #lifetime),
         impl_try_from_value: try_from,
+        impl_conversion: conversion,
     }
 }
 
@@ -273,7 +358,7 @@ struct SelfVariant<'a>(&'a TokenStream);
 impl ToTokens for SelfVariant<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let name = self.0;
-        tokens.extend(quote!(:: #name))
+        tokens.extend(quote!(:: #name));
     }
 }
 
@@ -283,21 +368,21 @@ struct SelfType<'a> {
 }
 
 impl<'a> SelfType<'a> {
-    fn hoist(&self) -> bool {
+    const fn hoist(self) -> bool {
         self.variant.is_none()
     }
 
-    fn hoisted_visibility(&self) -> Option<Visibility> {
+    fn hoisted_visibility(self) -> Option<Visibility> {
         self.hoist().then_some(Visibility::Public(Pub::default()))
     }
 
-    fn enum_(name: &'a TokenStream) -> Self {
+    const fn enum_(name: &'a TokenStream) -> Self {
         SelfType {
             variant: Some(SelfVariant(name)),
         }
     }
 
-    fn struct_() -> Self {
+    const fn struct_() -> Self {
         SelfType { variant: None }
     }
 }
@@ -327,7 +412,7 @@ fn generate_body_data_type(
     variant: Variant,
     reference: &DataTypeReference,
     locations: &HashMap<&VersionedUrl, Location>,
-    self_type: &SelfType,
+    self_type: SelfType,
     suffix: Option<TokenStream>,
 ) -> Body {
     let location = &locations[reference.url()];
@@ -399,7 +484,7 @@ fn generate_body_object(
     object: &Object<ValueOrArray<PropertyTypeReference>, 1>,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    self_type: &SelfType,
+    self_type: SelfType,
     state: &mut State,
 ) -> Body {
     let property_names =
@@ -486,7 +571,7 @@ fn generate_body_array(
     array: &Array<OneOf<PropertyValues>>,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    self_type: &SelfType,
+    self_type: SelfType,
     state: &mut State,
 ) -> Body {
     let items = array.items();
@@ -551,7 +636,7 @@ fn generate_body(
     value: &PropertyValues,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    self_type: &SelfType,
+    self_type: SelfType,
     state: &mut State,
 ) -> Body {
     let suffix = match variant {
