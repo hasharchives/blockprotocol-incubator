@@ -16,7 +16,9 @@ use type_system::{
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
-    shared::{generate_mod, generate_property, imports, Import, Property, Variant},
+    shared::{
+        generate_mod, generate_property, imports, Import, IncludeLifetime, Property, Variant,
+    },
 };
 
 const RESERVED: &[&str] = &[
@@ -232,7 +234,7 @@ fn generate_type(
         Variant::Mut => Ident::new("PropertiesMut", Span::call_site()),
     };
 
-    let reference = variant.into_reference(true);
+    let reference = variant.into_reference(IncludeLifetime::Yes);
 
     let mutability = match variant {
         Variant::Owned => Some(quote!(mut)),

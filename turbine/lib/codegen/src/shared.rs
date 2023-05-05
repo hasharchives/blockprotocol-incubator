@@ -153,6 +153,20 @@ pub(crate) fn generate_mod(kind: &LocationKind, resolver: &NameResolver) -> Opti
     Some(quote!(#(#statements)*))
 }
 
+pub(crate) enum IncludeLifetime {
+    Yes,
+    No,
+}
+
+impl IncludeLifetime {
+    fn into_bool(self) -> bool {
+        match self {
+            Self::Yes => true,
+            Self::No => false,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum Variant {
     Owned,
@@ -161,8 +175,11 @@ pub(crate) enum Variant {
 }
 
 impl Variant {
-    pub(crate) fn into_reference(self, with_lifetime: bool) -> Option<TokenStream> {
-        let lifetime = with_lifetime.then(|| self.into_lifetime()).flatten();
+    pub(crate) fn into_reference(self, with_lifetime: IncludeLifetime) -> Option<TokenStream> {
+        let lifetime = with_lifetime
+            .into_bool()
+            .then(|| self.into_lifetime())
+            .flatten();
 
         match self {
             Self::Owned => None,

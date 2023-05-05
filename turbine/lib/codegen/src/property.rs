@@ -16,7 +16,9 @@ use type_system::{
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
-    shared::{generate_mod, generate_property, imports, Import, Property, Variant},
+    shared::{
+        generate_mod, generate_property, imports, Import, IncludeLifetime, Property, Variant,
+    },
 };
 
 struct State {
@@ -354,18 +356,28 @@ fn generate_body_data_type(
         value.map(#self_type)
     });
 
-    let reference = variant.into_reference(false);
-
-    let variant = self_type.variant;
-    let into_owned =
-        quote!(<<Self as Type>::Owned> #variant (<#type_name #cast>::into_owned(value)));
-    let as_ref = quote!(<<Self as Type>::Ref> #variant (<#type_name #cast>::as_ref(value)));
-    let as_mut = quote!(<<Self as Type>::Mut> #variant (<#type_name #cast>::as_mut(value)));
+    let reference = variant.into_reference(IncludeLifetime::No);
 
     // we can either be called if we're hoisted (`destruct`) or we're in a match arm (`match_arm`),
     // either way the conversion code stays the same, but how we get to value is a bit different
     let match_arm = quote!(#self_type(value) =>);
     let destruct = quote!(let Self(value) = #reference self);
+
+    let cast = match variant {
+        Variant::Owned => quote!(as Type),
+        Variant::Ref => quote!(as TypeRef),
+        Variant::Mut => quote!(as TypeMut),
+    };
+
+    let variant = self_type.variant;
+
+    // TODO: we might need to explicitly cast on all other variants as well
+    // need to use explicit cast as there are multiple possibilities here, either `Ref` or `Mut`
+    // if a `DataType` implements both
+    let into_owned =
+        quote!(<<Self as #cast>::Owned> #variant (<#type_name #cast>::into_owned(value)));
+    let as_ref = quote!(<Self::Ref> #variant (<#type_name #cast>::as_ref(value)));
+    let as_mut = quote!(<Self::Mut> #variant (<#type_name #cast>::as_mut(value)));
 
     Body {
         def: quote!((#vis #type_name)),
@@ -405,7 +417,7 @@ fn generate_body_object(
     );
 
     let visibility = self_type.hoisted_visibility();
-    let properties = properties.iter().map(|(base, property)| {
+    let fields = properties.iter().map(|(base, property)| {
         generate_property(
             base,
             property,
@@ -425,9 +437,30 @@ fn generate_body_object(
         Variant::Ref | Variant::Mut => None,
     };
 
+    let reference = variant.into_reference(IncludeLifetime::No);
+
+    let property_names: Vec<_> = properties
+        .values()
+        .map(|Property { name, .. }| name)
+        .collect();
+    let match_arm = quote!(#self_type { #(#property_names),* } =>);
+    let destruct = quote!(let Self { #(#property_names),* } = #reference self);
+
+    // we have already loaded the
+    let variant = self_type.variant;
+    let into_owned = quote!(<Self::Owned> #variant {
+        #(#property_names: #property_names.into_owned()),*
+    });
+    let as_ref = quote!(<Self::Ref> #variant {
+        #(#property_names: #property_names.as_ref()),*
+    });
+    let as_mut = quote!(<Self::Mut> #variant {
+        #(#property_names: #property_names.as_mut()),*
+    });
+
     Body {
         def: quote!({
-            #(#properties),*
+            #(#fields),*
         }),
         try_from: quote!('variant: {
             let serde_json::Value::Object(#mutability properties) = value #clone else {
@@ -436,6 +469,13 @@ fn generate_body_object(
 
             #try_from
         }),
+        conversion: Conversion {
+            into_owned,
+            as_ref,
+            as_mut,
+            match_arm,
+            destruct,
+        },
     }
 }
 
@@ -472,6 +512,21 @@ fn generate_body_array(
         }
     });
 
+    let reference = variant.into_reference(IncludeLifetime::No);
+    let match_arm = quote!(#self_type(value) =>);
+    let destruct = quote!(let Self(value) = #reference self);
+
+    // we have already loaded the
+    let variant = self_type.variant;
+    // TODO: depending on what it is, we might need to `.into()` or `.into_boxed_slice()`
+    // we don't need to cast to a specific trait here, because we know that inner type cannot be the
+    // same type (for now) as we do not directly hoist DataType etc. as inner value.
+    let into_owned = quote!(<Self::Owned> #variant (value.into_iter().map(|value| value.into_owned())).collect());
+    let as_ref = quote!(<Self::Ref> #variant (value.iter().map(|value| value.as_ref())).collect());
+    // TODO: this might fail?
+    let as_mut =
+        quote!(<Self::Mut> #variant (value.iter_mut().map(|value| value.as_mut())).collect());
+
     // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
     // Array
     state.import.vec = true;
@@ -479,6 +534,13 @@ fn generate_body_array(
     Body {
         def: quote!((#vis Vec<#inner #lifetime>)),
         try_from,
+        conversion: Conversion {
+            into_owned,
+            as_ref,
+            as_mut,
+            match_arm,
+            destruct,
+        },
     }
 }
 
@@ -813,7 +875,3 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
 // in the enum we could in theory name the variant by the name of the struct, problem here is ofc
 // that we would still need to name the other variants and then we have potential name conflicts...
 // Do we need to box on Ref and Mut self-referential?
-
-// TODO: intermediate mod.rs (/module.rs) generation
-// TODO: try_from_*
-// TODO: project scaffolding
