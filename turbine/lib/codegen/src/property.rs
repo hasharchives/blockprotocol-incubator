@@ -5,10 +5,12 @@ use std::{
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
+use serde_json::Value;
 use syn::{token::Pub, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
-    DataTypeReference, Object, PropertyType, PropertyTypeReference, PropertyValues, ValueOrArray,
+    Array, DataTypeReference, Object, OneOf, PropertyType, PropertyTypeReference, PropertyValues,
+    ValueOrArray,
 };
 
 use crate::{
@@ -282,6 +284,164 @@ struct Body {
     conversion_match_arm: TokenStream,
 }
 
+fn generate_body_data_type(
+    variant: Variant,
+    reference: &DataTypeReference,
+    locations: &HashMap<&VersionedUrl, Location>,
+    self_type: &SelfType,
+    suffix: Option<TokenStream>,
+) -> Body {
+    let location = &locations[reference.url()];
+    let vis = self_type.variant.is_none().then_some(quote!(pub));
+
+    let name = location
+        .alias
+        .value
+        .as_ref()
+        .unwrap_or(&location.name.value);
+    let mut name = Ident::new(name, Span::call_site()).to_token_stream();
+
+    if let Some(suffix) = suffix {
+        name = quote!(<#name as Type>#suffix);
+    }
+
+    let cast = match variant {
+        Variant::Owned => quote!(as DataType),
+        Variant::Ref => quote!(as DataTypeRef<'a>),
+        Variant::Mut => quote!(as DataTypeMut<'a>),
+    };
+
+    let try_from = quote!({
+        let value = <#name #cast>::try_from_value(value)
+            .change_context(GenericPropertyError::Data);
+
+        value.map(#self_type)
+    });
+
+    // TODO: the problem here are the different match arms, we somehow need to bind
+    // variables
+    // TODO: problem, we have multiple variables :/
+
+    let conversion_match_arm = quote!(#self_type(value) =>);
+
+    // TODO: here we need the name :/ we should make out if we hoise not on the self_type
+    //  but if a variant is present in `Self`
+    let into_owned = quote!(#self_type(<#name #cast>::into_owned(value)));
+
+    Body {
+        def: quote!((#vis #name)),
+        try_from,
+    }
+}
+
+fn generate_body_object(
+    id: &VersionedUrl,
+    variant: Variant,
+    object: &Object<ValueOrArray<PropertyTypeReference>, 1>,
+    resolver: &NameResolver,
+    locations: &HashMap<&VersionedUrl, Location>,
+    self_type: &SelfType,
+    state: &mut State,
+) -> Body {
+    let property_names =
+        resolver.property_names(object.properties().values().map(|property| match property {
+            ValueOrArray::Value(value) => value.url(),
+            ValueOrArray::Array(value) => value.items().url(),
+        }));
+
+    let properties = properties(id, object, resolver, &property_names, locations);
+
+    let try_from = shared::generate_properties_try_from_value(
+        variant,
+        &properties,
+        &Ident::new("GenericPropertyError", Span::call_site()),
+        &self_type.to_token_stream(),
+    );
+
+    let visibility = self_type
+        .variant
+        .is_none()
+        .then(|| Visibility::Public(Pub::default()));
+    let properties = properties.iter().map(|(base, property)| {
+        generate_property(
+            base,
+            property,
+            variant,
+            visibility.as_ref(),
+            &mut state.import,
+        )
+    });
+
+    let mutability = match variant {
+        Variant::Owned => Some(quote!(mut)),
+        Variant::Ref | Variant::Mut => None,
+    };
+
+    let clone = match variant {
+        Variant::Owned => Some(quote!(.clone())),
+        Variant::Ref | Variant::Mut => None,
+    };
+
+    Body {
+        def: quote!({
+            #(#properties),*
+        }),
+        try_from: quote!('variant: {
+            let serde_json::Value::Object(#mutability properties) = value #clone else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject))
+            };
+
+            #try_from
+        }),
+    }
+}
+
+fn generate_body_array(
+    id: &VersionedUrl,
+    variant: Variant,
+    array: &Array<OneOf<PropertyValues>>,
+    resolver: &NameResolver,
+    locations: &HashMap<&VersionedUrl, Location>,
+    self_type: &SelfType,
+    state: &mut State,
+) -> Body {
+    let items = array.items();
+    let inner = generate_inner(id, variant, items.one_of(), resolver, locations, state);
+
+    let vis = self_type.variant.is_none().then_some(quote!(pub));
+
+    let lifetime = match variant {
+        Variant::Ref | Variant::Mut => Some(quote!(<'a>)),
+        Variant::Owned => None,
+    };
+
+    let suffix = match variant {
+        Variant::Ref => Some(quote!(.map(|array| array.into_boxed_slice()))),
+        _ => None,
+    };
+
+    let try_from = quote!({
+        match value {
+            serde_json::Value::Array(array) => turbine::fold_iter_reports(
+                array.into_iter().map(|value| <#inner #lifetime>::try_from_value(value))
+            )
+            #suffix
+            .map(#self_type)
+            .change_context(GenericPropertyError::Array),
+            _ => Err(Report::new(GenericPropertyError::ExpectedArray))
+        }
+    });
+
+    // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
+    // Array
+    state.import.vec = true;
+
+    Body {
+        def: quote!((#vis Vec<#inner #lifetime>)),
+        try_from,
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 fn generate_body(
     (id, variant): (&VersionedUrl, Variant),
@@ -299,140 +459,15 @@ fn generate_body(
 
     match value {
         PropertyValues::DataTypeReference(reference) => {
-            let location = &locations[reference.url()];
-            let vis = self_type.variant.is_none().then_some(quote!(pub));
-
-            let name = location
-                .alias
-                .value
-                .as_ref()
-                .unwrap_or(&location.name.value);
-            let mut name = Ident::new(name, Span::call_site()).to_token_stream();
-
-            if let Some(suffix) = suffix {
-                name = quote!(<#name as Type>#suffix);
-            }
-
-            let cast = match variant {
-                Variant::Owned => quote!(as DataType),
-                Variant::Ref => quote!(as DataTypeRef<'a>),
-                Variant::Mut => quote!(as DataTypeMut<'a>),
-            };
-
-            let try_from = quote!({
-                let value = <#name #cast>::try_from_value(value)
-                    .change_context(GenericPropertyError::Data);
-
-                value.map(#self_type)
-            });
-
-            // TODO: the problem here are the different match arms, we somehow need to bind
-            // variables
-            // TODO: problem, we have multiple variables :/
-
-            let conversion_match_arm = quote!(#self_type(value) =>);
-
-            // TODO: here we need the name :/ we should make out if we hoise not on the self_type
-            //  but if a variant is present in `Self`
-            let into_owned = quote!(#self_type(<#name #cast>::into_owned(value)));
-
-            Body {
-                def: quote!((#vis #name)),
-                try_from,
-            }
+            generate_body_data_type(variant, reference, locations, self_type, suffix)
         }
         PropertyValues::PropertyTypeObject(object) => {
-            let property_names = resolver.property_names(object.properties().values().map(
-                |property| match property {
-                    ValueOrArray::Value(value) => value.url(),
-                    ValueOrArray::Array(value) => value.items().url(),
-                },
-            ));
-
-            let properties = properties(id, object, resolver, &property_names, locations);
-
-            let try_from = shared::generate_properties_try_from_value(
-                variant,
-                &properties,
-                &Ident::new("GenericPropertyError", Span::call_site()),
-                &self_type.to_token_stream(),
-            );
-
-            let visibility = self_type
-                .variant
-                .is_none()
-                .then(|| Visibility::Public(Pub::default()));
-            let properties = properties.iter().map(|(base, property)| {
-                generate_property(
-                    base,
-                    property,
-                    variant,
-                    visibility.as_ref(),
-                    &mut state.import,
-                )
-            });
-
-            let mutability = match variant {
-                Variant::Owned => Some(quote!(mut)),
-                Variant::Ref | Variant::Mut => None,
-            };
-
-            let clone = match variant {
-                Variant::Owned => Some(quote!(.clone())),
-                Variant::Ref | Variant::Mut => None,
-            };
-
-            Body {
-                def: quote!({
-                    #(#properties),*
-                }),
-                try_from: quote!('variant: {
-                    let serde_json::Value::Object(#mutability properties) = value #clone else {
-                        break 'variant Err(Report::new(GenericPropertyError::ExpectedObject))
-                    };
-
-                    #try_from
-                }),
-            }
+            generate_body_object(id, variant, object, resolver, locations, self_type, state)
         }
         // TODO: automatically flatten, different modes?, inner data-type reference should just be a
         //  newtype?
         PropertyValues::ArrayOfPropertyValues(array) => {
-            let items = array.items();
-            let inner = generate_inner(id, variant, items.one_of(), resolver, locations, state);
-
-            let vis = self_type.variant.is_none().then_some(quote!(pub));
-
-            let lifetime = match variant {
-                Variant::Ref | Variant::Mut => Some(quote!(<'a>)),
-                Variant::Owned => None,
-            };
-
-            let suffix = match variant {
-                Variant::Ref => Some(quote!(.map(|array| array.into_boxed_slice()))),
-                _ => None,
-            };
-
-            let try_from = quote!({
-                match value {
-                    serde_json::Value::Array(array) => turbine::fold_iter_reports(
-                        array.into_iter().map(|value| <#inner #lifetime>::try_from_value(value))
-                    )
-                    #suffix
-                    .map(#self_type)
-                    .change_context(GenericPropertyError::Array),
-                    _ => Err(Report::new(GenericPropertyError::ExpectedArray))
-                }
-            });
-
-            // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
-            // Array
-            state.import.vec = true;
-
-            Body {
-                def: quote!((#vis Vec<#inner #lifetime>)),
-                try_from,
-            }
+            generate_body_array(id, variant, array, resolver, locations, self_type, state)
         }
     }
 }
