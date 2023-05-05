@@ -102,6 +102,7 @@ struct Type {
     def: TokenStream,
     impl_ty: TokenStream,
     impl_try_from_value: TokenStream,
+    impl_conversion: TokenStream,
 }
 
 fn generate_type(
@@ -130,7 +131,10 @@ fn generate_type(
         };
 
         // we can hoist!
-        let (body, try_from) = generate_contents(
+        let Body {
+            def: body,
+            try_from,
+        } = generate_body(
             (id, variant),
             value,
             resolver,
@@ -161,7 +165,10 @@ fn generate_type(
         .enumerate()
         .map(|(index, value)| {
             let name = format_ident!("Variant{index}");
-            let (body, try_from) = generate_contents(
+            let Body {
+                def: body,
+                try_from,
+            } = generate_body(
                 (id, variant),
                 value,
                 resolver,
@@ -230,6 +237,7 @@ fn generate_inner(
         def,
         impl_ty,
         impl_try_from_value,
+        impl_conversion,
     } = generate_type(id, &name, variant, values, resolver, locations, state);
 
     let value_ref = match variant {
@@ -247,6 +255,8 @@ fn generate_inner(
                 fn try_from_value(value: #value_ref serde_json::Value) -> Result<Self, GenericPropertError> {
                     #impl_try_from_value
                 }
+
+                #impl_conversion
             }
         ),
     });
@@ -254,8 +264,13 @@ fn generate_inner(
     name
 }
 
+struct Body {
+    def: TokenStream,
+    try_from: TokenStream,
+}
+
 #[allow(clippy::too_many_lines)]
-fn generate_contents(
+fn generate_body(
     (id, variant): (&VersionedUrl, Variant),
     value: &PropertyValues,
     resolver: &NameResolver,
@@ -263,7 +278,7 @@ fn generate_contents(
     hoist: bool,
     type_: &TokenStream,
     state: &mut State,
-) -> (TokenStream, TokenStream) {
+) -> Body {
     let suffix = match variant {
         Variant::Owned => None,
         Variant::Ref => Some(quote!(::Ref<'a>)),
@@ -299,7 +314,10 @@ fn generate_contents(
                 value.map(#type_)
             });
 
-            (quote!((#vis #name)), try_from)
+            Body {
+                def: quote!((#vis #name)),
+                try_from,
+            }
         }
         PropertyValues::PropertyTypeObject(object) => {
             let property_names = resolver.property_names(object.properties().values().map(
@@ -339,18 +357,18 @@ fn generate_contents(
                 Variant::Ref | Variant::Mut => None,
             };
 
-            (
-                quote!({
+            Body {
+                def: quote!({
                     #(#properties),*
                 }),
-                quote!('variant: {
+                try_from: quote!('variant: {
                     let serde_json::Value::Object(#mutability properties) = value #clone else {
                         break 'variant Err(Report::new(GenericPropertyError::ExpectedObject))
                     };
 
                     #try_from
                 }),
-            )
+            }
         }
         // TODO: automatically flatten, different modes?, inner data-type reference should just be a
         //  newtype?
@@ -385,7 +403,11 @@ fn generate_contents(
             // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
             // Array
             state.import.vec = true;
-            (quote!((#vis Vec<#inner #lifetime>)), try_from)
+
+            Body {
+                def: quote!((#vis Vec<#inner #lifetime>)),
+                try_from,
+            }
         }
     }
 }
