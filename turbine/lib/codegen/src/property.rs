@@ -141,7 +141,7 @@ fn generate_type(
             value,
             resolver,
             locations,
-            &SelfType { variant: None },
+            &SelfType::struct_(),
             state,
         );
         let semicolon = semicolon.then_some(quote!(;));
@@ -174,9 +174,7 @@ fn generate_type(
                 value,
                 resolver,
                 locations,
-                &SelfType {
-                    variant: Some(&name.to_token_stream()),
-                },
+                &SelfType::enum_(&name.to_token_stream()),
                 state,
             );
 
@@ -266,14 +264,37 @@ fn generate_inner(
     name
 }
 
+#[derive(Debug, Copy, Clone)]
+struct SelfVariant<'a>(&'a TokenStream);
+
+impl ToTokens for SelfVariant<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let name = self.0;
+        tokens.extend(quote!(:: #name))
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 struct SelfType<'a> {
-    variant: Option<&'a TokenStream>,
+    variant: Option<SelfVariant<'a>>,
+}
+
+impl<'a> SelfType<'a> {
+    fn enum_(name: &'a TokenStream) -> Self {
+        SelfType {
+            variant: Some(SelfVariant(name)),
+        }
+    }
+
+    fn struct_() -> Self {
+        SelfType { variant: None }
+    }
 }
 
 impl ToTokens for SelfType<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let variant = self.variant.iter();
-        tokens.extend(quote!(Self #(:: #variant)*));
+        let variant = self.variant;
+        tokens.extend(quote!(Self #variant));
     }
 }
 
