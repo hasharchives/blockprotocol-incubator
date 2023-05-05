@@ -6,7 +6,7 @@ use std::{
 
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{token::Pub, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
@@ -135,10 +135,17 @@ fn generate_type(
 ) -> TokenStream {
     let lifetime = matches!(variant, Variant::Ref | Variant::Mut).then(|| quote!(<'a>));
 
-    let derive = match variant {
-        Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
-        Variant::Mut => quote!(#[derive(Debug, Serialize)]),
-    };
+    let mut derives = vec![format_ident!("Debug")];
+
+    if !properties.is_empty() {
+        derives.push(format_ident!("Serialize"));
+    }
+
+    if variant == Variant::Owned || variant == Variant::Ref {
+        derives.push(format_ident!("Clone"));
+    }
+
+    let derive = quote!(#[derive(#(#derives),*)]);
 
     let name = match variant {
         Variant::Owned => &location.name,
@@ -210,9 +217,15 @@ fn generate_type(
         )
     };
 
+    let serialize_polyfill = properties
+        .is_empty()
+        .then(|| quote!(turbine::serialize_compat!(#properties_name #lifetime);));
+
     quote! {
         #derive
         pub struct #properties_name #lifetime #body
+
+        #serialize_polyfill
 
         impl #lifetime #properties_name #lifetime {
             fn try_from_value(#mutability properties: #reference HashMap<String, serde_json::Value>) -> Result<Self, GenericEntityError> {
