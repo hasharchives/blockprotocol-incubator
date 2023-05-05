@@ -261,12 +261,12 @@ fn generate_type(
             let as_ref = conversion.iter().map(
                 |Conversion {
                      as_ref, match_arm, ..
-                 }| quote!(#match_arm, #as_ref),
+                 }| quote!(#match_arm #as_ref),
             );
             let as_mut = conversion.iter().map(
                 |Conversion {
                      as_mut, match_arm, ..
-                 }| quote!(#match_arm, #as_mut),
+                 }| quote!(#match_arm #as_mut),
             );
 
             quote! {
@@ -418,12 +418,12 @@ fn generate_body_data_type(
     let location = &locations[reference.url()];
     let vis = self_type.hoisted_visibility();
 
-    let type_name = location
+    let type_name_raw = location
         .alias
         .value
         .as_ref()
         .unwrap_or(&location.name.value);
-    let mut type_name = Ident::new(type_name, Span::call_site()).to_token_stream();
+    let mut type_name = Ident::new(type_name_raw, Span::call_site()).to_token_stream();
 
     if let Some(suffix) = suffix {
         type_name = quote!(<#type_name as Type>#suffix);
@@ -455,15 +455,21 @@ fn generate_body_data_type(
         Variant::Mut => quote!(as TypeMut),
     };
 
+    let mut type_name = Ident::new(type_name_raw, Span::call_site()).to_token_stream();
+    type_name = match variant {
+        Variant::Owned => type_name,
+        Variant::Ref => quote!(<#type_name as Type> :: Ref),
+        Variant::Mut => quote!(<#type_name as Type> :: Mut),
+    };
+
     let variant = self_type.variant;
 
     // TODO: we might need to explicitly cast on all other variants as well
     // need to use explicit cast as there are multiple possibilities here, either `Ref` or `Mut`
     // if a `DataType` implements both
-    let into_owned =
-        quote!(<<Self as #cast>::Owned> #variant (<#type_name #cast>::into_owned(value)));
-    let as_ref = quote!(<Self::Ref> #variant (<#type_name #cast>::as_ref(value)));
-    let as_mut = quote!(<Self::Mut> #variant (<#type_name #cast>::as_mut(value)));
+    let into_owned = quote!(<Self #cast>::Owned #variant (<#type_name #cast>::into_owned(value)));
+    let as_ref = quote!(Self::Ref #variant (<#type_name #cast>::as_ref(value)));
+    let as_mut = quote!(Self::Mut #variant (<#type_name #cast>::as_mut(value)));
 
     Body {
         def: quote!((#vis #type_name)),
@@ -530,17 +536,27 @@ fn generate_body_object(
         .map(|Property { name, .. }| name)
         .collect();
     let match_arm = quote!(#self_type { #(#property_names),* } =>);
+    // TODO: this is wrong, back to the drawing board
+    // TODO: current challenges:
+    //  1) we do not know what we do at this stage (do we destruct or are we an arm)
+    //  2) we do not know what to generate
+    //  3) we do not know what `Inner` does (who is the `Mut` variant)
+    //  The current approach is lacking, what we need to do instead is depending on the `self_type`
+    //  either create a match_arm or destruct, how we destruct depends on what we are trying to
+    //  achieve. `as_ref` is `&`, `as_mut` is `&mut`, `into_owned` is nothing. We then return a
+    //  struct with all three, but as options. Not perfect but good enough. These are either bodies
+    //  or just match arms.
     let destruct = quote!(let Self { #(#property_names),* } = #reference self);
 
     // we have already loaded the
     let variant = self_type.variant;
-    let into_owned = quote!(<Self::Owned> #variant {
+    let into_owned = quote!(Self::Owned #variant {
         #(#property_names: #property_names.into_owned()),*
     });
-    let as_ref = quote!(<Self::Ref> #variant {
+    let as_ref = quote!(Self::Ref #variant {
         #(#property_names: #property_names.as_ref()),*
     });
-    let as_mut = quote!(<Self::Mut> #variant {
+    let as_mut = quote!(Self::Mut #variant {
         #(#property_names: #property_names.as_mut()),*
     });
 
@@ -607,11 +623,12 @@ fn generate_body_array(
     // TODO: depending on what it is, we might need to `.into()` or `.into_boxed_slice()`
     // we don't need to cast to a specific trait here, because we know that inner type cannot be the
     // same type (for now) as we do not directly hoist DataType etc. as inner value.
-    let into_owned = quote!(<Self::Owned> #variant (value.into_iter().map(|value| value.into_owned())).collect());
-    let as_ref = quote!(<Self::Ref> #variant (value.iter().map(|value| value.as_ref())).collect());
+    let into_owned =
+        quote!(Self::Owned #variant (value.into_iter().map(|value| value.into_owned())).collect());
+    let as_ref = quote!(Self::Ref #variant (value.iter().map(|value| value.as_ref())).collect());
     // TODO: this might fail?
     let as_mut =
-        quote!(<Self::Mut> #variant (value.iter_mut().map(|value| value.as_mut())).collect());
+        quote!(Self::Mut #variant (value.iter_mut().map(|value| value.as_mut())).collect());
 
     // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
     // Array
