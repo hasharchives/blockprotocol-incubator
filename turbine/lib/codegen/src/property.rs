@@ -139,8 +139,7 @@ fn generate_type(
             value,
             resolver,
             locations,
-            true,
-            &quote!(Self),
+            &SelfType { variant: None },
             state,
         );
         let semicolon = semicolon.then_some(quote!(;));
@@ -173,8 +172,9 @@ fn generate_type(
                 value,
                 resolver,
                 locations,
-                false,
-                &quote!(Self::#name),
+                &SelfType {
+                    variant: Some(&name.to_token_stream()),
+                },
                 state,
             );
 
@@ -264,9 +264,22 @@ fn generate_inner(
     name
 }
 
+struct SelfType<'a> {
+    variant: Option<&'a TokenStream>,
+}
+
+impl ToTokens for SelfType<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let variant = self.variant.iter();
+        tokens.extend(quote!(Self #(:: #variant)*));
+    }
+}
+
 struct Body {
     def: TokenStream,
     try_from: TokenStream,
+    conversion: TokenStream,
+    conversion_match_arm: TokenStream,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -275,8 +288,7 @@ fn generate_body(
     value: &PropertyValues,
     resolver: &NameResolver,
     locations: &HashMap<&VersionedUrl, Location>,
-    hoist: bool,
-    type_: &TokenStream,
+    self_type: &SelfType,
     state: &mut State,
 ) -> Body {
     let suffix = match variant {
@@ -288,7 +300,7 @@ fn generate_body(
     match value {
         PropertyValues::DataTypeReference(reference) => {
             let location = &locations[reference.url()];
-            let vis = hoist.then_some(quote!(pub));
+            let vis = self_type.variant.is_none().then_some(quote!(pub));
 
             let name = location
                 .alias
@@ -311,8 +323,18 @@ fn generate_body(
                 let value = <#name #cast>::try_from_value(value)
                     .change_context(GenericPropertyError::Data);
 
-                value.map(#type_)
+                value.map(#self_type)
             });
+
+            // TODO: the problem here are the different match arms, we somehow need to bind
+            // variables
+            // TODO: problem, we have multiple variables :/
+
+            let conversion_match_arm = quote!(#self_type(value) =>);
+
+            // TODO: here we need the name :/ we should make out if we hoise not on the self_type
+            //  but if a variant is present in `Self`
+            let into_owned = quote!(#self_type(<#name #cast>::into_owned(value)));
 
             Body {
                 def: quote!((#vis #name)),
@@ -333,10 +355,13 @@ fn generate_body(
                 variant,
                 &properties,
                 &Ident::new("GenericPropertyError", Span::call_site()),
-                type_,
+                &self_type.to_token_stream(),
             );
 
-            let visibility = hoist.then(|| Visibility::Public(Pub::default()));
+            let visibility = self_type
+                .variant
+                .is_none()
+                .then(|| Visibility::Public(Pub::default()));
             let properties = properties.iter().map(|(base, property)| {
                 generate_property(
                     base,
@@ -376,7 +401,7 @@ fn generate_body(
             let items = array.items();
             let inner = generate_inner(id, variant, items.one_of(), resolver, locations, state);
 
-            let vis = hoist.then_some(quote!(pub));
+            let vis = self_type.variant.is_none().then_some(quote!(pub));
 
             let lifetime = match variant {
                 Variant::Ref | Variant::Mut => Some(quote!(<'a>)),
@@ -394,7 +419,7 @@ fn generate_body(
                         array.into_iter().map(|value| <#inner #lifetime>::try_from_value(value))
                     )
                     #suffix
-                    .map(#type_)
+                    .map(#self_type)
                     .change_context(GenericPropertyError::Array),
                     _ => Err(Report::new(GenericPropertyError::ExpectedArray))
                 }
