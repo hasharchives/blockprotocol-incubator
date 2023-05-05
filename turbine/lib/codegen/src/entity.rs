@@ -278,13 +278,17 @@ fn generate_owned(
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
             fn as_mut(&mut self) -> Self::Mut<'_> {
-                // TODO!
-                todo!()
+                #name_mut {
+                    properties: self.properties.as_mut(),
+                    #(#link_data: &mut self.link_data)*
+                }
             }
 
             fn as_ref(&self) -> Self::Ref<'_> {
-                // TODO!
-                todo!()
+                #name_ref {
+                    properties: self.properties.as_ref(),
+                    #(#link_data: &self.link_data)*
+                }
             }
         }
 
@@ -344,8 +348,10 @@ fn generate_ref(
             type Owned = #name;
 
             fn into_owned(self) -> Self::Owned {
-                // TODO!
-                todo!();
+                #name {
+                    properties: self.properties.into_owned(),
+                    #(#link_data: self.link_data.clone())*
+                }
             }
         }
 
@@ -406,8 +412,10 @@ fn generate_mut(
             type Owned = #name;
 
             fn into_owned(self) -> Self::Owned {
-                // TODO!
-                todo!();
+                #name {
+                    properties: self.properties.into_owned(),
+                    #(#link_data: self.link_data.clone())*
+                }
             }
         }
 
