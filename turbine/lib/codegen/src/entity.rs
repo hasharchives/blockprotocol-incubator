@@ -232,7 +232,7 @@ fn generate_type(
 
 fn generate_doc(entity: &EntityType) -> TokenStream {
     let title = entity.title();
-    // mimic #()?
+    // mimic `#(...)?`
     let description = entity.description().into_iter();
 
     quote!(

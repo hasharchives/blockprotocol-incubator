@@ -15,6 +15,7 @@ use crate::entity::Entity;
 pub mod entity;
 mod error;
 mod polyfill;
+mod serialize;
 pub mod types;
 
 pub use error::{GenericEntityError, GenericPropertyError};
