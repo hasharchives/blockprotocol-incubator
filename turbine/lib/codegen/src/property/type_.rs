@@ -9,7 +9,7 @@ use crate::{
     name::{Location, NameResolver},
     property::{
         property_value::{PropertyValue, PropertyValueGenerator, SelfType},
-        State,
+        PathSegment, State,
     },
     shared::Variant,
 };
@@ -35,7 +35,7 @@ pub(super) struct TypeGenerator<'a> {
 }
 
 impl<'a> TypeGenerator<'a> {
-    pub(super) fn finish(mut self) -> Type {
+    pub(super) fn finish(self) -> Type {
         let derive = match self.variant {
             Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
             Variant::Mut => quote!(#[derive(Debug, Serialize)]),
@@ -56,6 +56,7 @@ impl<'a> TypeGenerator<'a> {
                 }
             };
 
+            self.state.stack.push(PathSegment::OneOf { index: 0 });
             let PropertyValue { body, try_from } = PropertyValueGenerator {
                 id: self.id,
                 variant: self.variant,
@@ -63,9 +64,10 @@ impl<'a> TypeGenerator<'a> {
                 resolver: self.resolver,
                 locations: self.locations,
                 value,
-                state: &mut self.state,
+                state: self.state,
             }
             .finish();
+            self.state.stack.pop();
 
             let semicolon = semicolon.then_some(quote!(;));
 
@@ -90,6 +92,8 @@ impl<'a> TypeGenerator<'a> {
             .enumerate()
             .map(|(index, value)| {
                 let name = format_ident!("Variant{index}");
+
+                self.state.stack.push(PathSegment::OneOf { index });
                 let PropertyValue { body, try_from } = PropertyValueGenerator {
                     id: self.id,
                     variant: self.variant,
@@ -97,9 +101,10 @@ impl<'a> TypeGenerator<'a> {
                     resolver: self.resolver,
                     locations: self.locations,
                     value,
-                    state: &mut self.state,
+                    state: self.state,
                 }
                 .finish();
+                self.state.stack.pop();
 
                 (
                     quote! {

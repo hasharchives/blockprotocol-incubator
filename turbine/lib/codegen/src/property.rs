@@ -22,7 +22,6 @@ enum PathSegment {
     Inner { index: usize },
     OneOf { index: usize },
     Array,
-    Property,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

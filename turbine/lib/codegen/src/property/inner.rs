@@ -5,16 +5,17 @@ use quote::{format_ident, quote, ToTokens};
 use type_system::{url::VersionedUrl, PropertyValues};
 
 use crate::{
-    name::{Location, Name, NameResolver},
+    name::{Location, NameResolver},
     property::{
         type_::{Type, TypeGenerator},
-        PathSegment, Stack, State,
+        PathSegment, State,
     },
     shared::Variant,
 };
 
 type Path = Box<[PathSegment]>;
 
+#[derive(Debug)]
 struct NameVariants {
     index: usize,
     owned: Ident,
@@ -41,6 +42,7 @@ impl NameVariants {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct InnerTypes {
     lookup: HashMap<Path, NameVariants>,
     prefix: String,
@@ -104,17 +106,6 @@ impl InnerTypes {
     }
 }
 
-pub(super) struct Inner {
-    name: Ident,
-    stream: TokenStream,
-}
-
-impl ToTokens for Inner {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        tokens.extend(self.stream.clone());
-    }
-}
-
 pub(super) struct InnerGenerator<'a> {
     pub(super) id: &'a VersionedUrl,
     pub(super) variant: Variant,
@@ -134,7 +125,6 @@ impl<'a> InnerGenerator<'a> {
         let (name, index) = names.to_variant(self.variant);
 
         self.state.stack.push(PathSegment::Inner { index });
-
         let Type {
             def,
             impl_ty,
@@ -150,7 +140,6 @@ impl<'a> InnerGenerator<'a> {
             state: self.state,
         }
         .finish();
-
         self.state.stack.pop();
 
         let value_ref = match self.variant {

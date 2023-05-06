@@ -10,7 +10,7 @@ use type_system::{
 
 use crate::{
     name::{Location, NameResolver, PropertyName},
-    property::{inner::InnerGenerator, State},
+    property::{inner::InnerGenerator, PathSegment, State},
     shared,
     shared::{IncludeLifetime, Property, Variant},
 };
@@ -271,15 +271,17 @@ impl<'a> PropertyValueGenerator<'a> {
     fn array(&mut self, array: &Array<OneOf<PropertyValues>>) -> PropertyValue {
         let items = array.items();
 
+        self.state.stack.push(PathSegment::Array);
         let inner = InnerGenerator {
             id: self.id,
             variant: self.variant,
             values: items.one_of(),
             resolver: self.resolver,
             locations: self.locations,
-            state: &mut self.state,
+            state: self.state,
         }
         .finish();
+        self.state.stack.pop();
 
         let vis = self.self_type.hoisted_visibility();
 
