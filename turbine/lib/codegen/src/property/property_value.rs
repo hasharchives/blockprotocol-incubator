@@ -10,7 +10,7 @@ use type_system::{
 
 use crate::{
     name::{Location, NameResolver, PropertyName},
-    property::State,
+    property::{inner::InnerGenerator, State},
     shared,
     shared::{IncludeLifetime, Property, Variant},
 };
@@ -89,17 +89,17 @@ fn properties<'a>(
     )
 }
 
-struct PropertyValueGenerator<'a> {
-    id: &'a VersionedUrl,
-    variant: Variant,
-    self_type: SelfType<'a>,
+pub(super) struct PropertyValueGenerator<'a> {
+    pub(super) id: &'a VersionedUrl,
+    pub(super) variant: Variant,
+    pub(super) self_type: SelfType<'a>,
 
-    resolver: &'a NameResolver<'a>,
-    locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
+    pub(super) resolver: &'a NameResolver<'a>,
+    pub(super) locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
 
-    value: &'a PropertyValues,
+    pub(super) value: &'a PropertyValues,
 
-    state: &'a mut State,
+    pub(super) state: &'a mut State,
 }
 
 impl<'a> PropertyValueGenerator<'a> {
@@ -284,7 +284,16 @@ impl<'a> PropertyValueGenerator<'a> {
 
     fn array(&mut self, array: &Array<OneOf<PropertyValues>>) -> Body {
         let items = array.items();
-        let inner = generate_inner(id, variant, items.one_of(), resolver, locations, state);
+
+        let inner = InnerGenerator {
+            id: self.id,
+            variant: self.variant,
+            values: items.one_of(),
+            resolver: self.resolver,
+            locations: self.locations,
+            state: &mut self.state,
+        }
+        .finish();
 
         let vis = self.self_type.hoisted_visibility();
 
@@ -344,7 +353,7 @@ impl<'a> PropertyValueGenerator<'a> {
         }
     }
 
-    fn finish(mut self) -> Body {
+    pub(super) fn finish(mut self) -> Body {
         match self.value {
             PropertyValues::DataTypeReference(reference) => self.data_type(reference),
             PropertyValues::PropertyTypeObject(object) => self.object(object),

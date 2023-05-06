@@ -382,19 +382,6 @@ impl<'a> PropertyTypeGenerator<'a> {
     }
 }
 
-struct Type {
-    def: TokenStream,
-    impl_ty: TokenStream,
-    impl_try_from_value: TokenStream,
-    impl_conversion: TokenStream,
-}
-
-struct Body {
-    def: TokenStream,
-    try_from: TokenStream,
-    conversion: Conversion,
-}
-
 // Generate the code for all oneOf, depending (with the () vs. {}) and extra types required,
 // then if oneOf is one use a struct instead, inner types (`Inner`) should be
 // generated via a mutable vec

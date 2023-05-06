@@ -22,19 +22,19 @@ pub(super) struct Type {
     impl_conversion: TokenStream,
 }
 
-struct TypeGenerator<'a> {
-    id: &'a VersionedUrl,
-    name: &'a Ident,
-    variant: Variant,
+pub(super) struct TypeGenerator<'a> {
+    pub(super) id: &'a VersionedUrl,
+    pub(super) name: &'a Ident,
+    pub(super) variant: Variant,
 
-    values: &'a [PropertyValues],
-    locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
+    pub(super) values: &'a [PropertyValues],
+    pub(super) locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
 
-    state: &'a mut State,
+    pub(super) state: &'a mut State,
 }
 
 impl<'a> TypeGenerator<'a> {
-    fn finish(mut self) -> Type {
+    pub(super) fn finish(mut self) -> Type {
         let derive = match self.variant {
             Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
             Variant::Mut => quote!(#[derive(Debug, Serialize)]),

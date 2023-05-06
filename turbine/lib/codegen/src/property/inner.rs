@@ -1,43 +1,46 @@
 use std::collections::HashMap;
-use proc_macro2::TokenStream;
-use quote::format_ident;
-use type_system::PropertyValues;
-use type_system::url::VersionedUrl;
-use crate::name::{Location, NameResolver};
-use crate::property::State;
-use crate::shared::Variant;
 
-struct InnerGenerator<'a> {
-    id: &'a VersionedUrl,
-    variant: Variant,
-    
-    values: &'a[PropertyValues],
-    
-    resolver: &'a NameResolver<'a>,
-    locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
-    
-    state: &'a mut State
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use type_system::{url::VersionedUrl, PropertyValues};
+
+use crate::{
+    name::{Location, NameResolver},
+    property::State,
+    shared::Variant,
+};
+
+pub(super) struct InnerGenerator<'a> {
+    pub(super) id: &'a VersionedUrl,
+    pub(super) variant: Variant,
+
+    pub(super) values: &'a [PropertyValues],
+
+    pub(super) resolver: &'a NameResolver<'a>,
+    pub(super) locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
+
+    pub(super) state: &'a mut State,
 }
 
 impl<'a> InnerGenerator<'a> {
-    fn finish(mut self) -> TokenStream {
-        let n = state.inner.len();
-    let name = format_ident!("{}{n}", state.inner_name);
+    pub(super) fn finish(mut self) -> TokenStream {
+        let n = self.state.inner.len();
+        let name = format_ident!("{}{n}", self.state.inner_name);
 
-    let Type {
-        def,
-        impl_ty,
-        impl_try_from_value,
-        impl_conversion,
-    } = generate_type(id, &name, variant, values, resolver, locations, state);
+        let Type {
+            def,
+            impl_ty,
+            impl_try_from_value,
+            impl_conversion,
+        } = generate_type(id, &name, variant, values, resolver, locations, state);
 
-    let value_ref = match variant {
-        Variant::Owned => None,
-        Variant::Ref => Some(quote!(&'a)),
-        Variant::Mut => Some(quote!(&'a mut)),
-    };
+        let value_ref = match variant {
+            Variant::Owned => None,
+            Variant::Ref => Some(quote!(&'a)),
+            Variant::Mut => Some(quote!(&'a mut)),
+        };
 
-    state.inner.push(Inner {
+        self.state.inner.push(Inner {
         name: name.clone(),
         stream: quote!(
             #def
@@ -52,6 +55,6 @@ impl<'a> InnerGenerator<'a> {
         ),
     });
 
-    name
+        name
     }
 }
