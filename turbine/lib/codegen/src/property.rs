@@ -2,7 +2,7 @@ mod inner;
 mod property_value;
 mod type_;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
@@ -11,16 +11,52 @@ use type_system::{url::VersionedUrl, DataTypeReference, PropertyType, PropertyTy
 use crate::{
     name::{Location, NameResolver},
     property::{
-        inner::Inner,
+        inner::InnerTypes,
         type_::{Type, TypeGenerator},
     },
     shared::{generate_mod, imports, Import, Variant},
 };
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+enum PathSegment {
+    Inner { index: usize },
+    OneOf { index: usize },
+    Array,
+    Property,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+struct Stack(Vec<PathSegment>);
+
+impl Stack {
+    #[must_use]
+    const fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    fn push(&mut self, segment: PathSegment) {
+        self.0.push(segment);
+    }
+
+    fn pop(&mut self) {
+        self.0.pop();
+    }
+}
+
+impl Deref for Stack {
+    type Target = [PathSegment];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 struct State {
-    inner: Vec<Inner>,
+    /// extra streams that are to be created in the main function body
+    extra: Vec<TokenStream>,
+    stack: Stack,
+    inner: InnerTypes,
     import: Import,
-    inner_name: String,
 }
 
 const RESERVED: &[&str] = &[
@@ -83,49 +119,18 @@ impl<'a> PropertyTypeGenerator<'a> {
             reserved.push(name);
         }
 
-        // TODO: fix
-        let mut inner = "Inner".to_owned();
         // we need to clone here, otherwise we're in ownership kerfuffle
         let locations = resolver.locations(references.clone(), &reserved);
 
-        for location in locations.values() {
-            let name = location
-                .alias
-                .value
-                .as_ref()
-                .unwrap_or(&location.name.value);
-            let name_ref = location
-                .alias
-                .value_ref
-                .as_ref()
-                .unwrap_or(&location.name_ref.value);
-            let name_mut = location
-                .alias
-                .value_mut
-                .as_ref()
-                .unwrap_or(&location.name_mut.value);
-
-            // ensures that we test if the new identifier is also a collision
-            loop {
-                if name.starts_with(inner.as_str())
-                    || name_ref.starts_with(inner.as_str())
-                    || name_mut.starts_with(inner.as_str())
-                {
-                    inner = format!("_{inner}");
-                } else {
-                    break;
-                }
-            }
-        }
-
         let state = State {
-            inner: vec![],
+            extra: vec![],
+            inner: InnerTypes::new(&locations),
+            stack: Stack::new(),
             import: Import {
                 vec: false,
                 box_: false,
                 phantom_data: false,
             },
-            inner_name: inner,
         };
 
         Self {
@@ -336,12 +341,12 @@ impl<'a> PropertyTypeGenerator<'a> {
         let use_ = self.use_();
         let mod_ = self.mod_();
 
-        let inner = self.state.inner;
+        let extra = self.state.extra;
 
         quote! {
             #use_
 
-            #(#inner)*
+            #(#extra)*
 
             #owned
             #ref_
