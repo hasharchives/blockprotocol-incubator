@@ -9,7 +9,7 @@ use type_system::{
 };
 
 use crate::{
-    name::{Location, Name, NameResolver, PropertyName},
+    name::{Location, NameResolver, PropertyName},
     property::{inner::InnerGenerator, PathSegment, State},
     shared,
     shared::{
@@ -303,7 +303,7 @@ impl<'a> PropertyValueGenerator<'a> {
                 // needs `into_owned`
                 let into_owned = if let Some(variant) = self.self_type.variant {
                     let body = generate_property_object_conversion_body(
-                        &quote!(<#mut_> #variant),
+                        &quote!(<#owned> #variant),
                         ConversionFunction::IntoOwned {
                             variant: self.variant,
                         },
@@ -315,7 +315,7 @@ impl<'a> PropertyValueGenerator<'a> {
                     }
                 } else {
                     let body = generate_property_object_conversion_body(
-                        &quote!(#mut_),
+                        &quote!(#owned),
                         ConversionFunction::IntoOwned {
                             variant: self.variant,
                         },
@@ -382,41 +382,7 @@ impl<'a> PropertyValueGenerator<'a> {
             Variant::Ref | Variant::Mut => None,
         };
 
-        let reference = self.variant.into_reference(IncludeLifetime::No);
-
-        let property_names: Vec<_> = properties
-            .values()
-            .map(|Property { name, .. }| name)
-            .collect();
-        let self_type = self.self_type;
-        let match_arm = quote!(#self_type { #(#property_names),* } =>);
-        // TODO: this is wrong, back to the drawing board
-        // TODO: current challenges:
-        //  1) we do not know what we do at this stage (do we destruct or are we an arm)
-        //  2) we do not know what to generate
-        //  3) we do not know what `Inner` does (who is the `Mut` variant)
-        //      We need a path lookup which we trail (in state) and once `Inner` is accessed we
-        //      generate it, we can then simply reference which one we need!
-        //  The current approach is lacking, what we need to do instead is depending on the
-        // `self_type`  either create a match_arm or destruct, how we destruct depends on
-        // what we are trying to  achieve. `as_ref` is `&`, `as_mut` is `&mut`, `into_owned`
-        // is nothing. We then return a  struct with all three, but as options. Not perfect
-        // but good enough. These are either bodies  or just match arms.
         // TODO: integration tests on example project w/ bootstrapping and such
-        let destruct = quote!(let Self { #(#property_names),* } = #reference self);
-
-        // we have already loaded the
-        let variant = self_type.variant;
-        let into_owned = quote!(Self::Owned #variant {
-            #(#property_names: #property_names.into_owned()),*
-        });
-        let as_ref = quote!(Self::Ref #variant {
-            #(#property_names: #property_names.as_ref()),*
-        });
-        let as_mut = quote!(Self::Mut #variant {
-            #(#property_names: #property_names.as_mut()),*
-        });
-
         let conversion = self.object_conversion(&properties);
 
         PropertyValue {
@@ -434,8 +400,95 @@ impl<'a> PropertyValueGenerator<'a> {
         }
     }
 
-    fn array_conversion(&self) -> ConversionBody {
-        todo!()
+    fn array_conversion(&self, inner_type: &TokenStream) -> ConversionBody {
+        let SelfVariants { owned, ref_, mut_ } = &self.self_variants;
+
+        // The inner type will be `Inner` (for now), which does not implement the `Type` trait,
+        // therefore we call the function directly, as it is directly implemented instead.
+        match self.variant {
+            Variant::Owned => {
+                // needs `as_ref` and `as_mut`
+                let as_ref = if let Some(variant) = self.self_type.variant {
+                    quote! {
+                        Self #variant (value) => <#ref_> #variant(
+                            value
+                                .iter()
+                                .map(|value| #inner_type::as_ref(value))
+                                .collect()
+                        )
+                    }
+                } else {
+                    quote! {
+                        let Self(value) = self;
+
+                        #ref_(
+                            value
+                                .iter()
+                                .map(|value| #inner_type::as_ref(value))
+                                .collect()
+                        )
+                    }
+                };
+
+                let as_mut = if let Some(variant) = self.self_type.variant {
+                    quote! {
+                        Self #variant (value) => <#mut_> #variant(
+                            value
+                                .iter_mut()
+                                .map(|value| #inner_type::as_mut(value))
+                                .collect()
+                        )
+                    }
+                } else {
+                    quote! {
+                        let Self(value) = self;
+
+                        #mut_(
+                            value
+                                .iter_mut()
+                                .map(|value| #inner_type::as_mut(value))
+                                .collect()
+                        )
+                    }
+                };
+
+                ConversionBody {
+                    into_owned: None,
+                    as_ref: Some(as_ref),
+                    as_mut: Some(as_mut),
+                }
+            }
+            Variant::Ref | Variant::Mut => {
+                // `into_owned`
+                let into_owned = if let Some(variant) = self.self_type.variant {
+                    quote! {
+                        Self #variant (value) => <#owned> #variant (
+                            value
+                                .into_iter()
+                                .map(|value| #inner_type::into_owned(value))
+                                .collect()
+                        )
+                    }
+                } else {
+                    quote! {
+                        let Self(value) = self;
+
+                        #owned(
+                            value
+                                .into_iter()
+                                .map(|value| #inner_type::into_owned(value))
+                                .collect()
+                        )
+                    }
+                };
+
+                ConversionBody {
+                    into_owned: Some(into_owned),
+                    as_ref: None,
+                    as_mut: None,
+                }
+            }
+        }
     }
 
     fn array(&mut self, array: &Array<OneOf<PropertyValues>>) -> PropertyValue {
@@ -478,23 +531,7 @@ impl<'a> PropertyValueGenerator<'a> {
             }
         });
 
-        let reference = self.variant.into_reference(IncludeLifetime::No);
-        let match_arm = quote!(#self_type(value) =>);
-        let destruct = quote!(let Self(value) = #reference self);
-
-        // we have already loaded the
-        let variant = self_type.variant;
-        // TODO: depending on what it is, we might need to `.into()` or `.into_boxed_slice()`
-        // we don't need to cast to a specific trait here, because we know that inner type cannot be
-        // the same type (for now) as we do not directly hoist DataType etc. as inner value.
-        let into_owned = quote!(Self::Owned #variant (value.into_iter().map(|value| value.into_owned())).collect());
-        let as_ref =
-            quote!(Self::Ref #variant (value.iter().map(|value| value.as_ref())).collect());
-        // TODO: this might fail?
-        let as_mut =
-            quote!(Self::Mut #variant (value.iter_mut().map(|value| value.as_mut())).collect());
-
-        let conversion = self.array_conversion();
+        let conversion = self.array_conversion(&inner.to_token_stream());
 
         // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
         // Array
