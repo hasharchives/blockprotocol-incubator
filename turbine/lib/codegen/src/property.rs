@@ -173,7 +173,7 @@ impl<'a> PropertyTypeGenerator<'a> {
     fn doc(&self) -> TokenStream {
         let property = self.property;
         let title = property.title();
-        // mimic #()?
+        // mimic `#(...)?`
         let description = property.description().into_iter();
 
         quote!(
@@ -183,6 +183,19 @@ impl<'a> PropertyTypeGenerator<'a> {
                 #[doc = #description]
             )*
         )
+    }
+
+    fn type_(&mut self, name: &Ident, variant: Variant) -> Type {
+        TypeGenerator {
+            id: self.property.id(),
+            name,
+            variant,
+            values: self.property.one_of(),
+            resolver: self.resolver,
+            locations: &self.locations,
+            state: &mut self.state,
+        }
+        .finish()
     }
 
     fn owned(&mut self) -> TokenStream {
@@ -206,16 +219,7 @@ impl<'a> PropertyTypeGenerator<'a> {
             impl_try_from_value,
             impl_conversion,
             ..
-        } = TypeGenerator {
-            id: self.property.id(),
-            name: &name,
-            variant: Variant::Owned,
-            values: self.property.one_of(),
-            resolver: self.resolver,
-            locations: &self.locations,
-            state: &mut self.state,
-        }
-        .finish();
+        } = self.type_(&name, Variant::Owned);
 
         quote! {
             #doc
@@ -259,16 +263,7 @@ impl<'a> PropertyTypeGenerator<'a> {
             impl_try_from_value,
             impl_conversion,
             ..
-        } = TypeGenerator {
-            id: self.property.id(),
-            name: &name_ref,
-            variant: Variant::Ref,
-            values: self.property.one_of(),
-            resolver: self.resolver,
-            locations: &self.locations,
-            state: &mut self.state,
-        }
-        .finish();
+        } = self.type_(&name_ref, Variant::Ref);
 
         quote! {
             #doc
@@ -309,16 +304,7 @@ impl<'a> PropertyTypeGenerator<'a> {
             impl_try_from_value,
             impl_conversion,
             ..
-        } = TypeGenerator {
-            id: self.property.id(),
-            name: &name_mut,
-            variant: Variant::Mut,
-            values: self.property.one_of(),
-            resolver: self.resolver,
-            locations: &self.locations,
-            state: &mut self.state,
-        }
-        .finish();
+        } = self.type_(&name_mut, Variant::Mut);
 
         quote! {
             #doc
