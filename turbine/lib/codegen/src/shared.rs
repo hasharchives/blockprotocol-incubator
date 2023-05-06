@@ -159,7 +159,7 @@ pub(crate) enum IncludeLifetime {
 }
 
 impl IncludeLifetime {
-    fn into_bool(self) -> bool {
+    const fn into_bool(self) -> bool {
         match self {
             Self::Yes => true,
             Self::No => false,

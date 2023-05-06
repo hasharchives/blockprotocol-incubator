@@ -7,7 +7,7 @@ use std::{
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::{token::Pub, Lifetime, Visibility};
+use syn::{Token, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
     EntityType, EntityTypeReference,
@@ -266,7 +266,7 @@ fn generate_type(
                 base,
                 property,
                 variant,
-                Some(&Visibility::Public(Pub::default())),
+                Some(&Visibility::Public(Token![pub](Span::call_site()))),
                 &mut state.import,
             )
         });
