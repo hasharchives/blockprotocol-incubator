@@ -195,6 +195,7 @@ impl<'a> PropertyTypeGenerator<'a> {
             name,
             variant,
             values: self.property.one_of(),
+            self_variants: (&self.location).into(),
             resolver: self.resolver,
             locations: &self.locations,
             state: &mut self.state,

@@ -17,7 +17,8 @@ use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
     shared::{
-        generate_mod, generate_property, imports, Import, IncludeLifetime, Property, Variant,
+        generate_mod, generate_property, generate_property_object_conversion_body, imports,
+        ConversionFunction, Import, IncludeLifetime, Property, Variant,
     },
 };
 
@@ -165,26 +166,44 @@ fn generate_properties_convert(
 
         match variant {
             Variant::Owned => {
+                let as_mut = generate_property_object_conversion_body(
+                    &quote!(PropertiesMut),
+                    ConversionFunction::AsMut,
+                    properties,
+                );
+
+                let as_ref = generate_property_object_conversion_body(
+                    &quote!(PropertiesRef),
+                    ConversionFunction::AsRef,
+                    properties,
+                );
+
                 quote! {
                     fn as_mut(&mut self) -> PropertiesMut<'_> {
-                        PropertiesRef {
-                            #(#name: self.#name.as_mut()),*
-                        }
+                        let Self { #(#name),* } = self;
+
+                        #as_mut
                     }
 
                     fn as_ref(&self) -> PropertiesRef<'_> {
-                        PropertiesRef {
-                            #(#name: self.#name.as_ref()),*
-                        }
+                        let Self { #(#name),* } = self;
+
+                        #as_ref
                     }
                 }
             }
             _ => {
+                let into_owned = generate_property_object_conversion_body(
+                    &quote!(Properties),
+                    ConversionFunction::IntoOwned { variant },
+                    properties,
+                );
+
                 quote! {
                     fn into_owned(self) -> Properties {
-                        Properties {
-                            #(#name: self.#name.into_owned()),*
-                        }
+                        let Self { #(#name),* } = self;
+
+                        #into_owned
                     }
                 }
             }

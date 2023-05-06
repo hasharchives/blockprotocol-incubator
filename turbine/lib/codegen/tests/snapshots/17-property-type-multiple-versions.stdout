@@ -16,12 +16,14 @@ impl Type for UserId {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> UserIdMut<'_> {
+        let Self(value) = self;
+        UserIdMut(<Number as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> UserIdRef<'_> {
+        let Self(value) = self;
+        UserIdRef(<Number as Type>::as_ref(value))
     }
 }
 impl PropertyType for UserId {
@@ -42,8 +44,9 @@ pub struct UserIdRef<'a>(pub <Number as Type>::Ref<'a>);
 impl TypeRef for UserIdRef<'_> {
     type Owned = UserId;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserId {
+        let Self(value) = self;
+        UserId(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
@@ -64,8 +67,9 @@ pub struct UserIdMut<'a>(pub <Number as Type>::Mut<'a>);
 impl TypeMut for UserIdMut<'_> {
     type Owned = UserId;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserId {
+        let Self(value) = self;
+        UserId(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
@@ -104,12 +108,14 @@ impl Type for UserIdV1 {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> UserIdV1Mut<'_> {
+        let Self(value) = self;
+        UserIdV1Mut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> UserIdV1Ref<'_> {
+        let Self(value) = self;
+        UserIdV1Ref(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for UserIdV1 {
@@ -129,8 +135,9 @@ pub struct UserIdV1Ref<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for UserIdV1Ref<'_> {
     type Owned = UserIdV1;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserIdV1 {
+        let Self(value) = self;
+        UserIdV1(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for UserIdV1Ref<'a> {
@@ -150,8 +157,9 @@ pub struct UserIdV1Mut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for UserIdV1Mut<'_> {
     type Owned = UserIdV1;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserIdV1 {
+        let Self(value) = self;
+        UserIdV1(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for UserIdV1Mut<'a> {

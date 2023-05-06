@@ -22,12 +22,12 @@ impl Properties {
         Ok(Self)
     }
 
-    fn as_ref(&self) -> PropertiesRef<'_> {
-        PropertiesRef(PhantomData)
-    }
-
     fn as_mut(&mut self) -> PropertiesMut<'_> {
         PropertiesMut(PhantomData)
+    }
+
+    fn as_ref(&self) -> PropertiesRef<'_> {
+        PropertiesRef(PhantomData)
     }
 }
 #[derive(Debug, Clone)]
@@ -81,7 +81,7 @@ impl<'a> PropertiesRef<'a> {
     }
 
     fn into_owned(self) -> Properties {
-        Properties(PhantomData)
+        Properties
     }
 }
 #[derive(Debug, Clone)]
@@ -125,7 +125,7 @@ impl<'a> PropertiesMut<'a> {
     }
 
     fn into_owned(self) -> Properties {
-        Properties(PhantomData)
+        Properties
     }
 }
 #[derive(Debug)]

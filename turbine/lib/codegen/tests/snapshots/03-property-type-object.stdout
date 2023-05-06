@@ -25,12 +25,30 @@ impl Type for FullEmail {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> FullEmailMut<'_> {
+        let Self {
+            primary_email,
+            secondary_email,
+        } = self;
+        FullEmailMut {
+            primary_email: <PrimaryEmail as Type>::as_mut(primary_email),
+            secondary_email: secondary_email
+                .as_mut()
+                .map(|secondary_email| <SecondaryEmail as Type>::as_mut(secondary_email)),
+        }
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> FullEmailRef<'_> {
+        let Self {
+            primary_email,
+            secondary_email,
+        } = self;
+        FullEmailRef {
+            primary_email: <PrimaryEmail as Type>::as_ref(primary_email),
+            secondary_email: secondary_email
+                .as_ref()
+                .map(|secondary_email| <SecondaryEmail as Type>::as_ref(secondary_email)),
+        }
     }
 }
 impl PropertyType for FullEmail {
@@ -86,8 +104,16 @@ pub struct FullEmailRef<'a> {
 impl TypeRef for FullEmailRef<'_> {
     type Owned = FullEmail;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> FullEmail {
+        let Self {
+            primary_email,
+            secondary_email,
+        } = self;
+        FullEmail {
+            primary_email: <PrimaryEmail as TypeRef>::into_owned(primary_email),
+            secondary_email: secondary_email
+                .map(|secondary_email| <SecondaryEmail as TypeRef>::into_owned(secondary_email)),
+        }
     }
 }
 impl<'a> PropertyTypeRef<'a> for FullEmailRef<'a> {
@@ -141,8 +167,16 @@ pub struct FullEmailMut<'a> {
 impl TypeMut for FullEmailMut<'_> {
     type Owned = FullEmail;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> FullEmail {
+        let Self {
+            primary_email,
+            secondary_email,
+        } = self;
+        FullEmail {
+            primary_email: <PrimaryEmail as TypeMut>::into_owned(primary_email),
+            secondary_email: secondary_email
+                .map(|secondary_email| <SecondaryEmail as TypeMut>::into_owned(secondary_email)),
+        }
     }
 }
 impl<'a> PropertyTypeMut<'a> for FullEmailMut<'a> {
@@ -216,12 +250,14 @@ impl Type for PrimaryEmail {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> PrimaryEmailMut<'_> {
+        let Self(value) = self;
+        PrimaryEmailMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> PrimaryEmailRef<'_> {
+        let Self(value) = self;
+        PrimaryEmailRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for PrimaryEmail {
@@ -242,8 +278,9 @@ pub struct PrimaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for PrimaryEmailRef<'_> {
     type Owned = PrimaryEmail;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> PrimaryEmail {
+        let Self(value) = self;
+        PrimaryEmail(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for PrimaryEmailRef<'a> {
@@ -264,8 +301,9 @@ pub struct PrimaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for PrimaryEmailMut<'_> {
     type Owned = PrimaryEmail;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> PrimaryEmail {
+        let Self(value) = self;
+        PrimaryEmail(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for PrimaryEmailMut<'a> {
@@ -302,12 +340,14 @@ impl Type for SecondaryEmail {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> SecondaryEmailMut<'_> {
+        let Self(value) = self;
+        SecondaryEmailMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> SecondaryEmailRef<'_> {
+        let Self(value) = self;
+        SecondaryEmailRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for SecondaryEmail {
@@ -328,8 +368,9 @@ pub struct SecondaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for SecondaryEmailRef<'_> {
     type Owned = SecondaryEmail;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> SecondaryEmail {
+        let Self(value) = self;
+        SecondaryEmail(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for SecondaryEmailRef<'a> {
@@ -350,8 +391,9 @@ pub struct SecondaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for SecondaryEmailMut<'_> {
     type Owned = SecondaryEmail;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> SecondaryEmail {
+        let Self(value) = self;
+        SecondaryEmail(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for SecondaryEmailMut<'a> {

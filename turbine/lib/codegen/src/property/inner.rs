@@ -7,6 +7,7 @@ use type_system::{url::VersionedUrl, PropertyValues};
 use crate::{
     name::{Location, NameResolver},
     property::{
+        property_value::SelfVariants,
         type_::{Type, TypeGenerator},
         PathSegment, State,
     },
@@ -123,6 +124,9 @@ impl<'a> InnerGenerator<'a> {
         let names = self.state.inner.get_or_insert(&self.state.stack);
 
         let (name, index) = names.to_variant(self.variant);
+        let NameVariants {
+            owned, ref_, mut_, ..
+        } = names;
 
         self.state.stack.push(PathSegment::Inner { index });
         let Type {
@@ -134,6 +138,11 @@ impl<'a> InnerGenerator<'a> {
             id: self.id,
             name: &name,
             variant: self.variant,
+            self_variants: SelfVariants {
+                owned: owned.to_token_stream(),
+                ref_: ref_.to_token_stream(),
+                mut_: mut_.to_token_stream(),
+            },
             values: self.values,
             resolver: self.resolver,
             locations: self.locations,

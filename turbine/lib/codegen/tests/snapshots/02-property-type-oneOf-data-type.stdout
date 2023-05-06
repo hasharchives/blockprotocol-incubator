@@ -21,12 +21,18 @@ impl Type for UserId {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> UserIdMut<'_> {
+        match self {
+            Self::Variant0(value) => <UserIdMut>::Variant0(<Text as TypeMut>::as_mut(value)),
+            Self::Variant1(value) => <UserIdMut>::Variant1(<Number as TypeMut>::as_mut(value)),
+        }
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> UserIdRef<'_> {
+        match self {
+            Self::Variant0(value) => <UserIdRef>::Variant0(<Text as Type>::as_ref(value)),
+            Self::Variant1(value) => <UserIdRef>::Variant1(<Number as Type>::as_ref(value)),
+        }
     }
 }
 impl PropertyType for UserId {
@@ -73,8 +79,15 @@ pub enum UserIdRef<'a> {
 impl TypeRef for UserIdRef<'_> {
     type Owned = UserId;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserId {
+        match self {
+            Self::Variant0(value) => {
+                <UserId>::Variant0(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+            }
+            Self::Variant1(value) => {
+                <UserId>::Variant1(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
+            }
+        }
     }
 }
 impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
@@ -121,8 +134,15 @@ pub enum UserIdMut<'a> {
 impl TypeMut for UserIdMut<'_> {
     type Owned = UserId;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserId {
+        match self {
+            Self::Variant0(value) => {
+                <UserId>::Variant0(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+            }
+            Self::Variant1(value) => {
+                <UserId>::Variant1(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
+            }
+        }
     }
 }
 impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {

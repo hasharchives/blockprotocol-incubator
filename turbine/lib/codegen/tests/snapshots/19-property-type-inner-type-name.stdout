@@ -27,6 +27,16 @@ impl _Inner0 {
             value.map(Self)
         }
     }
+
+    fn as_mut(&mut self) -> _Inner2<'_> {
+        let Self(value) = self;
+        _Inner2(<Number as Type>::as_mut(value))
+    }
+
+    fn as_ref(&self) -> _Inner1<'_> {
+        let Self(value) = self;
+        _Inner1(<Number as Type>::as_ref(value))
+    }
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct _Inner1<'a>(pub <Number as Type>::Ref<'a>);
@@ -38,6 +48,11 @@ impl _Inner1<'a> {
             value.map(Self)
         }
     }
+
+    fn into_owned(self) -> _Inner0 {
+        let Self(value) = self;
+        _Inner0(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
+    }
 }
 #[derive(Debug, Serialize)]
 pub struct _Inner2<'a>(pub <Number as Type>::Mut<'a>);
@@ -48,6 +63,11 @@ impl _Inner2<'a> {
                 .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
+    }
+
+    fn into_owned(self) -> _Inner0 {
+        let Self(value) = self;
+        _Inner0(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 ///User ID
@@ -64,12 +84,25 @@ impl Type for UserId {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> UserIdMut<'_> {
+        match self {
+            Self::Variant0(value) => <UserIdMut>::Variant0(<Inner as TypeMut>::as_mut(value)),
+            Self::Variant1(value) => <UserIdMut>::Variant1(
+                value
+                    .iter_mut()
+                    .map(|value| _Inner0::as_mut(value))
+                    .collect(),
+            ),
+        }
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> UserIdRef<'_> {
+        match self {
+            Self::Variant0(value) => <UserIdRef>::Variant0(<Inner as Type>::as_ref(value)),
+            Self::Variant1(value) => {
+                <UserIdRef>::Variant1(value.iter().map(|value| _Inner0::as_ref(value)).collect())
+            }
+        }
     }
 }
 impl PropertyType for UserId {
@@ -123,8 +156,18 @@ pub enum UserIdRef<'a> {
 impl TypeRef for UserIdRef<'_> {
     type Owned = UserId;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserId {
+        match self {
+            Self::Variant0(value) => {
+                <UserId>::Variant0(<<Inner as Type>::Ref<'a> as TypeRef>::into_owned(value))
+            }
+            Self::Variant1(value) => <UserId>::Variant1(
+                value
+                    .into_iter()
+                    .map(|value| _Inner1::into_owned(value))
+                    .collect(),
+            ),
+        }
     }
 }
 impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
@@ -179,8 +222,18 @@ pub enum UserIdMut<'a> {
 impl TypeMut for UserIdMut<'_> {
     type Owned = UserId;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> UserId {
+        match self {
+            Self::Variant0(value) => {
+                <UserId>::Variant0(<<Inner as Type>::Mut<'a> as TypeMut>::into_owned(value))
+            }
+            Self::Variant1(value) => <UserId>::Variant1(
+                value
+                    .into_iter()
+                    .map(|value| _Inner2::into_owned(value))
+                    .collect(),
+            ),
+        }
     }
 }
 impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {

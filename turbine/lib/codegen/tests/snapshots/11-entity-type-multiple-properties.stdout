@@ -48,17 +48,19 @@ impl Properties {
         Ok(this)
     }
 
-    fn as_ref(&self) -> PropertiesRef<'_> {
-        PropertiesRef {
-            country_code: self.country_code.as_ref(),
-            name: self.name.as_ref(),
+    fn as_mut(&mut self) -> PropertiesMut<'_> {
+        let Self { country_code, name } = self;
+        PropertiesMut {
+            country_code: <CountryCode as Type>::as_mut(country_code),
+            name: <Name as Type>::as_mut(name),
         }
     }
 
-    fn as_mut(&mut self) -> PropertiesMut<'_> {
+    fn as_ref(&self) -> PropertiesRef<'_> {
+        let Self { country_code, name } = self;
         PropertiesRef {
-            country_code: self.country_code.as_mut(),
-            name: self.name.as_mut(),
+            country_code: <CountryCode as Type>::as_ref(country_code),
+            name: <Name as Type>::as_ref(name),
         }
     }
 }
@@ -141,9 +143,10 @@ impl<'a> PropertiesRef<'a> {
     }
 
     fn into_owned(self) -> Properties {
+        let Self { country_code, name } = self;
         Properties {
-            country_code: self.country_code.into_owned(),
-            name: self.name.into_owned(),
+            country_code: <CountryCode as TypeRef>::into_owned(country_code),
+            name: <Name as TypeRef>::into_owned(name),
         }
     }
 }
@@ -225,9 +228,10 @@ impl<'a> PropertiesMut<'a> {
     }
 
     fn into_owned(self) -> Properties {
+        let Self { country_code, name } = self;
         Properties {
-            country_code: self.country_code.into_owned(),
-            name: self.name.into_owned(),
+            country_code: <CountryCode as TypeMut>::into_owned(country_code),
+            name: <Name as TypeMut>::into_owned(name),
         }
     }
 }
@@ -284,12 +288,14 @@ impl Type for CountryCode {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> CountryCodeMut<'_> {
+        let Self(value) = self;
+        CountryCodeMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> CountryCodeRef<'_> {
+        let Self(value) = self;
+        CountryCodeRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for CountryCode {
@@ -312,8 +318,9 @@ pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for CountryCodeRef<'_> {
     type Owned = CountryCode;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> CountryCode {
+        let Self(value) = self;
+        CountryCode(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for CountryCodeRef<'a> {
@@ -336,8 +343,9 @@ pub struct CountryCodeMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for CountryCodeMut<'_> {
     type Owned = CountryCode;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> CountryCode {
+        let Self(value) = self;
+        CountryCode(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for CountryCodeMut<'a> {
@@ -374,12 +382,14 @@ impl Type for Name {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/name/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> NameMut<'_> {
+        let Self(value) = self;
+        NameMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> NameRef<'_> {
+        let Self(value) = self;
+        NameRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for Name {
@@ -400,8 +410,9 @@ pub struct NameRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for NameRef<'_> {
     type Owned = Name;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Name {
+        let Self(value) = self;
+        Name(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
@@ -422,8 +433,9 @@ pub struct NameMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for NameMut<'_> {
     type Owned = Name;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Name {
+        let Self(value) = self;
+        Name(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for NameMut<'a> {

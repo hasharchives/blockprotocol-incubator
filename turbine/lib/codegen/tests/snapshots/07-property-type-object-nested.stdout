@@ -17,12 +17,14 @@ impl Type for FavoriteFilm {
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
     );
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> FavoriteFilmMut<'_> {
+        let Self(value) = self;
+        FavoriteFilmMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> FavoriteFilmRef<'_> {
+        let Self(value) = self;
+        FavoriteFilmRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for FavoriteFilm {
@@ -43,8 +45,9 @@ pub struct FavoriteFilmRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for FavoriteFilmRef<'_> {
     type Owned = FavoriteFilm;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> FavoriteFilm {
+        let Self(value) = self;
+        FavoriteFilm(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for FavoriteFilmRef<'a> {
@@ -65,8 +68,9 @@ pub struct FavoriteFilmMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for FavoriteFilmMut<'_> {
     type Owned = FavoriteFilm;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> FavoriteFilm {
+        let Self(value) = self;
+        FavoriteFilm(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for FavoriteFilmMut<'a> {
@@ -104,12 +108,14 @@ impl Type for FavoriteSong {
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
     );
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> FavoriteSongMut<'_> {
+        let Self(value) = self;
+        FavoriteSongMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> FavoriteSongRef<'_> {
+        let Self(value) = self;
+        FavoriteSongRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for FavoriteSong {
@@ -130,8 +136,9 @@ pub struct FavoriteSongRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for FavoriteSongRef<'_> {
     type Owned = FavoriteSong;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> FavoriteSong {
+        let Self(value) = self;
+        FavoriteSong(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for FavoriteSongRef<'a> {
@@ -152,8 +159,9 @@ pub struct FavoriteSongMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for FavoriteSongMut<'_> {
     type Owned = FavoriteSong;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> FavoriteSong {
+        let Self(value) = self;
+        FavoriteSong(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for FavoriteSongMut<'a> {
@@ -190,12 +198,14 @@ impl Type for Hobby {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> HobbyMut<'_> {
+        let Self(value) = self;
+        HobbyMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> HobbyRef<'_> {
+        let Self(value) = self;
+        HobbyRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for Hobby {
@@ -216,8 +226,9 @@ pub struct HobbyRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for HobbyRef<'_> {
     type Owned = Hobby;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Hobby {
+        let Self(value) = self;
+        Hobby(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for HobbyRef<'a> {
@@ -238,8 +249,9 @@ pub struct HobbyMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for HobbyMut<'_> {
     type Owned = Hobby;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Hobby {
+        let Self(value) = self;
+        Hobby(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for HobbyMut<'a> {
@@ -293,12 +305,48 @@ impl Type for Interests {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> InterestsMut<'_> {
+        let Self {
+            favorite_film,
+            favorite_song,
+            hobby,
+        } = self;
+        InterestsMut {
+            favorite_film: favorite_film
+                .as_mut()
+                .map(|favorite_film| <FavoriteFilm as Type>::as_mut(favorite_film)),
+            favorite_song: favorite_song
+                .as_mut()
+                .map(|favorite_song| <FavoriteSong as Type>::as_mut(favorite_song)),
+            hobby: hobby.as_mut().map(|hobby| {
+                hobby
+                    .iter_mut()
+                    .map(|hobby| <Hobby as Type>::as_mut(hobby))
+                    .collect()
+            }),
+        }
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> InterestsRef<'_> {
+        let Self {
+            favorite_film,
+            favorite_song,
+            hobby,
+        } = self;
+        InterestsRef {
+            favorite_film: favorite_film
+                .as_ref()
+                .map(|favorite_film| <FavoriteFilm as Type>::as_ref(favorite_film)),
+            favorite_song: favorite_song
+                .as_ref()
+                .map(|favorite_song| <FavoriteSong as Type>::as_ref(favorite_song)),
+            hobby: hobby.as_ref().map(|hobby| {
+                hobby
+                    .iter()
+                    .map(|hobby| <Hobby as Type>::as_ref(hobby))
+                    .collect()
+            }),
+        }
     }
 }
 impl PropertyType for Interests {
@@ -388,8 +436,24 @@ pub struct InterestsRef<'a> {
 impl TypeRef for InterestsRef<'_> {
     type Owned = Interests;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Interests {
+        let Self {
+            favorite_film,
+            favorite_song,
+            hobby,
+        } = self;
+        Interests {
+            favorite_film: favorite_film
+                .map(|favorite_film| <FavoriteFilm as TypeRef>::into_owned(favorite_film)),
+            favorite_song: favorite_song
+                .map(|favorite_song| <FavoriteSong as TypeRef>::into_owned(favorite_song)),
+            hobby: hobby.map(|hobby| {
+                hobby
+                    .into_iter()
+                    .map(|hobby| <Hobby as TypeRef>::into_owned(hobby))
+                    .collect()
+            }),
+        }
     }
 }
 impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
@@ -480,8 +544,24 @@ pub struct InterestsMut<'a> {
 impl TypeMut for InterestsMut<'_> {
     type Owned = Interests;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Interests {
+        let Self {
+            favorite_film,
+            favorite_song,
+            hobby,
+        } = self;
+        Interests {
+            favorite_film: favorite_film
+                .map(|favorite_film| <FavoriteFilm as TypeMut>::into_owned(favorite_film)),
+            favorite_song: favorite_song
+                .map(|favorite_song| <FavoriteSong as TypeMut>::into_owned(favorite_song)),
+            hobby: hobby.map(|hobby| {
+                hobby
+                    .into_iter()
+                    .map(|hobby| <Hobby as TypeMut>::into_owned(hobby))
+                    .collect()
+            }),
+        }
     }
 }
 impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {

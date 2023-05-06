@@ -69,17 +69,30 @@ struct Conversion {
     destruct: TokenStream,
 }
 
-// TODO: different name
-struct SelfVariants {
-    owned: TokenStream,
-    ref_: TokenStream,
-    mut_: TokenStream,
+pub(super) struct SelfVariants {
+    pub(super) owned: TokenStream,
+    pub(super) ref_: TokenStream,
+    pub(super) mut_: TokenStream,
 }
 
-struct ConversionBody {
-    into_owned: Option<TokenStream>,
-    as_ref: Option<TokenStream>,
-    as_mut: Option<TokenStream>,
+impl From<&Location<'_>> for SelfVariants {
+    fn from(value: &Location) -> Self {
+        let name = Ident::new(value.name.value.as_str(), Span::call_site());
+        let name_ref = Ident::new(value.name_ref.value.as_str(), Span::call_site());
+        let name_mut = Ident::new(value.name_mut.value.as_str(), Span::call_site());
+
+        Self {
+            owned: name.to_token_stream(),
+            ref_: name_ref.to_token_stream(),
+            mut_: name_mut.to_token_stream(),
+        }
+    }
+}
+
+pub(super) struct ConversionBody {
+    pub(super) into_owned: Option<TokenStream>,
+    pub(super) as_ref: Option<TokenStream>,
+    pub(super) as_mut: Option<TokenStream>,
 }
 
 pub(super) struct PropertyValue {
@@ -110,7 +123,7 @@ pub(super) struct PropertyValueGenerator<'a> {
     pub(super) variant: Variant,
 
     pub(super) self_type: SelfType<'a>,
-    pub(super) self_variants: SelfVariants,
+    pub(super) self_variants: &'a SelfVariants,
 
     pub(super) resolver: &'a NameResolver<'a>,
     pub(super) locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
@@ -263,7 +276,7 @@ impl<'a> PropertyValueGenerator<'a> {
                     );
 
                     quote! {
-                        let Self { #(#(#property_names),*) } = self;
+                        let Self { #(#property_names),* } = self;
 
                         #body
                     }
@@ -287,7 +300,7 @@ impl<'a> PropertyValueGenerator<'a> {
                     );
 
                     quote! {
-                        let Self { #(#(#property_names),*) } = self;
+                        let Self { #(#property_names),* } = self;
 
                         #body
                     }
@@ -323,7 +336,7 @@ impl<'a> PropertyValueGenerator<'a> {
                     );
 
                     quote! {
-                        let Self { #(#(#property_names),*) } = self;
+                        let Self { #(#property_names),* } = self;
 
                         #body
                     }
@@ -362,6 +375,8 @@ impl<'a> PropertyValueGenerator<'a> {
         );
 
         let visibility = self.self_type.hoisted_visibility();
+
+        let conversion = self.object_conversion(&properties);
         let fields = properties.iter().map(|(base, property)| {
             shared::generate_property(
                 base,
@@ -383,7 +398,6 @@ impl<'a> PropertyValueGenerator<'a> {
         };
 
         // TODO: integration tests on example project w/ bootstrapping and such
-        let conversion = self.object_conversion(&properties);
 
         PropertyValue {
             body: quote!({

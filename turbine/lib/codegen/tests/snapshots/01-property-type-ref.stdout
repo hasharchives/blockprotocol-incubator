@@ -16,12 +16,14 @@ impl Type for CountryCode {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> CountryCodeMut<'_> {
+        let Self(value) = self;
+        CountryCodeMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> CountryCodeRef<'_> {
+        let Self(value) = self;
+        CountryCodeRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for CountryCode {
@@ -42,8 +44,9 @@ pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for CountryCodeRef<'_> {
     type Owned = CountryCode;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> CountryCode {
+        let Self(value) = self;
+        CountryCode(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for CountryCodeRef<'a> {
@@ -64,8 +67,9 @@ pub struct CountryCodeMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for CountryCodeMut<'_> {
     type Owned = CountryCode;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> CountryCode {
+        let Self(value) = self;
+        CountryCode(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for CountryCodeMut<'a> {

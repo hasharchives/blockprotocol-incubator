@@ -16,12 +16,14 @@ impl Type for Email {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/email/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> EmailMut<'_> {
+        let Self(value) = self;
+        EmailMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> EmailRef<'_> {
+        let Self(value) = self;
+        EmailRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for Email {
@@ -42,8 +44,9 @@ pub struct EmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for EmailRef<'_> {
     type Owned = Email;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Email {
+        let Self(value) = self;
+        Email(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for EmailRef<'a> {
@@ -64,8 +67,9 @@ pub struct EmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for EmailMut<'_> {
     type Owned = Email;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Email {
+        let Self(value) = self;
+        Email(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for EmailMut<'a> {
@@ -114,12 +118,30 @@ impl Type for ContactInformation {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contact-information/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> ContactInformationMut<'_> {
+        let Self {
+            contact_information,
+            email,
+        } = self;
+        ContactInformationMut {
+            contact_information: contact_information.as_mut().map(|contact_information| {
+                Box::new(<ContactInformation0 as Type>::as_mut(contact_information))
+            }),
+            email: <Email as Type>::as_mut(email),
+        }
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> ContactInformationRef<'_> {
+        let Self {
+            contact_information,
+            email,
+        } = self;
+        ContactInformationRef {
+            contact_information: contact_information.as_ref().map(|contact_information| {
+                Box::new(<ContactInformation0 as Type>::as_ref(contact_information))
+            }),
+            email: <Email as Type>::as_ref(email),
+        }
     }
 }
 impl PropertyType for ContactInformation {
@@ -174,8 +196,19 @@ pub struct ContactInformationRef<'a> {
 impl TypeRef for ContactInformationRef<'_> {
     type Owned = ContactInformation;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> ContactInformation {
+        let Self {
+            contact_information,
+            email,
+        } = self;
+        ContactInformation {
+            contact_information: contact_information.map(|contact_information| {
+                Box::new(<ContactInformation0 as TypeRef>::into_owned(
+                    contact_information,
+                ))
+            }),
+            email: <Email as TypeRef>::into_owned(email),
+        }
     }
 }
 impl<'a> PropertyTypeRef<'a> for ContactInformationRef<'a> {
@@ -231,8 +264,19 @@ pub struct ContactInformationMut<'a> {
 impl TypeMut for ContactInformationMut<'_> {
     type Owned = ContactInformation;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> ContactInformation {
+        let Self {
+            contact_information,
+            email,
+        } = self;
+        ContactInformation {
+            contact_information: contact_information.map(|contact_information| {
+                Box::new(<ContactInformation0 as TypeMut>::into_owned(
+                    contact_information,
+                ))
+            }),
+            email: <Email as TypeMut>::into_owned(email),
+        }
     }
 }
 impl<'a> PropertyTypeMut<'a> for ContactInformationMut<'a> {

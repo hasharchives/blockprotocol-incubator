@@ -50,17 +50,19 @@ impl Properties {
         Ok(this)
     }
 
-    fn as_ref(&self) -> PropertiesRef<'_> {
-        PropertiesRef {
-            name_0: self.name_0.as_ref(),
-            name_1: self.name_1.as_ref(),
+    fn as_mut(&mut self) -> PropertiesMut<'_> {
+        let Self { name_0, name_1 } = self;
+        PropertiesMut {
+            name_0: <Name0 as Type>::as_mut(name_0),
+            name_1: <Name1 as Type>::as_mut(name_1),
         }
     }
 
-    fn as_mut(&mut self) -> PropertiesMut<'_> {
+    fn as_ref(&self) -> PropertiesRef<'_> {
+        let Self { name_0, name_1 } = self;
         PropertiesRef {
-            name_0: self.name_0.as_mut(),
-            name_1: self.name_1.as_mut(),
+            name_0: <Name0 as Type>::as_ref(name_0),
+            name_1: <Name1 as Type>::as_ref(name_1),
         }
     }
 }
@@ -142,9 +144,10 @@ impl<'a> PropertiesRef<'a> {
     }
 
     fn into_owned(self) -> Properties {
+        let Self { name_0, name_1 } = self;
         Properties {
-            name_0: self.name_0.into_owned(),
-            name_1: self.name_1.into_owned(),
+            name_0: <Name0 as TypeRef>::into_owned(name_0),
+            name_1: <Name1 as TypeRef>::into_owned(name_1),
         }
     }
 }
@@ -226,9 +229,10 @@ impl<'a> PropertiesMut<'a> {
     }
 
     fn into_owned(self) -> Properties {
+        let Self { name_0, name_1 } = self;
         Properties {
-            name_0: self.name_0.into_owned(),
-            name_1: self.name_1.into_owned(),
+            name_0: <Name0 as TypeMut>::into_owned(name_0),
+            name_1: <Name1 as TypeMut>::into_owned(name_1),
         }
     }
 }
@@ -283,12 +287,14 @@ impl Type for Name {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/name/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> NameMut<'_> {
+        let Self(value) = self;
+        NameMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> NameRef<'_> {
+        let Self(value) = self;
+        NameRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for Name {
@@ -309,8 +315,9 @@ pub struct NameRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for NameRef<'_> {
     type Owned = Name;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Name {
+        let Self(value) = self;
+        Name(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
@@ -331,8 +338,9 @@ pub struct NameMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for NameMut<'_> {
     type Owned = Name;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Name {
+        let Self(value) = self;
+        Name(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for NameMut<'a> {
@@ -369,12 +377,14 @@ impl Type for Name {
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@bob/types/property-type/name/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> NameMut<'_> {
+        let Self(value) = self;
+        NameMut(<Text as Type>::as_mut(value))
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> NameRef<'_> {
+        let Self(value) = self;
+        NameRef(<Text as Type>::as_ref(value))
     }
 }
 impl PropertyType for Name {
@@ -395,8 +405,9 @@ pub struct NameRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeRef for NameRef<'_> {
     type Owned = Name;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Name {
+        let Self(value) = self;
+        Name(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
@@ -417,8 +428,9 @@ pub struct NameMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeMut for NameMut<'_> {
     type Owned = Name;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> Name {
+        let Self(value) = self;
+        Name(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for NameMut<'a> {

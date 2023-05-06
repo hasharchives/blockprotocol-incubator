@@ -18,6 +18,16 @@ impl Inner0 {
             value.map(Self)
         }
     }
+
+    fn as_mut(&mut self) -> Inner2<'_> {
+        let Self(value) = self;
+        Inner2(<Number as Type>::as_mut(value))
+    }
+
+    fn as_ref(&self) -> Inner1<'_> {
+        let Self(value) = self;
+        Inner1(<Number as Type>::as_ref(value))
+    }
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct Inner1<'a>(pub <Number as Type>::Ref<'a>);
@@ -28,6 +38,11 @@ impl Inner1<'a> {
                 .change_context(GenericPropertyError::Data);
             value.map(Self)
         }
+    }
+
+    fn into_owned(self) -> Inner0 {
+        let Self(value) = self;
+        Inner0(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
     }
 }
 #[derive(Debug, Serialize)]
@@ -40,6 +55,11 @@ impl Inner2<'a> {
             value.map(Self)
         }
     }
+
+    fn into_owned(self) -> Inner0 {
+        let Self(value) = self;
+        Inner0(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
+    }
 }
 ///Contrived Property
 #[derive(Debug, Clone, Serialize)]
@@ -51,12 +71,19 @@ impl Type for ContrivedProperty {
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 
-    fn as_mut(&mut self) -> Self::Mut<'_> {
-        todo!()
+    fn as_mut(&mut self) -> ContrivedPropertyMut<'_> {
+        let Self(value) = self;
+        ContrivedPropertyMut(
+            value
+                .iter_mut()
+                .map(|value| Inner0::as_mut(value))
+                .collect(),
+        )
     }
 
-    fn as_ref(&self) -> Self::Ref<'_> {
-        todo!()
+    fn as_ref(&self) -> ContrivedPropertyRef<'_> {
+        let Self(value) = self;
+        ContrivedPropertyRef(value.iter().map(|value| Inner0::as_ref(value)).collect())
     }
 }
 impl PropertyType for ContrivedProperty {
@@ -84,8 +111,14 @@ pub struct ContrivedPropertyRef<'a>(pub Vec<Inner1<'a>>);
 impl TypeRef for ContrivedPropertyRef<'_> {
     type Owned = ContrivedProperty;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> ContrivedProperty {
+        let Self(value) = self;
+        ContrivedProperty(
+            value
+                .into_iter()
+                .map(|value| Inner1::into_owned(value))
+                .collect(),
+        )
     }
 }
 impl<'a> PropertyTypeRef<'a> for ContrivedPropertyRef<'a> {
@@ -114,8 +147,14 @@ pub struct ContrivedPropertyMut<'a>(pub Vec<Inner2<'a>>);
 impl TypeMut for ContrivedPropertyMut<'_> {
     type Owned = ContrivedProperty;
 
-    fn into_owned(self) -> Self::Owned {
-        todo!();
+    fn into_owned(self) -> ContrivedProperty {
+        let Self(value) = self;
+        ContrivedProperty(
+            value
+                .into_iter()
+                .map(|value| Inner2::into_owned(value))
+                .collect(),
+        )
     }
 }
 impl<'a> PropertyTypeMut<'a> for ContrivedPropertyMut<'a> {
