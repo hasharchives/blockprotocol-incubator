@@ -26,7 +26,7 @@ impl ToTokens for SelfVariant<'_> {
 }
 
 #[derive(Debug, Copy, Clone)]
-struct SelfType<'a> {
+pub(super) struct SelfType<'a> {
     variant: Option<SelfVariant<'a>>,
 }
 
@@ -40,13 +40,13 @@ impl<'a> SelfType<'a> {
             .then_some(Visibility::Public(<Token![pub]>::default()))
     }
 
-    const fn enum_(name: &'a TokenStream) -> Self {
+    pub(super) const fn enum_(name: &'a TokenStream) -> Self {
         SelfType {
             variant: Some(SelfVariant(name)),
         }
     }
 
-    const fn struct_() -> Self {
+    pub(super) const fn struct_() -> Self {
         SelfType { variant: None }
     }
 }
@@ -66,10 +66,10 @@ struct Conversion {
     destruct: TokenStream,
 }
 
-pub(super) struct Body {
-    def: TokenStream,
-    try_from: TokenStream,
-    conversion: Conversion,
+pub(super) struct PropertyValue {
+    pub(super) body: TokenStream,
+    pub(super) try_from: TokenStream,
+    // conversion: Conversion,
 }
 
 fn properties<'a>(
@@ -103,7 +103,7 @@ pub(super) struct PropertyValueGenerator<'a> {
 }
 
 impl<'a> PropertyValueGenerator<'a> {
-    fn data_type(&mut self, reference: &DataTypeReference) -> Body {
+    fn data_type(&mut self, reference: &DataTypeReference) -> PropertyValue {
         let location = &self.locations[reference.url()];
         let vis = self.self_type.hoisted_visibility();
 
@@ -169,20 +169,13 @@ impl<'a> PropertyValueGenerator<'a> {
         let as_ref = quote!(Self::Ref #variant (<#type_name #cast>::as_ref(value)));
         let as_mut = quote!(Self::Mut #variant (<#type_name #cast>::as_mut(value)));
 
-        Body {
-            def: quote!((#vis #type_name)),
+        PropertyValue {
+            body: quote!((#vis #type_name)),
             try_from,
-            conversion: Conversion {
-                into_owned,
-                as_ref,
-                as_mut,
-                match_arm,
-                destruct,
-            },
         }
     }
 
-    fn object(&mut self, object: &Object<ValueOrArray<PropertyTypeReference>, 1>) -> Body {
+    fn object(&mut self, object: &Object<ValueOrArray<PropertyTypeReference>, 1>) -> PropertyValue {
         let property_names = self
             .resolver
             .property_names(object.properties().values().map(|property| match property {
@@ -261,8 +254,8 @@ impl<'a> PropertyValueGenerator<'a> {
             #(#property_names: #property_names.as_mut()),*
         });
 
-        Body {
-            def: quote!({
+        PropertyValue {
+            body: quote!({
                 #(#fields),*
             }),
             try_from: quote!('variant: {
@@ -272,17 +265,10 @@ impl<'a> PropertyValueGenerator<'a> {
 
                 #try_from
             }),
-            conversion: Conversion {
-                into_owned,
-                as_ref,
-                as_mut,
-                match_arm,
-                destruct,
-            },
         }
     }
 
-    fn array(&mut self, array: &Array<OneOf<PropertyValues>>) -> Body {
+    fn array(&mut self, array: &Array<OneOf<PropertyValues>>) -> PropertyValue {
         let items = array.items();
 
         let inner = InnerGenerator {
@@ -340,20 +326,13 @@ impl<'a> PropertyValueGenerator<'a> {
         // Array
         self.state.import.vec = true;
 
-        Body {
-            def: quote!((#vis Vec<#inner #lifetime>)),
+        PropertyValue {
+            body: quote!((#vis Vec<#inner #lifetime>)),
             try_from,
-            conversion: Conversion {
-                into_owned,
-                as_ref,
-                as_mut,
-                match_arm,
-                destruct,
-            },
         }
     }
 
-    pub(super) fn finish(mut self) -> Body {
+    pub(super) fn finish(mut self) -> PropertyValue {
         match self.value {
             PropertyValues::DataTypeReference(reference) => self.data_type(reference),
             PropertyValues::PropertyTypeObject(object) => self.object(object),

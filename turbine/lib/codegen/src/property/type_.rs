@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use type_system::{
-    url::VersionedUrl, Array, DataTypeReference, Object, OneOf, PropertyTypeReference,
-    PropertyValues, ValueOrArray,
-};
+use type_system::{url::VersionedUrl, PropertyValues};
 
 use crate::{
-    name::Location,
-    property::State,
-    shared::{IncludeLifetime, Variant},
+    name::{Location, NameResolver},
+    property::{
+        property_value::{PropertyValue, PropertyValueGenerator, SelfType},
+        State,
+    },
+    shared::Variant,
 };
 
 pub(super) struct Type {
@@ -28,6 +28,7 @@ pub(super) struct TypeGenerator<'a> {
     pub(super) variant: Variant,
 
     pub(super) values: &'a [PropertyValues],
+    pub(super) resolver: &'a NameResolver<'a>,
     pub(super) locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
 
     pub(super) state: &'a mut State,
@@ -45,6 +46,8 @@ impl<'a> TypeGenerator<'a> {
             Variant::Owned => None,
         };
 
+        let name = self.name;
+
         if let [value] = self.values {
             let semicolon = match value {
                 PropertyValues::PropertyTypeObject(_) => false,
@@ -53,26 +56,17 @@ impl<'a> TypeGenerator<'a> {
                 }
             };
 
-            // we can hoist!
-            let Body {
-                def: body,
-                try_from,
-                conversion:
-                    Conversion {
-                        into_owned,
-                        as_ref,
-                        as_mut,
-                        destruct,
-                        ..
-                    },
-            } = generate_body(
-                (id, variant),
+            let PropertyValue { body, try_from } = PropertyValueGenerator {
+                id: self.id,
+                variant: self.variant,
+                self_type: SelfType::struct_(),
+                resolver: self.resolver,
+                locations: self.locations,
                 value,
-                resolver,
-                locations,
-                SelfType::struct_(),
-                state,
-            );
+                state: &mut self.state,
+            }
+            .finish();
+
             let semicolon = semicolon.then_some(quote!(;));
 
             let def = quote! {
@@ -80,36 +74,11 @@ impl<'a> TypeGenerator<'a> {
                 pub struct #name #lifetime #body #semicolon
             };
 
-            let conversion = match variant {
-                Variant::Owned => quote! {
-                    fn as_ref(&self) -> Self::Ref<'_> {
-                        #destruct;
-
-                        #as_ref
-                    }
-
-                    fn as_mut(&self) -> Self::Mut<'_> {
-                        #destruct;
-
-                        #as_mut
-                    }
-                },
-                Variant::Ref | Variant::Mut => {
-                    quote! {
-                        fn into_owned(self) -> Self::Owned {
-                            #destruct;
-
-                            #into_owned
-                        }
-                    }
-                }
-            };
-
             return Type {
                 def,
                 impl_ty: quote!(#name #lifetime),
                 impl_try_from_value: try_from,
-                impl_conversion: conversion,
+                impl_conversion: quote!(todo!()),
             };
         }
 
@@ -121,25 +90,23 @@ impl<'a> TypeGenerator<'a> {
             .enumerate()
             .map(|(index, value)| {
                 let name = format_ident!("Variant{index}");
-                let Body {
-                    def: body,
-                    try_from,
-                    conversion,
-                } = generate_body(
-                    (id, variant),
+                let PropertyValue { body, try_from } = PropertyValueGenerator {
+                    id: self.id,
+                    variant: self.variant,
+                    self_type: SelfType::enum_(&name.to_token_stream()),
+                    resolver: self.resolver,
+                    locations: self.locations,
                     value,
-                    resolver,
-                    locations,
-                    SelfType::enum_(&name.to_token_stream()),
-                    state,
-                );
+                    state: &mut self.state,
+                }
+                .finish();
 
                 (
                     quote! {
                         #name #body
                     },
                     try_from,
-                    conversion,
+                    quote!(todo!()),
                 )
             })
             .multiunzip();
@@ -176,57 +143,57 @@ impl<'a> TypeGenerator<'a> {
         // TODO: this breaks down on inner, where things do not have a `Self::Owned` partner
         // TODO: for every inner type we need to record their `Owned`, `Ref` and `Mut` counterpart
         // ~>  lookup is needed of some sort :/ ~> state with a path of some sorts
-        let conversion = match self.variant {
-            Variant::Owned => {
-                let as_ref = conversion.iter().map(
-                    |Conversion {
-                         as_ref, match_arm, ..
-                     }| quote!(#match_arm #as_ref),
-                );
-                let as_mut = conversion.iter().map(
-                    |Conversion {
-                         as_mut, match_arm, ..
-                     }| quote!(#match_arm #as_mut),
-                );
-
-                quote! {
-                    fn as_ref(&self) -> Self::Ref<'_> {
-                        match &self {
-                            #(#as_ref),*
-                        }
-                    }
-
-                    fn as_mut(&mut self) -> Self::Mut<'_> {
-                        match &mut self {
-                            #(#as_mut),*
-                        }
-                    }
-                }
-            }
-            Variant::Ref | Variant::Mut => {
-                let match_arms = conversion.into_iter().map(
-                    |Conversion {
-                         into_owned,
-                         match_arm,
-                         ..
-                     }| quote!(#match_arm #into_owned),
-                );
-
-                quote! {
-                    fn into_owned(self) -> Self::Owned {
-                        match self {
-                            #(#match_arms),*
-                        }
-                    }
-                }
-            }
-        };
+        // let conversion = match self.variant {
+        //     Variant::Owned => {
+        //         let as_ref = conversion.iter().map(
+        //             |Conversion {
+        //                  as_ref, match_arm, ..
+        //              }| quote!(#match_arm #as_ref),
+        //         );
+        //         let as_mut = conversion.iter().map(
+        //             |Conversion {
+        //                  as_mut, match_arm, ..
+        //              }| quote!(#match_arm #as_mut),
+        //         );
+        //
+        //         quote! {
+        //             fn as_ref(&self) -> Self::Ref<'_> {
+        //                 match &self {
+        //                     #(#as_ref),*
+        //                 }
+        //             }
+        //
+        //             fn as_mut(&mut self) -> Self::Mut<'_> {
+        //                 match &mut self {
+        //                     #(#as_mut),*
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     Variant::Ref | Variant::Mut => {
+        //         let match_arms = conversion.into_iter().map(
+        //             |Conversion {
+        //                  into_owned,
+        //                  match_arm,
+        //                  ..
+        //              }| quote!(#match_arm #into_owned),
+        //         );
+        //
+        //         quote! {
+        //             fn into_owned(self) -> Self::Owned {
+        //                 match self {
+        //                     #(#match_arms),*
+        //                 }
+        //             }
+        //         }
+        //     }
+        // };
 
         Type {
             def,
             impl_ty: quote!(#name #lifetime),
             impl_try_from_value: try_from,
-            impl_conversion: conversion,
+            impl_conversion: quote!(todo!()),
         }
     }
 }
