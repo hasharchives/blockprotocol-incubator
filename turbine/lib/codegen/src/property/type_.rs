@@ -38,8 +38,123 @@ pub(super) struct TypeGenerator<'a> {
 }
 
 impl<'a> TypeGenerator<'a> {
-    #[allow(clippy::too_many_lines)]
-    pub(super) fn finish(self) -> Type {
+    fn hoist(
+        &mut self,
+        value: &PropertyValues,
+        derive: &TokenStream,
+        lifetime: Option<&TokenStream>,
+    ) -> Type {
+        let name = self.name;
+
+        let semicolon = match value {
+            PropertyValues::PropertyTypeObject(_) => false,
+            PropertyValues::ArrayOfPropertyValues(_) | PropertyValues::DataTypeReference(_) => true,
+        };
+
+        self.state.stack.push(PathSegment::OneOf { index: 0 });
+        let PropertyValue {
+            body,
+            try_from,
+            conversion,
+        } = PropertyValueGenerator {
+            id: self.id,
+            variant: self.variant,
+            self_type: SelfType::struct_(),
+            self_variants: &self.self_variants,
+            resolver: self.resolver,
+            locations: self.locations,
+            value,
+            state: self.state,
+        }
+        .finish();
+        self.state.stack.pop();
+
+        let semicolon = semicolon.then_some(quote!(;));
+
+        let def = quote! {
+            #derive
+            pub struct #name #lifetime #body #semicolon
+        };
+
+        let SelfVariants { owned, ref_, mut_ } = &self.self_variants;
+        let ConversionBody {
+            into_owned,
+            as_ref,
+            as_mut,
+        } = conversion;
+
+        let impl_conversion = match self.variant {
+            Variant::Owned => {
+                quote! {
+                    fn as_mut(&mut self) -> #mut_<'_> {
+                        #as_mut
+                    }
+
+                    fn as_ref(&self) -> #ref_<'_> {
+                        #as_ref
+                    }
+                }
+            }
+            Variant::Ref | Variant::Mut => {
+                quote! {
+                    fn into_owned(self) -> #owned {
+                        #into_owned
+                    }
+                }
+            }
+        };
+
+        Type {
+            def,
+            impl_ty: quote!(#name #lifetime),
+            impl_try_from_value: try_from,
+            impl_conversion,
+        }
+    }
+
+    fn impl_conversion(&self, conversion: &[ConversionBody]) -> TokenStream {
+        let SelfVariants { owned, ref_, mut_ } = &self.self_variants;
+
+        let into_owned = conversion
+            .iter()
+            .flat_map(|ConversionBody { into_owned, .. }| into_owned);
+        let as_ref = conversion
+            .iter()
+            .flat_map(|ConversionBody { as_ref, .. }| as_ref);
+        let as_mut = conversion
+            .iter()
+            .flat_map(|ConversionBody { as_mut, .. }| as_mut);
+
+        // TODO: we might need something else for the return type here!
+        match self.variant {
+            Variant::Owned => {
+                quote! {
+                    fn as_mut(&mut self) -> #mut_<'_> {
+                        match self {
+                            #(#as_mut),*
+                        }
+                    }
+
+                    fn as_ref(&self) -> #ref_<'_> {
+                        match self {
+                            #(#as_ref),*
+                        }
+                    }
+                }
+            }
+            Variant::Ref | Variant::Mut => {
+                quote! {
+                    fn into_owned(self) -> #owned {
+                        match self {
+                            #(#into_owned),*
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub(super) fn finish(mut self) -> Type {
         let derive = match self.variant {
             Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
             Variant::Mut => quote!(#[derive(Debug, Serialize)]),
@@ -50,75 +165,8 @@ impl<'a> TypeGenerator<'a> {
             Variant::Owned => None,
         };
 
-        let name = self.name;
-
         if let [value] = self.values {
-            let semicolon = match value {
-                PropertyValues::PropertyTypeObject(_) => false,
-                PropertyValues::ArrayOfPropertyValues(_) | PropertyValues::DataTypeReference(_) => {
-                    true
-                }
-            };
-
-            self.state.stack.push(PathSegment::OneOf { index: 0 });
-            let PropertyValue {
-                body,
-                try_from,
-                conversion,
-            } = PropertyValueGenerator {
-                id: self.id,
-                variant: self.variant,
-                self_type: SelfType::struct_(),
-                self_variants: &self.self_variants,
-                resolver: self.resolver,
-                locations: self.locations,
-                value,
-                state: self.state,
-            }
-            .finish();
-            self.state.stack.pop();
-
-            let semicolon = semicolon.then_some(quote!(;));
-
-            let def = quote! {
-                #derive
-                pub struct #name #lifetime #body #semicolon
-            };
-
-            let SelfVariants { owned, ref_, mut_ } = &self.self_variants;
-            let ConversionBody {
-                into_owned,
-                as_ref,
-                as_mut,
-            } = conversion;
-
-            let impl_conversion = match self.variant {
-                Variant::Owned => {
-                    quote! {
-                        fn as_mut(&mut self) -> #mut_<'_> {
-                            #as_mut
-                        }
-
-                        fn as_ref(&self) -> #ref_<'_> {
-                            #as_ref
-                        }
-                    }
-                }
-                Variant::Ref | Variant::Mut => {
-                    quote! {
-                        fn into_owned(self) -> #owned {
-                            #into_owned
-                        }
-                    }
-                }
-            };
-
-            return Type {
-                def,
-                impl_ty: quote!(#name #lifetime),
-                impl_try_from_value: try_from,
-                impl_conversion,
-            };
+            return self.hoist(value, &derive, lifetime.as_ref());
         }
 
         // we cannot hoist and therefore need to create an enum
@@ -190,50 +238,11 @@ impl<'a> TypeGenerator<'a> {
             }
         };
 
-        let SelfVariants { owned, ref_, mut_ } = &self.self_variants;
-
-        let into_owned = conversion
-            .iter()
-            .flat_map(|ConversionBody { into_owned, .. }| into_owned);
-        let as_ref = conversion
-            .iter()
-            .flat_map(|ConversionBody { as_ref, .. }| as_ref);
-        let as_mut = conversion
-            .iter()
-            .flat_map(|ConversionBody { as_mut, .. }| as_mut);
-        // TODO: we might need something else for the return type here!
-        let impl_conversion = match self.variant {
-            Variant::Owned => {
-                quote! {
-                    fn as_mut(&mut self) -> #mut_<'_> {
-                        match self {
-                            #(#as_mut),*
-                        }
-                    }
-
-                    fn as_ref(&self) -> #ref_<'_> {
-                        match self {
-                            #(#as_ref),*
-                        }
-                    }
-                }
-            }
-            Variant::Ref | Variant::Mut => {
-                quote! {
-                    fn into_owned(self) -> #owned {
-                        match self {
-                            #(#into_owned),*
-                        }
-                    }
-                }
-            }
-        };
-
         Type {
             def,
             impl_ty: quote!(#name #lifetime),
             impl_try_from_value: try_from,
-            impl_conversion,
+            impl_conversion: self.impl_conversion(&conversion),
         }
     }
 }
