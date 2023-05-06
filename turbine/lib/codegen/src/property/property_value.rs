@@ -12,10 +12,7 @@ use crate::{
     name::{Location, NameResolver, PropertyName},
     property::{inner::InnerGenerator, PathSegment, State},
     shared,
-    shared::{
-        generate_property_object_conversion_body, ConversionFunction, IncludeLifetime, Property,
-        PropertyKind, Variant,
-    },
+    shared::{generate_property_object_conversion_body, ConversionFunction, Property, Variant},
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -59,14 +56,6 @@ impl ToTokens for SelfType<'_> {
         let variant = self.variant;
         tokens.extend(quote!(Self #variant));
     }
-}
-
-struct Conversion {
-    into_owned: TokenStream,
-    as_ref: TokenStream,
-    as_mut: TokenStream,
-    match_arm: TokenStream,
-    destruct: TokenStream,
 }
 
 pub(super) struct SelfVariants {
@@ -140,12 +129,7 @@ impl<'a> PropertyValueGenerator<'a> {
         match self.variant {
             Variant::Owned => {
                 // needs `as_ref` and `as_mut`
-                let as_ref = if let Some(variant) = self.self_type.variant {
-                    // we just need to generate a match arm
-                    quote! {
-                        Self #variant (value) => <#ref_> #variant (<#inner_type as Type>::as_ref(value))
-                    }
-                } else {
+                let as_ref = self.self_type.variant.map_or_else(|| {
                     // we hoist, therefore we need to generate the whole function body
                     quote! {
                         let Self(value) = self;
@@ -153,19 +137,20 @@ impl<'a> PropertyValueGenerator<'a> {
                         // TODO: we need to get the type!
                         #ref_(<#inner_type as Type>::as_ref(value))
                     }
-                };
-
-                let as_mut = if let Some(variant) = self.self_type.variant {
+                }, |variant| {
+                    // not hoisting, therefore need to generate match arm
                     quote! {
-                        Self #variant (value) => <#mut_> #variant (<#inner_type as TypeMut>::as_mut(value))
+                        Self #variant (value) => <#ref_> #variant (<#inner_type as Type>::as_ref(value))
                     }
-                } else {
-                    quote! {
+                });
+
+                let as_mut = self.self_type.variant.map_or_else(|| quote! {
                         let Self(value) = self;
 
                         #mut_(<#inner_type as Type>::as_mut(value))
-                    }
-                };
+                    }, |variant| quote! {
+                        Self #variant (value) => <#mut_> #variant (<#inner_type as TypeMut>::as_mut(value))
+                    });
 
                 ConversionBody {
                     into_owned: None,
@@ -181,17 +166,13 @@ impl<'a> PropertyValueGenerator<'a> {
                 };
 
                 // needs `into_owned`
-                let into_owned = if let Some(variant) = self.self_type.variant {
-                    quote! {
-                        Self #variant (value) => <#owned> #variant (<#inner_type as #cast>::into_owned(value))
-                    }
-                } else {
-                    quote! {
+                let into_owned = self.self_type.variant.map_or_else(|| quote! {
                         let Self(value) = self;
 
                         #owned(<#inner_type as #cast>::into_owned(value))
-                    }
-                };
+                    }, |variant| quote! {
+                        Self #variant (value) => <#owned> #variant (<#inner_type as #cast>::into_owned(value))
+                    });
 
                 ConversionBody {
                     into_owned: Some(into_owned),
@@ -258,53 +239,59 @@ impl<'a> PropertyValueGenerator<'a> {
         match self.variant {
             Variant::Owned => {
                 // needs `as_ref` & `as_mut`
-                let as_ref = if let Some(variant) = self.self_type.variant {
-                    let body = generate_property_object_conversion_body(
-                        &quote!(<#ref_> #variant),
-                        ConversionFunction::AsRef,
-                        properties,
-                    );
+                let as_ref = self.self_type.variant.map_or_else(
+                    || {
+                        let body = generate_property_object_conversion_body(
+                            &quote!(#ref_),
+                            ConversionFunction::AsRef,
+                            properties,
+                        );
 
-                    quote! {
-                        Self #variant { #(#property_names),* } => #body
-                    }
-                } else {
-                    let body = generate_property_object_conversion_body(
-                        &quote!(#ref_),
-                        ConversionFunction::AsRef,
-                        properties,
-                    );
+                        quote! {
+                            let Self { #(#property_names),* } = self;
 
-                    quote! {
-                        let Self { #(#property_names),* } = self;
+                            #body
+                        }
+                    },
+                    |variant| {
+                        let body = generate_property_object_conversion_body(
+                            &quote!(<#ref_> #variant),
+                            ConversionFunction::AsRef,
+                            properties,
+                        );
 
-                        #body
-                    }
-                };
+                        quote! {
+                            Self #variant { #(#property_names),* } => #body
+                        }
+                    },
+                );
 
-                let as_mut = if let Some(variant) = self.self_type.variant {
-                    let body = generate_property_object_conversion_body(
-                        &quote!(<#mut_> #variant),
-                        ConversionFunction::AsMut,
-                        properties,
-                    );
+                let as_mut = self.self_type.variant.map_or_else(
+                    || {
+                        let body = generate_property_object_conversion_body(
+                            &quote!(#mut_),
+                            ConversionFunction::AsMut,
+                            properties,
+                        );
 
-                    quote! {
-                        Self #variant { #(#property_names),* } => #body
-                    }
-                } else {
-                    let body = generate_property_object_conversion_body(
-                        &quote!(#mut_),
-                        ConversionFunction::AsMut,
-                        properties,
-                    );
+                        quote! {
+                            let Self { #(#property_names),* } = self;
 
-                    quote! {
-                        let Self { #(#property_names),* } = self;
+                            #body
+                        }
+                    },
+                    |variant| {
+                        let body = generate_property_object_conversion_body(
+                            &quote!(<#mut_> #variant),
+                            ConversionFunction::AsMut,
+                            properties,
+                        );
 
-                        #body
-                    }
-                };
+                        quote! {
+                            Self #variant { #(#property_names),* } => #body
+                        }
+                    },
+                );
 
                 ConversionBody {
                     into_owned: None,
@@ -314,33 +301,36 @@ impl<'a> PropertyValueGenerator<'a> {
             }
             Variant::Ref | Variant::Mut => {
                 // needs `into_owned`
-                let into_owned = if let Some(variant) = self.self_type.variant {
-                    let body = generate_property_object_conversion_body(
-                        &quote!(<#owned> #variant),
-                        ConversionFunction::IntoOwned {
-                            variant: self.variant,
-                        },
-                        properties,
-                    );
+                let into_owned = self.self_type.variant.map_or_else(
+                    || {
+                        let body = generate_property_object_conversion_body(
+                            &quote!(#owned),
+                            ConversionFunction::IntoOwned {
+                                variant: self.variant,
+                            },
+                            properties,
+                        );
 
-                    quote! {
-                        Self #variant { #(#property_names),* } => #body
-                    }
-                } else {
-                    let body = generate_property_object_conversion_body(
-                        &quote!(#owned),
-                        ConversionFunction::IntoOwned {
-                            variant: self.variant,
-                        },
-                        properties,
-                    );
+                        quote! {
+                            let Self { #(#property_names),* } = self;
 
-                    quote! {
-                        let Self { #(#property_names),* } = self;
+                            #body
+                        }
+                    },
+                    |variant| {
+                        let body = generate_property_object_conversion_body(
+                            &quote!(<#owned> #variant),
+                            ConversionFunction::IntoOwned {
+                                variant: self.variant,
+                            },
+                            properties,
+                        );
 
-                        #body
-                    }
-                };
+                        quote! {
+                            Self #variant { #(#property_names),* } => #body
+                        }
+                    },
+                );
 
                 ConversionBody {
                     into_owned: Some(into_owned),
@@ -422,49 +412,55 @@ impl<'a> PropertyValueGenerator<'a> {
         match self.variant {
             Variant::Owned => {
                 // needs `as_ref` and `as_mut`
-                let as_ref = if let Some(variant) = self.self_type.variant {
-                    quote! {
-                        Self #variant (value) => <#ref_> #variant(
-                            value
-                                .iter()
-                                .map(|value| #inner_type::as_ref(value))
-                                .collect()
-                        )
-                    }
-                } else {
-                    quote! {
-                        let Self(value) = self;
+                let as_ref = self.self_type.variant.map_or_else(
+                    || {
+                        quote! {
+                            let Self(value) = self;
 
-                        #ref_(
-                            value
-                                .iter()
-                                .map(|value| #inner_type::as_ref(value))
-                                .collect()
-                        )
-                    }
-                };
+                            #ref_(
+                                value
+                                    .iter()
+                                    .map(|value| #inner_type::as_ref(value))
+                                    .collect()
+                            )
+                        }
+                    },
+                    |variant| {
+                        quote! {
+                            Self #variant (value) => <#ref_> #variant(
+                                value
+                                    .iter()
+                                    .map(|value| #inner_type::as_ref(value))
+                                    .collect()
+                            )
+                        }
+                    },
+                );
 
-                let as_mut = if let Some(variant) = self.self_type.variant {
-                    quote! {
-                        Self #variant (value) => <#mut_> #variant(
-                            value
-                                .iter_mut()
-                                .map(|value| #inner_type::as_mut(value))
-                                .collect()
-                        )
-                    }
-                } else {
-                    quote! {
-                        let Self(value) = self;
+                let as_mut = self.self_type.variant.map_or_else(
+                    || {
+                        quote! {
+                            let Self(value) = self;
 
-                        #mut_(
-                            value
-                                .iter_mut()
-                                .map(|value| #inner_type::as_mut(value))
-                                .collect()
-                        )
-                    }
-                };
+                            #mut_(
+                                value
+                                    .iter_mut()
+                                    .map(|value| #inner_type::as_mut(value))
+                                    .collect()
+                            )
+                        }
+                    },
+                    |variant| {
+                        quote! {
+                            Self #variant (value) => <#mut_> #variant(
+                                value
+                                    .iter_mut()
+                                    .map(|value| #inner_type::as_mut(value))
+                                    .collect()
+                            )
+                        }
+                    },
+                );
 
                 ConversionBody {
                     into_owned: None,
@@ -474,27 +470,30 @@ impl<'a> PropertyValueGenerator<'a> {
             }
             Variant::Ref | Variant::Mut => {
                 // `into_owned`
-                let into_owned = if let Some(variant) = self.self_type.variant {
-                    quote! {
-                        Self #variant (value) => <#owned> #variant (
-                            value
-                                .into_iter()
-                                .map(|value| #inner_type::into_owned(value))
-                                .collect()
-                        )
-                    }
-                } else {
-                    quote! {
-                        let Self(value) = self;
+                let into_owned = self.self_type.variant.map_or_else(
+                    || {
+                        quote! {
+                            let Self(value) = self;
 
-                        #owned(
-                            value
-                                .into_iter()
-                                .map(|value| #inner_type::into_owned(value))
-                                .collect()
-                        )
-                    }
-                };
+                            #owned(
+                                value
+                                    .into_iter()
+                                    .map(|value| #inner_type::into_owned(value))
+                                    .collect()
+                            )
+                        }
+                    },
+                    |variant| {
+                        quote! {
+                            Self #variant (value) => <#owned> #variant (
+                                value
+                                    .into_iter()
+                                    .map(|value| #inner_type::into_owned(value))
+                                    .collect()
+                            )
+                        }
+                    },
+                );
 
                 ConversionBody {
                     into_owned: Some(into_owned),
