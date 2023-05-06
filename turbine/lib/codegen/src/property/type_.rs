@@ -14,48 +14,6 @@ use crate::{
     shared::{IncludeLifetime, Variant},
 };
 
-#[derive(Debug, Copy, Clone)]
-struct SelfVariant<'a>(&'a TokenStream);
-
-impl ToTokens for SelfVariant<'_> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let name = self.0;
-        tokens.extend(quote!(:: #name));
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-struct SelfType<'a> {
-    variant: Option<SelfVariant<'a>>,
-}
-
-impl<'a> SelfType<'a> {
-    const fn hoist(self) -> bool {
-        self.variant.is_none()
-    }
-
-    fn hoisted_visibility(self) -> Option<Visibility> {
-        self.hoist().then_some(Visibility::Public(Pub::default()))
-    }
-
-    const fn enum_(name: &'a TokenStream) -> Self {
-        SelfType {
-            variant: Some(SelfVariant(name)),
-        }
-    }
-
-    const fn struct_() -> Self {
-        SelfType { variant: None }
-    }
-}
-
-impl ToTokens for SelfType<'_> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let variant = self.variant;
-        tokens.extend(quote!(Self #variant));
-    }
-}
-
 pub(super) struct Type {
     def: TokenStream,
     // TODO: rename

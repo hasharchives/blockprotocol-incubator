@@ -382,39 +382,11 @@ impl<'a> PropertyTypeGenerator<'a> {
     }
 }
 
-// TODO: into correct generator!?
-struct PropertyValueGenerator {}
-
-fn properties<'a>(
-    id: &VersionedUrl,
-    object: &'a Object<ValueOrArray<PropertyTypeReference>, 1>,
-    resolver: &NameResolver,
-    property_names: &HashMap<&VersionedUrl, PropertyName>,
-    locations: &HashMap<&VersionedUrl, Location>,
-) -> BTreeMap<&'a BaseUrl, Property> {
-    shared::properties(
-        id,
-        object.properties(),
-        object.required(),
-        resolver,
-        property_names,
-        locations,
-    )
-}
-
 struct Type {
     def: TokenStream,
     impl_ty: TokenStream,
     impl_try_from_value: TokenStream,
     impl_conversion: TokenStream,
-}
-
-struct Conversion {
-    into_owned: TokenStream,
-    as_ref: TokenStream,
-    as_mut: TokenStream,
-    match_arm: TokenStream,
-    destruct: TokenStream,
 }
 
 struct Body {
