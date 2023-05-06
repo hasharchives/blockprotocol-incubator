@@ -15,11 +15,11 @@ use crate::{
 };
 
 pub(super) struct Type {
-    def: TokenStream,
+    pub(super) def: TokenStream,
     // TODO: rename
-    impl_ty: TokenStream,
-    impl_try_from_value: TokenStream,
-    impl_conversion: TokenStream,
+    pub(super) impl_ty: TokenStream,
+    pub(super) impl_try_from_value: TokenStream,
+    pub(super) impl_conversion: TokenStream,
 }
 
 pub(super) struct TypeGenerator<'a> {
@@ -78,7 +78,7 @@ impl<'a> TypeGenerator<'a> {
                 def,
                 impl_ty: quote!(#name #lifetime),
                 impl_try_from_value: try_from,
-                impl_conversion: quote!(todo!()),
+                impl_conversion: quote!(todo!();),
             };
         }
 
@@ -106,7 +106,7 @@ impl<'a> TypeGenerator<'a> {
                         #name #body
                     },
                     try_from,
-                    quote!(todo!()),
+                    quote!(todo!();),
                 )
             })
             .multiunzip();
@@ -193,7 +193,7 @@ impl<'a> TypeGenerator<'a> {
             def,
             impl_ty: quote!(#name #lifetime),
             impl_try_from_value: try_from,
-            impl_conversion: quote!(todo!()),
+            impl_conversion: quote!(todo!();),
         }
     }
 }

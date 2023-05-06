@@ -2,27 +2,19 @@ mod inner;
 mod property_value;
 mod type_;
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    ops::Deref,
-};
+use std::collections::HashMap;
 
-use itertools::Itertools;
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{format_ident, quote, ToTokens};
-use syn::{token::Pub, Visibility};
-use type_system::{
-    url::{BaseUrl, VersionedUrl},
-    Array, DataTypeReference, Object, OneOf, PropertyType, PropertyTypeReference, PropertyValues,
-    ValueOrArray,
-};
+use quote::quote;
+use type_system::{url::VersionedUrl, DataTypeReference, PropertyType, PropertyTypeReference};
 
 use crate::{
-    name::{Location, NameResolver, PropertyName},
-    shared,
-    shared::{
-        generate_mod, generate_property, imports, Import, IncludeLifetime, Property, Variant,
+    name::{Location, NameResolver},
+    property::{
+        inner::Inner,
+        type_::{Type, TypeGenerator},
     },
+    shared::{generate_mod, imports, Import, Variant},
 };
 
 struct State {
@@ -45,17 +37,6 @@ const RESERVED: &[&str] = &[
     "Serialize",
     "Report",
 ];
-
-struct Inner {
-    name: Ident,
-    stream: TokenStream,
-}
-
-impl ToTokens for Inner {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        tokens.extend(self.stream.clone());
-    }
-}
 
 struct PropertyTypeGenerator<'a> {
     property: &'a PropertyType,
@@ -225,15 +206,16 @@ impl<'a> PropertyTypeGenerator<'a> {
             impl_try_from_value,
             impl_conversion,
             ..
-        } = generate_type(
-            self.property.id(),
-            &name,
-            Variant::Owned,
-            self.property.one_of(),
-            self.resolver,
-            &self.locations,
-            &mut self.state,
-        );
+        } = TypeGenerator {
+            id: self.property.id(),
+            name: &name,
+            variant: Variant::Owned,
+            values: self.property.one_of(),
+            resolver: self.resolver,
+            locations: &self.locations,
+            state: &mut self.state,
+        }
+        .finish();
 
         quote! {
             #doc
@@ -277,15 +259,16 @@ impl<'a> PropertyTypeGenerator<'a> {
             impl_try_from_value,
             impl_conversion,
             ..
-        } = generate_type(
-            self.property.id(),
-            &name_ref,
-            Variant::Ref,
-            self.property.one_of(),
-            self.resolver,
-            &self.locations,
-            &mut self.state,
-        );
+        } = TypeGenerator {
+            id: self.property.id(),
+            name: &name_ref,
+            variant: Variant::Ref,
+            values: self.property.one_of(),
+            resolver: self.resolver,
+            locations: &self.locations,
+            state: &mut self.state,
+        }
+        .finish();
 
         quote! {
             #doc
@@ -326,15 +309,16 @@ impl<'a> PropertyTypeGenerator<'a> {
             impl_try_from_value,
             impl_conversion,
             ..
-        } = generate_type(
-            self.property.id(),
-            &name_mut,
-            Variant::Mut,
-            self.property.one_of(),
-            self.resolver,
-            &self.locations,
-            &mut self.state,
-        );
+        } = TypeGenerator {
+            id: self.property.id(),
+            name: &name_mut,
+            variant: Variant::Mut,
+            values: self.property.one_of(),
+            resolver: self.resolver,
+            locations: &self.locations,
+            state: &mut self.state,
+        }
+        .finish();
 
         quote! {
             #doc
