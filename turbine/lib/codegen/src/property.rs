@@ -364,8 +364,3 @@ pub(crate) fn generate(property: &PropertyType, resolver: &NameResolver) -> Toke
 
     generator.finish()
 }
-
-// N.B.:
-// in the enum we could in theory name the variant by the name of the struct, problem here is ofc
-// that we would still need to name the other variants and then we have potential name conflicts...
-// Do we need to box on Ref and Mut self-referential?

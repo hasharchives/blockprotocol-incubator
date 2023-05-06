@@ -86,6 +86,10 @@ impl<'a> TypeGenerator<'a> {
 
         // we cannot hoist and therefore need to create an enum
 
+        // N.B.:
+        // in the enum we could in theory name the variant by the name of the struct, problem here
+        // is ofc that we would still need to name the other variants and then we have
+        // potential name conflicts... Do we need to box on Ref and Mut self-referential?
         let (body, try_from_variants, conversion): (Vec<_>, Vec<_>, Vec<_>) = self
             .values
             .iter()

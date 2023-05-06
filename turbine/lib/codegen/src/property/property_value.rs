@@ -9,10 +9,13 @@ use type_system::{
 };
 
 use crate::{
-    name::{Location, NameResolver, PropertyName},
+    name::{Location, Name, NameResolver, PropertyName},
     property::{inner::InnerGenerator, PathSegment, State},
     shared,
-    shared::{IncludeLifetime, Property, Variant},
+    shared::{
+        generate_property_object_conversion_body, ConversionFunction, IncludeLifetime, Property,
+        PropertyKind, Variant,
+    },
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -66,10 +69,23 @@ struct Conversion {
     destruct: TokenStream,
 }
 
+// TODO: different name
+struct SelfVariants {
+    owned: TokenStream,
+    ref_: TokenStream,
+    mut_: TokenStream,
+}
+
+struct ConversionBody {
+    into_owned: Option<TokenStream>,
+    as_ref: Option<TokenStream>,
+    as_mut: Option<TokenStream>,
+}
+
 pub(super) struct PropertyValue {
     pub(super) body: TokenStream,
     pub(super) try_from: TokenStream,
-    // conversion: Conversion,
+    pub(super) conversion: ConversionBody,
 }
 
 fn properties<'a>(
@@ -92,7 +108,9 @@ fn properties<'a>(
 pub(super) struct PropertyValueGenerator<'a> {
     pub(super) id: &'a VersionedUrl,
     pub(super) variant: Variant,
+
     pub(super) self_type: SelfType<'a>,
+    pub(super) self_variants: SelfVariants,
 
     pub(super) resolver: &'a NameResolver<'a>,
     pub(super) locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
@@ -103,6 +121,74 @@ pub(super) struct PropertyValueGenerator<'a> {
 }
 
 impl<'a> PropertyValueGenerator<'a> {
+    fn data_type_conversion(&self, inner_type: &TokenStream) -> ConversionBody {
+        let SelfVariants { owned, ref_, mut_ } = &self.self_variants;
+
+        match self.variant {
+            Variant::Owned => {
+                // needs `as_ref` and `as_mut`
+                let as_ref = if let Some(variant) = self.self_type.variant {
+                    // we just need to generate a match arm
+                    quote! {
+                        Self #variant (value) => <#ref_> #variant (<#inner_type as Type>::as_ref(value))
+                    }
+                } else {
+                    // we hoist, therefore we need to generate the whole function body
+                    quote! {
+                        let Self(value) = self;
+
+                        // TODO: we need to get the type!
+                        #ref_(<#inner_type as Type>::as_ref(value))
+                    }
+                };
+
+                let as_mut = if let Some(variant) = self.self_type.variant {
+                    quote! {
+                        Self #variant (value) => <#mut_> #variant (<#inner_type as TypeMut>::as_mut(value))
+                    }
+                } else {
+                    quote! {
+                        let Self(value) = self;
+
+                        #mut_(<#inner_type as Type>::as_mut(value))
+                    }
+                };
+
+                ConversionBody {
+                    into_owned: None,
+                    as_ref: Some(as_ref),
+                    as_mut: Some(as_mut),
+                }
+            }
+            Variant::Ref | Variant::Mut => {
+                let cast = match self.variant {
+                    Variant::Ref => quote!(TypeRef),
+                    Variant::Mut => quote!(TypeMut),
+                    Variant::Owned => unreachable!(),
+                };
+
+                // needs `into_owned`
+                let into_owned = if let Some(variant) = self.self_type.variant {
+                    quote! {
+                        Self #variant (value) => <#owned> #variant (<#inner_type as #cast>::into_owned(value))
+                    }
+                } else {
+                    quote! {
+                        let Self(value) = self;
+
+                        #owned(<#inner_type as #cast>::into_owned(value))
+                    }
+                };
+
+                ConversionBody {
+                    into_owned: Some(into_owned),
+                    as_ref: None,
+                    as_mut: None,
+                }
+            }
+        }
+    }
+
     fn data_type(&mut self, reference: &DataTypeReference) -> PropertyValue {
         let location = &self.locations[reference.url()];
         let vis = self.self_type.hoisted_visibility();
@@ -138,40 +224,117 @@ impl<'a> PropertyValueGenerator<'a> {
             value.map(#self_type)
         });
 
-        let reference = self.variant.into_reference(IncludeLifetime::No);
-
-        // we can either be called if we're hoisted (`destruct`) or we're in a match arm
-        // (`match_arm`), either way the conversion code stays the same, but how we get to
-        // value is a bit different
-        let match_arm = quote!(#self_type(value) =>);
-        let destruct = quote!(let Self(value) = #reference self);
-
-        let cast = match self.variant {
-            Variant::Owned => quote!(as Type),
-            Variant::Ref => quote!(as TypeRef),
-            Variant::Mut => quote!(as TypeMut),
-        };
-
-        let mut type_name = Ident::new(type_name_raw, Span::call_site()).to_token_stream();
-        type_name = match self.variant {
-            Variant::Owned => type_name,
-            Variant::Ref => quote!(<#type_name as Type> :: Ref),
-            Variant::Mut => quote!(<#type_name as Type> :: Mut),
-        };
-
-        let variant = self_type.variant;
-
-        // TODO: we might need to explicitly cast on all other variants as well
-        // need to use explicit cast as there are multiple possibilities here, either `Ref` or `Mut`
-        // if a `DataType` implements both
-        let into_owned =
-            quote!(<Self #cast>::Owned #variant (<#type_name #cast>::into_owned(value)));
-        let as_ref = quote!(Self::Ref #variant (<#type_name #cast>::as_ref(value)));
-        let as_mut = quote!(Self::Mut #variant (<#type_name #cast>::as_mut(value)));
+        let conversion = self.data_type_conversion(&type_name);
 
         PropertyValue {
             body: quote!((#vis #type_name)),
             try_from,
+            conversion,
+        }
+    }
+
+    fn object_conversion(&self, properties: &BTreeMap<&BaseUrl, Property>) -> ConversionBody {
+        let SelfVariants { owned, ref_, mut_ } = &self.self_variants;
+
+        let property_names: Vec<_> = properties
+            .values()
+            .map(|Property { name, .. }| name)
+            .collect();
+
+        // TODO: change the content of entity properties!
+        match self.variant {
+            Variant::Owned => {
+                // needs `as_ref` & `as_mut`
+                let as_ref = if let Some(variant) = self.self_type.variant {
+                    let body = generate_property_object_conversion_body(
+                        &quote!(<#ref_> #variant),
+                        ConversionFunction::AsRef,
+                        properties,
+                    );
+
+                    quote! {
+                        Self #variant { #(#property_names),* } => #body
+                    }
+                } else {
+                    let body = generate_property_object_conversion_body(
+                        &quote!(#ref_),
+                        ConversionFunction::AsRef,
+                        properties,
+                    );
+
+                    quote! {
+                        let Self { #(#(#property_names),*) } = self;
+
+                        #body
+                    }
+                };
+
+                let as_mut = if let Some(variant) = self.self_type.variant {
+                    let body = generate_property_object_conversion_body(
+                        &quote!(<#mut_> #variant),
+                        ConversionFunction::AsMut,
+                        properties,
+                    );
+
+                    quote! {
+                        Self #variant { #(#property_names),* } => #body
+                    }
+                } else {
+                    let body = generate_property_object_conversion_body(
+                        &quote!(#mut_),
+                        ConversionFunction::AsMut,
+                        properties,
+                    );
+
+                    quote! {
+                        let Self { #(#(#property_names),*) } = self;
+
+                        #body
+                    }
+                };
+
+                ConversionBody {
+                    into_owned: None,
+                    as_ref: Some(as_ref),
+                    as_mut: Some(as_mut),
+                }
+            }
+            Variant::Ref | Variant::Mut => {
+                // needs `into_owned`
+                let into_owned = if let Some(variant) = self.self_type.variant {
+                    let body = generate_property_object_conversion_body(
+                        &quote!(<#mut_> #variant),
+                        ConversionFunction::IntoOwned {
+                            variant: self.variant,
+                        },
+                        properties,
+                    );
+
+                    quote! {
+                        Self #variant { #(#property_names),* } => #body
+                    }
+                } else {
+                    let body = generate_property_object_conversion_body(
+                        &quote!(#mut_),
+                        ConversionFunction::IntoOwned {
+                            variant: self.variant,
+                        },
+                        properties,
+                    );
+
+                    quote! {
+                        let Self { #(#(#property_names),*) } = self;
+
+                        #body
+                    }
+                };
+
+                ConversionBody {
+                    into_owned: Some(into_owned),
+                    as_ref: None,
+                    as_mut: None,
+                }
+            }
         }
     }
 
@@ -254,6 +417,8 @@ impl<'a> PropertyValueGenerator<'a> {
             #(#property_names: #property_names.as_mut()),*
         });
 
+        let conversion = self.object_conversion(&properties);
+
         PropertyValue {
             body: quote!({
                 #(#fields),*
@@ -265,7 +430,12 @@ impl<'a> PropertyValueGenerator<'a> {
 
                 #try_from
             }),
+            conversion,
         }
+    }
+
+    fn array_conversion(&self) -> ConversionBody {
+        todo!()
     }
 
     fn array(&mut self, array: &Array<OneOf<PropertyValues>>) -> PropertyValue {
@@ -324,6 +494,8 @@ impl<'a> PropertyValueGenerator<'a> {
         let as_mut =
             quote!(Self::Mut #variant (value.iter_mut().map(|value| value.as_mut())).collect());
 
+        let conversion = self.array_conversion();
+
         // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
         // Array
         self.state.import.vec = true;
@@ -331,6 +503,7 @@ impl<'a> PropertyValueGenerator<'a> {
         PropertyValue {
             body: quote!((#vis Vec<#inner #lifetime>)),
             try_from,
+            conversion,
         }
     }
 

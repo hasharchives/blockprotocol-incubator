@@ -29,6 +29,7 @@ pub(crate) struct Property {
     pub(crate) required: bool,
 }
 
+// TODO: conversion of entity is incomplete as it does not take `Box<>` and `Vec<>` into account!
 pub(crate) fn properties<'a>(
     id: &VersionedUrl,
     properties: &'a HashMap<BaseUrl, ValueOrArray<PropertyTypeReference>>,
@@ -437,5 +438,82 @@ pub(crate) fn generate_property(
     quote! {
         #[serde(rename = #url)]
         #visibility #name: #type_
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum ConversionFunction {
+    IntoOwned { variant: Variant },
+    AsRef,
+    AsMut,
+}
+
+/// creates the body of the conversion
+///
+/// This method assumes that all names of the property are in scope!
+pub(crate) fn generate_property_object_conversion_body(
+    name: &TokenStream,
+    func: ConversionFunction,
+    properties: &BTreeMap<&BaseUrl, Property>,
+) -> TokenStream {
+    let cast = match func {
+        ConversionFunction::IntoOwned { variant } => match variant {
+            Variant::Ref => quote!(TypeRef),
+            Variant::Mut => quote!(TypeMut),
+            Variant::Owned => panic!("cannot call into_owned on the owned type!"),
+        },
+        ConversionFunction::AsRef => quote!(Type),
+        ConversionFunction::AsMut => quote!(Type),
+    };
+
+    let call = match func {
+        ConversionFunction::IntoOwned { .. } => quote!(into_owned),
+        ConversionFunction::AsRef => quote!(as_ref),
+        ConversionFunction::AsMut => quote!(as_mut),
+    };
+
+    let iter = match func {
+        ConversionFunction::IntoOwned { .. } => quote!(into_iter),
+        ConversionFunction::AsRef => quote!(iter),
+        ConversionFunction::AsMut => quote!(iter_mut),
+    };
+
+    let map_as = match func {
+        ConversionFunction::IntoOwned { .. } => None,
+        ConversionFunction::AsRef => Some(quote!(.as_ref())),
+        ConversionFunction::AsMut => Some(quote!(.as_mut())),
+    };
+
+    let mapping = properties.values().map(
+        |Property {
+             name,
+             type_,
+             kind,
+             required,
+         }| {
+            let convert = quote!(<#type_ as #cast>::#call(#name));
+
+            // depending on the kind we need to additionally convert
+            let mut value = match kind {
+                PropertyKind::Array => {
+                    quote!(#name.#iter().map(|#name| #convert).collect())
+                }
+                PropertyKind::Plain => convert,
+                PropertyKind::Boxed => quote!(Box::new(#convert)),
+            };
+
+            if !*required {
+                // value is additionally wrapped in an `Option<T>`
+                value = quote!(#name #map_as .map(|#name| #value));
+            }
+
+            quote! (#name: #value)
+        },
+    );
+
+    quote! {
+        #name {
+            #(#mapping),*
+        }
     }
 }
