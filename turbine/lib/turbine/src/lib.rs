@@ -21,11 +21,17 @@ pub mod types;
 pub use error::{GenericEntityError, GenericPropertyError};
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct BaseUrlRef<'a>(&'a str);
 
 impl<'a> BaseUrlRef<'a> {
-    #[doc(hidden)] // use the macro instead
+    /// Create a new **unchecked** URL
+    ///
+    /// The URL must be valid as described in the type-system crate, otherwise
+    /// [`BaseUrlRef::into_owned`] will fail!
+    ///
+    /// Use the [`url`] macro instead.
+    #[doc(hidden)]
     #[must_use]
     pub const fn new_unchecked(url: &'a str) -> Self {
         Self(url)
@@ -44,13 +50,20 @@ impl<'a> BaseUrlRef<'a> {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct VersionedUrlRef<'a> {
     base: BaseUrlRef<'a>,
     version: u32,
 }
 
 impl<'a> VersionedUrlRef<'a> {
-    #[doc(hidden)] // use the macro instead
+    /// Create a new **unchecked** URL
+    ///
+    /// This URL must be valid as described in the type-system crate, otherwise
+    /// [`VersionedUrlRef::into_owned`] will fail!
+    ///
+    /// Use the [`url`] macro instead.
+    #[doc(hidden)]
     #[must_use]
     pub const fn new_unchecked(base: BaseUrlRef<'a>, version: u32) -> Self {
         Self { base, version }
@@ -78,6 +91,18 @@ impl<'a> VersionedUrlRef<'a> {
 impl PartialEq<VersionedUrl> for VersionedUrlRef<'_> {
     fn eq(&self, other: &VersionedUrl) -> bool {
         self.version == other.version && self.base.as_str() == other.base_url.as_str()
+    }
+}
+
+impl<'a> PartialEq<BaseUrlRef<'a>> for VersionedUrlRef<'a> {
+    fn eq(&self, other: &BaseUrlRef<'a>) -> bool {
+        self.base == *other
+    }
+}
+
+impl<'a> PartialEq<VersionedUrlRef<'a>> for BaseUrlRef<'a> {
+    fn eq(&self, other: &VersionedUrlRef<'a>) -> bool {
+        *self == other.base
     }
 }
 
