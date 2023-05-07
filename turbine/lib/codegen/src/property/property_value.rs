@@ -159,13 +159,13 @@ impl<'a> PropertyValueGenerator<'a> {
                 }
             }
             Variant::Ref | Variant::Mut => {
+                // needs `into_owned`
                 let cast = match self.variant {
                     Variant::Ref => quote!(TypeRef),
                     Variant::Mut => quote!(TypeMut),
                     Variant::Owned => unreachable!(),
                 };
 
-                // needs `into_owned`
                 let into_owned = self.self_type.variant.map_or_else(|| quote! {
                         let Self(value) = self;
 
@@ -235,7 +235,6 @@ impl<'a> PropertyValueGenerator<'a> {
             .map(|Property { name, .. }| name)
             .collect();
 
-        // TODO: change the content of entity properties!
         match self.variant {
             Variant::Owned => {
                 // needs `as_ref` & `as_mut`

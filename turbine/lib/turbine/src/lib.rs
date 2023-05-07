@@ -10,7 +10,7 @@ use error_stack::{Context, Result};
 use serde::Serialize;
 pub use type_system::url::{BaseUrl, VersionedUrl};
 
-use crate::entity::Entity;
+use crate::entity::{Entity, LinkData};
 
 pub mod entity;
 mod error;
@@ -31,7 +31,7 @@ impl<'a> BaseUrlRef<'a> {
         Self(url)
     }
 
-    // cannot implement ToOwned because this is fallible
+    // cannot implement ToOwned because `AsRef` is not implemented
     // TODO: compile time fail! ~> const fn validator?
     #[must_use]
     pub fn into_owned(self) -> BaseUrl {
@@ -173,9 +173,6 @@ pub trait EntityTypeMut<'a>: Serialize + TypeMut {
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>>;
 }
 
-// TODO: this is a bit more complicated <3
-// TODO: add additional information like inherits_from and links?!
-// TODO: figure out how to serialize?!?! just object that bad boy? with serde rename?!
 pub trait EntityType: Serialize + Type
 where
     for<'a> Self::Ref<'a>: EntityTypeRef<'a>,
@@ -186,16 +183,27 @@ where
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>>;
 }
 
-// Might be included in future version?!
-// pub trait LinkEntityType: EntityType
-// where
-//     for<'a> Self::Ref<'a>: LinkEntityTypeRef<'a>,
-// {
-//     fn left_entity_id(&self) -> EntityId;
-//     fn right_entity_id(&self) -> EntityId;
-// }
-//
-// pub trait LinkEntityTypeRef<'a>: EntityTypeRef<'a> {
-//     fn left_entity_id(&self) -> EntityId;
-//     fn right_entity_id(&self) -> EntityId;
-// }
+pub trait EntityProperties {
+    type Properties<'a>: Serialize
+    where
+        Self: 'a;
+
+    fn properties(&self) -> &Self::Properties<'_>;
+}
+
+pub trait EntityLink {
+    fn link_data(&self) -> &LinkData;
+}
+
+pub trait OptionalEntityLink {
+    fn link_data_opt(&self) -> Option<&LinkData>;
+}
+
+impl<T> OptionalEntityLink for T
+where
+    T: EntityLink,
+{
+    fn link_data_opt(&self) -> Option<&LinkData> {
+        Some(<T as EntityLink>::link_data(self))
+    }
+}

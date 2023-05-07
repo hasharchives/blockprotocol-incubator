@@ -6,9 +6,9 @@ use error_stack::{Report, Result, ResultExt as _};
 use hashbrown::HashMap;
 use serde::Serialize;
 use turbine::{
-    entity::Entity, url, BaseUrl, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError,
-    PropertyType as _, PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef,
-    VersionedUrlRef,
+    entity::Entity, url, BaseUrl, EntityLink, EntityProperties, EntityType, EntityTypeMut,
+    EntityTypeRef, GenericEntityError, OptionalEntityLink, PropertyType as _, PropertyTypeMut as _,
+    PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
 
 use crate::localhost_3000::alice::property::name::Name;
@@ -89,6 +89,18 @@ impl EntityType for Country {
         }
     }
 }
+impl EntityProperties for Country {
+    type Properties < 'a > = Properties where Self : 'a ;
+
+    fn properties(&self) -> &Self::Properties<'_> {
+        &self.properties
+    }
+}
+impl OptionalEntityLink for Country {
+    fn link_data_opt(&self) -> Option<&LinkData> {
+        None
+    }
+}
 ///Country
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a> {
@@ -149,6 +161,18 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
             Err(error) => Some(Err(error)),
             Ok((properties,)) => Some(Ok(Self { properties })),
         }
+    }
+}
+impl<'a> EntityProperties for Country<'a> {
+    type Properties < 'b > = PropertiesRef < 'b > where Self : 'b ;
+
+    fn properties(&self) -> &Self::Properties<'_> {
+        self.properties
+    }
+}
+impl OptionalEntityLink for Country {
+    fn link_data_opt(&self) -> Option<&LinkData> {
+        None
     }
 }
 ///Country
@@ -216,6 +240,18 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
             Err(error) => Some(Err(error)),
             Ok((properties,)) => Some(Ok(Self { properties })),
         }
+    }
+}
+impl<'a> EntityProperties for Country<'a> {
+    type Properties < 'b > = PropertiesMut < 'b > where Self : 'b ;
+
+    fn properties(&self) -> &Self::Properties<'_> {
+        &*self.properties
+    }
+}
+impl OptionalEntityLink for Country {
+    fn link_data_opt(&self) -> Option<&LinkData> {
+        None
     }
 }
 

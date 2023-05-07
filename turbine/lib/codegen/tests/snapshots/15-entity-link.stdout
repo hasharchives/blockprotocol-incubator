@@ -8,8 +8,9 @@ use hashbrown::HashMap;
 use serde::Serialize;
 use turbine::{
     entity::{Entity, LinkData},
-    url, BaseUrl, EntityType, EntityTypeMut, EntityTypeRef, GenericEntityError, PropertyType as _,
-    PropertyTypeMut as _, PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
+    url, BaseUrl, EntityLink, EntityProperties, EntityType, EntityTypeMut, EntityTypeRef,
+    GenericEntityError, OptionalEntityLink, PropertyType as _, PropertyTypeMut as _,
+    PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
 };
 ///Part Of
 #[derive(Debug, Clone)]
@@ -78,6 +79,18 @@ impl EntityType for PartOf {
         }
     }
 }
+impl EntityProperties for PartOf {
+    type Properties < 'a > = Properties where Self : 'a ;
+
+    fn properties(&self) -> &Self::Properties<'_> {
+        &self.properties
+    }
+}
+impl EntityLink for PartOf {
+    fn link_data(&self) -> &LinkData {
+        &self.link_data
+    }
+}
 ///Part Of
 #[derive(Debug, Clone)]
 pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
@@ -131,6 +144,18 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
         }
     }
 }
+impl<'a> EntityProperties for PartOf<'a> {
+    type Properties < 'b > = PropertiesRef < 'b > where Self : 'b ;
+
+    fn properties(&self) -> &Self::Properties<'_> {
+        self.properties
+    }
+}
+impl EntityLink for PartOf {
+    fn link_data(&self) -> &LinkData {
+        self.link_data
+    }
+}
 ///Part Of
 #[derive(Debug)]
 pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
@@ -182,5 +207,17 @@ impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {
                 link_data,
             })),
         }
+    }
+}
+impl<'a> EntityProperties for PartOf<'a> {
+    type Properties < 'b > = PropertiesMut < 'b > where Self : 'b ;
+
+    fn properties(&self) -> &Self::Properties<'_> {
+        &*self.properties
+    }
+}
+impl EntityLink for PartOf {
+    fn link_data(&self) -> &LinkData {
+        &*self.link_data
     }
 }

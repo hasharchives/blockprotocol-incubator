@@ -29,7 +29,6 @@ pub(crate) struct Property {
     pub(crate) required: bool,
 }
 
-// TODO: conversion of entity is incomplete as it does not take `Box<>` and `Vec<>` into account!
 pub(crate) fn properties<'a>(
     id: &VersionedUrl,
     properties: &'a HashMap<BaseUrl, ValueOrArray<PropertyTypeReference>>,

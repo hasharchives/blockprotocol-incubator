@@ -27,6 +27,9 @@ const RESERVED: &[&str] = &[
     "TypeRef",
     "EntityType",
     "EntityTypeRef",
+    "EntityProperties",
+    "EntityLink",
+    "OptionalEntityLink",
     "VersionedUrlRef",
     "GenericEntityError",
     "Entity",
@@ -105,7 +108,7 @@ fn generate_use(
     quote! {
         use serde::Serialize;
         use turbine::{Type, TypeRef, TypeMut};
-        use turbine::{EntityType, EntityTypeRef, EntityTypeMut};
+        use turbine::{EntityType, EntityTypeRef, EntityTypeMut, EntityProperties, EntityLink, OptionalEntityLink};
         use turbine::{PropertyType as _, PropertyTypeRef as _, PropertyTypeMut as _};
         use turbine::{VersionedUrlRef, GenericEntityError};
         use turbine::entity::Entity;
@@ -164,47 +167,44 @@ fn generate_properties_convert(
             .map(|Property { name, .. }| name)
             .collect();
 
-        match variant {
-            Variant::Owned => {
-                let as_mut = generate_property_object_conversion_body(
-                    &quote!(PropertiesMut),
-                    ConversionFunction::AsMut,
-                    properties,
-                );
+        if variant == Variant::Owned {
+            let as_mut = generate_property_object_conversion_body(
+                &quote!(PropertiesMut),
+                ConversionFunction::AsMut,
+                properties,
+            );
 
-                let as_ref = generate_property_object_conversion_body(
-                    &quote!(PropertiesRef),
-                    ConversionFunction::AsRef,
-                    properties,
-                );
+            let as_ref = generate_property_object_conversion_body(
+                &quote!(PropertiesRef),
+                ConversionFunction::AsRef,
+                properties,
+            );
 
-                quote! {
-                    fn as_mut(&mut self) -> PropertiesMut<'_> {
-                        let Self { #(#name),* } = self;
+            quote! {
+                fn as_mut(&mut self) -> PropertiesMut<'_> {
+                    let Self { #(#name),* } = self;
 
-                        #as_mut
-                    }
+                    #as_mut
+                }
 
-                    fn as_ref(&self) -> PropertiesRef<'_> {
-                        let Self { #(#name),* } = self;
+                fn as_ref(&self) -> PropertiesRef<'_> {
+                    let Self { #(#name),* } = self;
 
-                        #as_ref
-                    }
+                    #as_ref
                 }
             }
-            _ => {
-                let into_owned = generate_property_object_conversion_body(
-                    &quote!(Properties),
-                    ConversionFunction::IntoOwned { variant },
-                    properties,
-                );
+        } else {
+            let into_owned = generate_property_object_conversion_body(
+                &quote!(Properties),
+                ConversionFunction::IntoOwned { variant },
+                properties,
+            );
 
-                quote! {
-                    fn into_owned(self) -> Properties {
-                        let Self { #(#name),* } = self;
+            quote! {
+                fn into_owned(self) -> Properties {
+                    let Self { #(#name),* } = self;
 
-                        #into_owned
-                    }
+                    #into_owned
                 }
             }
         }
@@ -365,6 +365,24 @@ fn generate_owned(
         .into_iter()
         .collect();
 
+    let entity_link = if state.is_link {
+        quote! {
+            impl EntityLink for #name {
+                fn link_data(&self) -> &LinkData {
+                    &self.link_data
+                }
+            }
+        }
+    } else {
+        quote! {
+            impl OptionalEntityLink for #name {
+                fn link_data_opt(&self) -> Option<&LinkData> {
+                    None
+                }
+            }
+        }
+    };
+
     quote! {
         #doc
         #def
@@ -416,6 +434,16 @@ fn generate_owned(
                 }
             }
         }
+
+        impl EntityProperties for #name {
+            type Properties<'a> = Properties where Self: 'a;
+
+            fn properties(&self) -> &Self::Properties<'_> {
+                &self.properties
+            }
+        }
+
+        #entity_link
     }
 }
 
@@ -437,6 +465,24 @@ fn generate_ref(
         .then(|| Ident::new("link_data", Span::call_site()))
         .into_iter()
         .collect();
+
+    let entity_link = if state.is_link {
+        quote! {
+            impl EntityLink for #name {
+                fn link_data(&self) -> &LinkData {
+                    self.link_data
+                }
+            }
+        }
+    } else {
+        quote! {
+            impl OptionalEntityLink for #name {
+                fn link_data_opt(&self) -> Option<&LinkData> {
+                    None
+                }
+            }
+        }
+    };
 
     quote! {
         #doc
@@ -480,6 +526,16 @@ fn generate_ref(
                 }
             }
         }
+
+        impl<'a> EntityProperties for #name<'a> {
+            type Properties<'b> = PropertiesRef<'b> where Self: 'b;
+
+            fn properties(&self) -> &Self::Properties<'_> {
+                self.properties
+            }
+        }
+
+        #entity_link
     }
 }
 
@@ -501,6 +557,24 @@ fn generate_mut(
         .then(|| Ident::new("link_data", Span::call_site()))
         .into_iter()
         .collect();
+
+    let entity_link = if state.is_link {
+        quote! {
+            impl EntityLink for #name {
+                fn link_data(&self) -> &LinkData {
+                    &*self.link_data
+                }
+            }
+        }
+    } else {
+        quote! {
+            impl OptionalEntityLink for #name {
+                fn link_data_opt(&self) -> Option<&LinkData> {
+                    None
+                }
+            }
+        }
+    };
 
     quote! {
         #doc
@@ -544,6 +618,16 @@ fn generate_mut(
                 }
             }
         }
+
+        impl<'a> EntityProperties for #name<'a> {
+            type Properties<'b> = PropertiesMut<'b> where Self: 'b;
+
+            fn properties(&self) -> &Self::Properties<'_> {
+                &*self.properties
+            }
+        }
+
+        #entity_link
     }
 }
 
