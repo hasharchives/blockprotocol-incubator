@@ -183,6 +183,10 @@ where
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>>;
 }
 
+// These might be removed, but act as a marker trait.
+//
+// These are especially important for functions that only care about properties or links, not the
+// type of entity e.g. EntityType, EntityTypeRef and EntityTypeMut are all handled the same.
 pub trait EntityProperties {
     type Properties<'a>: Serialize
     where
@@ -195,6 +199,7 @@ pub trait EntityLink {
     fn link_data(&self) -> &LinkData;
 }
 
+// TODO: rename
 pub trait OptionalEntityLink {
     fn link_data_opt(&self) -> Option<&LinkData>;
 }
