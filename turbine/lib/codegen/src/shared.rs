@@ -472,6 +472,9 @@ pub(crate) fn generate_property_object_conversion_body(
     };
 
     let iter = match func {
+        ConversionFunction::IntoOwned {
+            variant: Variant::Ref,
+        } => quote!(into_vec().into_iter),
         ConversionFunction::IntoOwned { .. } => quote!(into_iter),
         ConversionFunction::AsRef => quote!(iter),
         ConversionFunction::AsMut => quote!(iter_mut),
@@ -490,6 +493,16 @@ pub(crate) fn generate_property_object_conversion_body(
              kind,
              required,
          }| {
+            let type_ = if let ConversionFunction::IntoOwned { variant } = func {
+                match variant {
+                    Variant::Owned => type_.to_token_stream(),
+                    Variant::Ref => quote!(<#type_ as Type>::Ref<'_>),
+                    Variant::Mut => quote!(<#type_ as Type>::Mut<'_>),
+                }
+            } else {
+                type_.to_token_stream()
+            };
+
             let convert = quote!(<#type_ as #cast>::#call(#name));
 
             // depending on the kind we need to additionally convert

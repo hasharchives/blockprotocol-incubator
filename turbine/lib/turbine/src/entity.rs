@@ -11,7 +11,7 @@ use serde::{
 };
 use serde_json::Value;
 use time::OffsetDateTime;
-use type_system::url::{BaseUrl, VersionedUrl};
+use type_system::url::VersionedUrl;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -72,7 +72,7 @@ pub struct EntityTemporalMetadata {
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityRecordId {
-    pub entity_id: Uuid,
+    pub entity_id: EntityId,
     pub edition_id: Uuid,
 }
 
@@ -107,7 +107,7 @@ impl EntityProperties {
 #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EntityMetadata {
-    record_id: EntityRecordId,
+    pub record_id: EntityRecordId,
     temporal_versioning: EntityTemporalMetadata,
     pub entity_type_id: VersionedUrl,
     provenance: ProvenanceMetadata,

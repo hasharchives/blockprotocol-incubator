@@ -187,21 +187,24 @@ impl<'a> PropertyValueGenerator<'a> {
         let location = &self.locations[reference.url()];
         let vis = self.self_type.hoisted_visibility();
 
-        let suffix = match self.variant {
-            Variant::Owned => None,
-            Variant::Ref => Some(quote!(::Ref<'a>)),
-            Variant::Mut => Some(quote!(::Mut<'a>)),
-        };
-
         let type_name_raw = location
             .alias
             .value
             .as_ref()
             .unwrap_or(&location.name.value);
         let mut type_name = Ident::new(type_name_raw, Span::call_site()).to_token_stream();
+        let mut anon_type_name = type_name.clone();
 
-        if let Some(suffix) = suffix {
-            type_name = quote!(<#type_name as Type>#suffix);
+        match self.variant {
+            Variant::Owned => {}
+            Variant::Ref => {
+                type_name = quote!(<#type_name as Type>::Ref<'a>);
+                anon_type_name = quote!(<#anon_type_name as Type>::Ref<'_>);
+            }
+            Variant::Mut => {
+                type_name = quote!(<#type_name as Type>::Mut<'a>);
+                anon_type_name = quote!(<#anon_type_name as Type>::Mut<'_>);
+            }
         }
 
         let cast = match self.variant {
@@ -218,7 +221,7 @@ impl<'a> PropertyValueGenerator<'a> {
             value.map(#self_type)
         });
 
-        let conversion = self.data_type_conversion(&type_name);
+        let conversion = self.data_type_conversion(&anon_type_name);
 
         PropertyValue {
             body: quote!((#vis #type_name)),
@@ -254,7 +257,7 @@ impl<'a> PropertyValueGenerator<'a> {
                     },
                     |variant| {
                         let body = generate_property_object_conversion_body(
-                            &quote!(<#ref_> #variant),
+                            &quote!(#ref_ #variant),
                             ConversionFunction::AsRef,
                             properties,
                         );
@@ -281,7 +284,7 @@ impl<'a> PropertyValueGenerator<'a> {
                     },
                     |variant| {
                         let body = generate_property_object_conversion_body(
-                            &quote!(<#mut_> #variant),
+                            &quote!(#mut_ #variant),
                             ConversionFunction::AsMut,
                             properties,
                         );
@@ -318,7 +321,7 @@ impl<'a> PropertyValueGenerator<'a> {
                     },
                     |variant| {
                         let body = generate_property_object_conversion_body(
-                            &quote!(<#owned> #variant),
+                            &quote!(#owned #variant),
                             ConversionFunction::IntoOwned {
                                 variant: self.variant,
                             },

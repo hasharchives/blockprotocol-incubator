@@ -4,7 +4,7 @@
 macro_rules! serialize_compat {
     ($name:ident $(< $($lt:lifetime),* >)?) => {
         impl $(<$($lt),*>)? serde::Serialize for $name $(<$($lt),*>)? {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
             where
                 S: serde::Serializer,
             {

@@ -45,6 +45,7 @@ pub struct Config {
 
     pub overrides: Vec<Override>,
     pub flavors: Vec<Flavor>,
+    pub force: bool,
 }
 
 #[derive(Debug, Copy, Clone, Error)]
@@ -62,8 +63,19 @@ pub enum Error {
 }
 
 #[allow(clippy::too_many_lines)]
-fn setup(root: impl AsRef<Path>, name: Option<String>) -> Result<(PathBuf, cargo::Config), Error> {
+fn setup(
+    root: impl AsRef<Path>,
+    name: Option<String>,
+    force: bool,
+) -> Result<(PathBuf, cargo::Config), Error> {
     let root = root.as_ref();
+
+    if force && root.exists() {
+        std::fs::remove_dir_all(root)
+            .into_report()
+            .change_context(Error::Path)?;
+    }
+
     std::fs::create_dir_all(root)
         .into_report()
         .change_context(Error::Path)?;
@@ -190,7 +202,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
     })
     .change_context(Error::Codegen)?;
 
-    setup(&config.root, config.name)?;
+    setup(&config.root, config.name, config.force)?;
 
     let mut folder = VirtualFolder::new("src".to_owned());
 

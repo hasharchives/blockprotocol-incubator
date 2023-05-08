@@ -220,17 +220,20 @@ fn generate_type(
 ) -> TokenStream {
     let lifetime = variant.into_lifetime().map(|lifetime| quote!(<#lifetime>));
 
-    let mut derives = vec![format_ident!("Debug")];
+    let mut derives = vec![format_ident!("Debug"), format_ident!("Serialize")];
+    let mut property_derives = vec![format_ident!("Debug")];
 
     if variant == Variant::Owned || variant == Variant::Ref {
         derives.push(format_ident!("Clone"));
+        property_derives.push(format_ident!("Clone"));
     }
 
     if !properties.is_empty() {
-        derives.push(format_ident!("Serialize"));
+        property_derives.push(format_ident!("Serialize"));
     }
 
     let derive = quote!(#[derive(#(#derives),*)]);
+    let property_derive = quote!(#[derive(#(#property_derives),*)]);
 
     let name = match variant {
         Variant::Owned => &location.name,
@@ -305,7 +308,7 @@ fn generate_type(
     let conversion = generate_properties_convert(variant, properties);
 
     quote! {
-        #derive
+        #property_derive
         pub struct #properties_name #lifetime #body
 
         #serialize_polyfill
@@ -376,7 +379,7 @@ fn generate_owned(
     } else {
         quote! {
             impl OptionalEntityLink for #name {
-                fn link_data_opt(&self) -> Option<&LinkData> {
+                fn link_data_opt(&self) -> Option<&turbine::entity::LinkData> {
                     None
                 }
             }
@@ -436,9 +439,9 @@ fn generate_owned(
         }
 
         impl EntityProperties for #name {
-            type Properties<'a> = Properties where Self: 'a;
+            type Properties = Properties;
 
-            fn properties(&self) -> &Self::Properties<'_> {
+            fn properties(&self) -> &Self::Properties {
                 &self.properties
             }
         }
@@ -468,7 +471,7 @@ fn generate_ref(
 
     let entity_link = if state.is_link {
         quote! {
-            impl EntityLink for #name {
+            impl EntityLink for #name_ref<'_> {
                 fn link_data(&self) -> &LinkData {
                     self.link_data
                 }
@@ -476,8 +479,8 @@ fn generate_ref(
         }
     } else {
         quote! {
-            impl OptionalEntityLink for #name {
-                fn link_data_opt(&self) -> Option<&LinkData> {
+            impl OptionalEntityLink for #name_ref<'_> {
+                fn link_data_opt(&self) -> Option<&turbine::entity::LinkData> {
                     None
                 }
             }
@@ -527,11 +530,11 @@ fn generate_ref(
             }
         }
 
-        impl<'a> EntityProperties for #name<'a> {
-            type Properties<'b> = PropertiesRef<'b> where Self: 'b;
+        impl<'a> EntityProperties for #name_ref<'a> {
+            type Properties = PropertiesRef<'a>;
 
-            fn properties(&self) -> &Self::Properties<'_> {
-                self.properties
+            fn properties(&self) -> &Self::Properties {
+                &self.properties
             }
         }
 
@@ -560,7 +563,7 @@ fn generate_mut(
 
     let entity_link = if state.is_link {
         quote! {
-            impl EntityLink for #name {
+            impl EntityLink for #name_mut<'_> {
                 fn link_data(&self) -> &LinkData {
                     &*self.link_data
                 }
@@ -568,8 +571,8 @@ fn generate_mut(
         }
     } else {
         quote! {
-            impl OptionalEntityLink for #name {
-                fn link_data_opt(&self) -> Option<&LinkData> {
+            impl OptionalEntityLink for #name_mut<'_> {
+                fn link_data_opt(&self) -> Option<&turbine::entity::LinkData> {
                     None
                 }
             }
@@ -619,11 +622,11 @@ fn generate_mut(
             }
         }
 
-        impl<'a> EntityProperties for #name<'a> {
-            type Properties<'b> = PropertiesMut<'b> where Self: 'b;
+        impl<'a> EntityProperties for #name_mut<'a> {
+            type Properties = PropertiesMut<'a>;
 
-            fn properties(&self) -> &Self::Properties<'_> {
-                &*self.properties
+            fn properties(&self) -> &Self::Properties {
+                &self.properties
             }
         }
 

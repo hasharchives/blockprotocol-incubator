@@ -64,6 +64,9 @@ pub(crate) struct Lib {
 
     #[arg(long)]
     name: Option<String>,
+
+    #[arg(long)]
+    force: Option<bool>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -195,6 +198,9 @@ pub(crate) struct Config {
 
     overrides: Vec<Override>,
     flavors: Vec<Flavor>,
+
+    #[serde(default)]
+    force: bool,
 }
 
 pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Error> {
@@ -203,6 +209,7 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         origin,
         style,
         name,
+        force,
     } = lib;
 
     let mut figment = Figment::new()
@@ -223,7 +230,10 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         figment = figment.merge(("style".to_owned(), figment::value::Value::serialize(style)?));
     }
     if let Some(name) = name {
-        figment = figment.merge(("name", figment::value::Value::serialize(name)?));
+        figment = figment.merge(("name", figment::value::Value::from(name)));
+    }
+    if let Some(force) = force {
+        figment = figment.merge(("force", figment::value::Value::from(force)));
     }
 
     figment.extract()
@@ -254,6 +264,8 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
 
         overrides: config.overrides,
         flavors: config.flavors,
+
+        force: config.force,
     })
     .change_context(Error::Skeletor)
 }

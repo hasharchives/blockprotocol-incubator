@@ -213,11 +213,9 @@ where
 // These are especially important for functions that only care about properties or links, not the
 // type of entity e.g. EntityType, EntityTypeRef and EntityTypeMut are all handled the same.
 pub trait EntityProperties {
-    type Properties<'a>: Serialize
-    where
-        Self: 'a;
+    type Properties: Serialize;
 
-    fn properties(&self) -> &Self::Properties<'_>;
+    fn properties(&self) -> &Self::Properties;
 }
 
 pub trait EntityLink {
