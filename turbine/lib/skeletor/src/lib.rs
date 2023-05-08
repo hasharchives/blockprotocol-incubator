@@ -219,6 +219,8 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         .into_report()
         .change_context(Error::Io)?;
 
+    // TODO: run `cargo fix`
+
     let mut child = Command::new("cargo-fmt")
         .arg("--all")
         .arg("--")
