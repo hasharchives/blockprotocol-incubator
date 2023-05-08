@@ -5,7 +5,9 @@ use onlyerror::Error;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef};
+use crate::{
+    url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
+};
 
 #[derive(Debug, Clone, Error)]
 pub enum NumberError {
@@ -40,12 +42,14 @@ impl Deref for Number {
     }
 }
 
+impl TypeUrl for Number {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
+}
+
 impl Type for Number {
     type Mut<'a> = NumberMut<'a> where Self: 'a;
     type Ref<'a> = NumberRef<'a> where Self: 'a;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         NumberMut(&mut self.0)
@@ -77,6 +81,11 @@ impl Deref for NumberRef<'_> {
     fn deref(&self) -> &Self::Target {
         self.0
     }
+}
+
+impl TypeUrl for NumberRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 }
 
 impl TypeRef for NumberRef<'_> {
@@ -114,6 +123,11 @@ impl DerefMut for NumberMut<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.0
     }
+}
+
+impl TypeUrl for NumberMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 }
 
 impl TypeMut for NumberMut<'_> {

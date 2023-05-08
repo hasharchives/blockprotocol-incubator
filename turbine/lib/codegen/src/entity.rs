@@ -107,7 +107,7 @@ fn generate_use(
 
     quote! {
         use serde::Serialize;
-        use turbine::{Type, TypeRef, TypeMut};
+        use turbine::{TypeUrl, Type, TypeRef, TypeMut};
         use turbine::{EntityType, EntityTypeRef, EntityTypeMut, EntityProperties, EntityLink, OptionalEntityLink};
         use turbine::{PropertyType as _, PropertyTypeRef as _, PropertyTypeMut as _};
         use turbine::{VersionedUrlRef, GenericEntityError};
@@ -390,11 +390,13 @@ fn generate_owned(
         #doc
         #def
 
+        impl TypeUrl for #name {
+            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
+        }
+
         impl Type for #name {
             type Mut<'a> = #name_mut<'a> where Self: 'a;
             type Ref<'a> = #name_ref<'a> where Self: 'a;
-
-            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
             fn as_mut(&mut self) -> Self::Mut<'_> {
                 #name_mut {
@@ -462,6 +464,9 @@ fn generate_ref(
     let doc = generate_doc(entity);
     let def = generate_type(Variant::Ref, location, properties, state);
 
+    let base_url = entity.id().base_url.as_str();
+    let version = entity.id().version;
+
     // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
     let link_data: Vec<_> = state
         .is_link
@@ -490,6 +495,10 @@ fn generate_ref(
     quote! {
         #doc
         #def
+
+        impl TypeUrl for #name_ref<'_> {
+            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
+        }
 
         impl TypeRef for #name_ref<'_> {
             type Owned = #name;
@@ -554,6 +563,9 @@ fn generate_mut(
     let doc = generate_doc(entity);
     let def = generate_type(Variant::Mut, location, properties, state);
 
+    let base_url = entity.id().base_url.as_str();
+    let version = entity.id().version;
+
     // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
     let link_data: Vec<_> = state
         .is_link
@@ -582,6 +594,10 @@ fn generate_mut(
     quote! {
         #doc
         #def
+
+        impl TypeUrl for #name_mut<'_> {
+            const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
+        }
 
         impl TypeMut for #name_mut<'_> {
             type Owned = #name;

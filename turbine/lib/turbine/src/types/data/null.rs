@@ -3,7 +3,9 @@ use onlyerror::Error;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef};
+use crate::{
+    url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
+};
 
 #[derive(Debug, Clone, Error)]
 pub enum NullError {
@@ -14,13 +16,15 @@ pub enum NullError {
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct Null;
 
+impl TypeUrl for Null {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/null/" / v / 1);
+}
+
 impl Type for Null {
     // `Null` is `Null`, you cannot change the value of it
     type Mut<'a> = Self where Self: 'a;
     type Ref<'a> = Self where Self: 'a;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/null/" / v / 1);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         *self

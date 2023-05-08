@@ -5,7 +5,9 @@ use onlyerror::Error;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef};
+use crate::{
+    url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
+};
 
 #[derive(Debug, Clone, Error)]
 pub enum BooleanError {
@@ -37,12 +39,14 @@ impl DerefMut for Boolean {
     }
 }
 
+impl TypeUrl for Boolean {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
+}
+
 impl Type for Boolean {
     type Mut<'a> = BooleanMut<'a> where Self: 'a;
     type Ref<'a> = Self where Self: 'a;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         BooleanMut(&mut self.0)
@@ -99,6 +103,11 @@ impl DerefMut for BooleanMut<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.0
     }
+}
+
+impl TypeUrl for BooleanMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
 }
 
 impl TypeMut for BooleanMut<'_> {

@@ -113,20 +113,24 @@ macro_rules! url {
     };
 }
 
-pub trait TypeRef: Sized {
+pub trait TypeUrl {
+    const ID: VersionedUrlRef<'static>;
+}
+
+pub trait TypeRef: TypeUrl + Sized {
     type Owned;
 
     // called into_owned instead of to_owned to prevent confusion
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait TypeMut: Sized {
+pub trait TypeMut: TypeUrl + Sized {
     type Owned;
 
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait Type: Sized {
+pub trait Type: TypeUrl + Sized {
     type Mut<'a>: TypeMut<Owned = Self>
     where
         Self: 'a;
@@ -134,8 +138,6 @@ pub trait Type: Sized {
     type Ref<'a>: TypeRef<Owned = Self>
     where
         Self: 'a;
-
-    const ID: VersionedUrlRef<'static>;
 
     fn as_mut(&mut self) -> Self::Mut<'_>;
 

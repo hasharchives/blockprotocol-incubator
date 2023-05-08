@@ -159,7 +159,7 @@ impl<'a> PropertyTypeGenerator<'a> {
 
         quote! {
             use serde::Serialize;
-            use turbine::{Type, TypeRef, TypeMut};
+            use turbine::{TypeUrl, Type, TypeRef, TypeMut};
             use turbine::{PropertyType, PropertyTypeRef, PropertyTypeMut};
             use turbine::{DataType, DataTypeRef, DataTypeMut};
             use turbine::url;
@@ -230,11 +230,13 @@ impl<'a> PropertyTypeGenerator<'a> {
             #doc
             #def
 
+            impl TypeUrl for #name {
+                const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
+            }
+
             impl Type for #name {
                 type Mut<'a> = #name_mut<'a> where Self: 'a;
                 type Ref<'a> = #name_ref<'a> where Self: 'a;
-
-                const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
 
                 #impl_conversion
             }
@@ -255,6 +257,9 @@ impl<'a> PropertyTypeGenerator<'a> {
         let name = Ident::new(self.location.name.value.as_str(), Span::call_site());
         let name_ref = Ident::new(self.location.name_ref.value.as_str(), Span::call_site());
 
+        let base_url = self.property.id().base_url.as_str();
+        let version = self.property.id().version;
+
         let alias = self.location.name_ref.alias.as_ref().map(|alias| {
             let alias = Ident::new(alias, Span::call_site());
 
@@ -273,6 +278,10 @@ impl<'a> PropertyTypeGenerator<'a> {
         quote! {
             #doc
             #def
+
+            impl TypeUrl for #name_ref<'_> {
+                const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
+            }
 
             impl TypeRef for #name_ref<'_> {
                 type Owned = #name;
@@ -296,6 +305,9 @@ impl<'a> PropertyTypeGenerator<'a> {
         let name = Ident::new(self.location.name.value.as_str(), Span::call_site());
         let name_mut = Ident::new(self.location.name_mut.value.as_str(), Span::call_site());
 
+        let base_url = self.property.id().base_url.as_str();
+        let version = self.property.id().version;
+
         let alias = self.location.name_mut.alias.as_ref().map(|alias| {
             let alias = Ident::new(alias, Span::call_site());
 
@@ -314,6 +326,10 @@ impl<'a> PropertyTypeGenerator<'a> {
         quote! {
             #doc
             #def
+
+            impl TypeUrl for #name_mut<'_> {
+                const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
+            }
 
             impl TypeMut for #name_mut<'_> {
                 type Owned = #name;

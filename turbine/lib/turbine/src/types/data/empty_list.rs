@@ -1,9 +1,11 @@
 use error_stack::{Report, Result};
 use onlyerror::Error;
-use serde::Serialize;
+use serde::{ser::SerializeSeq, Serialize, Serializer};
 use serde_json::Value;
 
-use crate::{url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef};
+use crate::{
+    url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
+};
 
 #[derive(Debug, Clone, Error)]
 pub enum EmptyListError {
@@ -14,16 +16,27 @@ pub enum EmptyListError {
     NotEmpty,
 }
 
-#[derive(Debug, Copy, Clone, Serialize)]
+#[derive(Debug, Copy, Clone)]
 pub struct EmptyList;
+
+impl Serialize for EmptyList {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_seq(Some(0))?.end()
+    }
+}
+
+impl TypeUrl for EmptyList {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/emptyList/" / v / 1);
+}
 
 impl Type for EmptyList {
     // `EmptyList` is `EmptyList`, you cannot change the value of it
     type Mut<'a> = Self where Self: 'a;
     type Ref<'a> = Self where Self: 'a;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/emptyList/" / v / 1);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         *self

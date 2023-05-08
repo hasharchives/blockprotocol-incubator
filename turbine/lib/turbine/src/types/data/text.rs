@@ -6,7 +6,9 @@ use onlyerror::Error;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef};
+use crate::{
+    url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
+};
 
 #[derive(Debug, Clone, Error)]
 pub enum TextError {
@@ -47,12 +49,14 @@ impl DerefMut for Text {
     }
 }
 
+impl TypeUrl for Text {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
+}
+
 impl Type for Text {
     type Mut<'a> = TextMut<'a> where Self: 'a;
     type Ref<'a> = TextRef<'a> where Self: 'a;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/data-type/text/" / v / 1);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         TextMut(&mut self.0)
@@ -84,6 +88,11 @@ impl Deref for TextRef<'_> {
     fn deref(&self) -> &Self::Target {
         self.0
     }
+}
+
+impl TypeUrl for TextRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
 
 impl TypeRef for TextRef<'_> {
@@ -120,6 +129,11 @@ impl DerefMut for TextMut<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.0
     }
+}
+
+impl TypeUrl for TextMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
 
 impl TypeMut for TextMut<'_> {
