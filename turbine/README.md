@@ -37,8 +37,8 @@ force = false
 #kind = "crates-io" # currently does not work, use turbine from crates.io
 #kind = "git"
 #value = {url = "...", rev = "...", tag = "...", branch = "..."} # rev, tag, branch are optional
-#kind = "path"
-#value = "../turbine" # relative path from the crate
+kind = "path"
+value = "../turbine" # relative path from the generated crate
 
 # Origin where types are to be fetched, either `remote` (will query the HASH-Graph) or `local`, pointing to a JSON file
 [origin]
