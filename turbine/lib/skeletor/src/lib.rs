@@ -10,10 +10,10 @@ use std::{
 };
 
 use cargo::{
-    core::{SourceId, Workspace},
+    core::{compiler::CompileMode, SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
-        NewOptions, VersionControl,
+        CompileOptions, FixOptions, NewOptions, VersionControl,
     },
     util::toml_mut::manifest::DepTable,
 };
@@ -22,6 +22,18 @@ use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
 use onlyerror::Error;
 
 use crate::vfs::VirtualFolder;
+
+#[derive(Debug, Clone)]
+pub enum Dependency {
+    Path(PathBuf),
+    Git {
+        url: String,
+        rev: Option<String>,
+        branch: Option<String>,
+        tag: Option<String>,
+    },
+    CratesIo,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub enum Style {
@@ -46,6 +58,8 @@ pub struct Config {
     pub overrides: Vec<Override>,
     pub flavors: Vec<Flavor>,
     pub force: bool,
+
+    pub turbine: Dependency,
 }
 
 #[derive(Debug, Copy, Clone, Error)]
@@ -67,6 +81,7 @@ fn setup(
     root: impl AsRef<Path>,
     name: Option<String>,
     force: bool,
+    turbine: Dependency,
 ) -> Result<(PathBuf, cargo::Config), Error> {
     let root = root.as_ref();
 
@@ -115,7 +130,6 @@ fn setup(
         .change_context(Error::Codegen)?;
 
     // add all required dependencies
-    // TODO: blockprotocol, but that is kinda, idk...?
     let cargo_add = AddOptions {
         config: &cargo_config,
         spec: &package,
@@ -182,6 +196,34 @@ fn setup(
                 rev: None,
                 tag: None,
             },
+            DepOp {
+                crate_spec: Some("turbine".to_owned()),
+                rename: None,
+                features: None,
+                default_features: None,
+                optional: Some(false),
+                registry: None,
+                git: match &turbine {
+                    Dependency::Git { url, .. } => Some(url.clone()),
+                    _ => None,
+                },
+                path: match &turbine {
+                    Dependency::Path(path) => Some(path.to_string_lossy().to_string()),
+                    _ => None,
+                },
+                branch: match &turbine {
+                    Dependency::Git { branch, .. } => branch.clone(),
+                    _ => None,
+                },
+                rev: match &turbine {
+                    Dependency::Git { rev, .. } => rev.clone(),
+                    _ => None,
+                },
+                tag: match turbine {
+                    Dependency::Git { tag, .. } => tag,
+                    _ => None,
+                },
+            },
         ],
         section: DepTable::default(),
         dry_run: false,
@@ -202,7 +244,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
     })
     .change_context(Error::Codegen)?;
 
-    setup(&config.root, config.name, config.force)?;
+    let (abs_root, cargo_config) = setup(&config.root, config.name, config.force, config.turbine)?;
 
     let mut folder = VirtualFolder::new("src".to_owned());
 
@@ -219,7 +261,23 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         .into_report()
         .change_context(Error::Io)?;
 
-    // TODO: run `cargo fix`
+    let workspace = Workspace::new(&abs_root.join("Cargo.toml"), &cargo_config)
+        .into_report()
+        .change_context(Error::Codegen)?;
+
+    cargo::ops::fix(&workspace, &mut FixOptions {
+        edition: true,
+        idioms: true,
+        compile_opts: CompileOptions::new(&cargo_config, CompileMode::Check { test: true })
+            .into_report()
+            .change_context(Error::Codegen)?,
+        allow_dirty: true,
+        allow_no_vcs: true,
+        allow_staged: true,
+        broken_code: false,
+    })
+    .into_report()
+    .change_context(Error::Codegen)?;
 
     let mut child = Command::new("cargo-fmt")
         .arg("--all")

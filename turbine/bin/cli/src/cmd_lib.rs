@@ -187,6 +187,51 @@ fn call_remote(url: &Url) -> Result<Vec<AnyTypeRepr>, Error> {
     Ok(types)
 }
 
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(tag = "type", content = "value", rename_all = "kebab-case")]
+pub enum Dependency {
+    Path(PathBuf),
+    Git {
+        url: Url,
+        rev: Option<String>,
+        branch: Option<String>,
+        tag: Option<String>,
+    },
+    CratesIo,
+}
+
+impl Default for Dependency {
+    fn default() -> Self {
+        Self::Git {
+            url: Url::parse("https://github.com/blockprotocol/incubator")
+                .expect("infallible; static url"),
+            rev: None,
+            branch: None,
+            tag: None,
+        }
+    }
+}
+
+impl From<Dependency> for skeletor::Dependency {
+    fn from(value: Dependency) -> Self {
+        match value {
+            Dependency::Path(path) => Self::Path(path),
+            Dependency::Git {
+                url,
+                rev,
+                branch,
+                tag,
+            } => Self::Git {
+                url: url.to_string(),
+                rev,
+                branch,
+                tag,
+            },
+            Dependency::CratesIo => Self::CratesIo,
+        }
+    }
+}
+
 #[derive(serde::Deserialize)]
 pub(crate) struct Config {
     root: PathBuf,
@@ -201,6 +246,8 @@ pub(crate) struct Config {
 
     #[serde(default)]
     force: bool,
+
+    turbine: Option<Dependency>,
 }
 
 pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Error> {
@@ -266,6 +313,8 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
         flavors: config.flavors,
 
         force: config.force,
+
+        turbine: config.turbine.unwrap_or_default().into(),
     })
     .change_context(Error::Skeletor)
 }
