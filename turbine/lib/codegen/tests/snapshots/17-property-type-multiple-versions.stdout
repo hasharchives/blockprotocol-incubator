@@ -46,7 +46,7 @@ impl TypeRef for UserIdRef<'_> {
 
     fn into_owned(self) -> UserId {
         let Self(value) = self;
-        UserId(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        UserId(<<Number as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
@@ -69,7 +69,7 @@ impl TypeMut for UserIdMut<'_> {
 
     fn into_owned(self) -> UserId {
         let Self(value) = self;
-        UserId(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        UserId(<<Number as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
@@ -137,7 +137,7 @@ impl TypeRef for UserIdV1Ref<'_> {
 
     fn into_owned(self) -> UserIdV1 {
         let Self(value) = self;
-        UserIdV1(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        UserIdV1(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for UserIdV1Ref<'a> {
@@ -159,7 +159,7 @@ impl TypeMut for UserIdV1Mut<'_> {
 
     fn into_owned(self) -> UserIdV1 {
         let Self(value) = self;
-        UserIdV1(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        UserIdV1(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for UserIdV1Mut<'a> {

@@ -46,7 +46,7 @@ impl TypeRef for EmailRef<'_> {
 
     fn into_owned(self) -> Email {
         let Self(value) = self;
-        Email(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        Email(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for EmailRef<'a> {
@@ -69,7 +69,7 @@ impl TypeMut for EmailMut<'_> {
 
     fn into_owned(self) -> Email {
         let Self(value) = self;
-        Email(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        Email(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for EmailMut<'a> {
@@ -203,11 +203,13 @@ impl TypeRef for ContactInformationRef<'_> {
         } = self;
         ContactInformation {
             contact_information: contact_information.map(|contact_information| {
-                Box::new(<ContactInformation0 as TypeRef>::into_owned(
-                    contact_information,
-                ))
+                Box::new(
+                    <<ContactInformation0 as Type>::Ref<'_> as TypeRef>::into_owned(
+                        contact_information,
+                    ),
+                )
             }),
-            email: <Email as TypeRef>::into_owned(email),
+            email: <<Email as Type>::Ref<'_> as TypeRef>::into_owned(email),
         }
     }
 }
@@ -271,11 +273,13 @@ impl TypeMut for ContactInformationMut<'_> {
         } = self;
         ContactInformation {
             contact_information: contact_information.map(|contact_information| {
-                Box::new(<ContactInformation0 as TypeMut>::into_owned(
-                    contact_information,
-                ))
+                Box::new(
+                    <<ContactInformation0 as Type>::Mut<'_> as TypeMut>::into_owned(
+                        contact_information,
+                    ),
+                )
             }),
-            email: <Email as TypeMut>::into_owned(email),
+            email: <<Email as Type>::Mut<'_> as TypeMut>::into_owned(email),
         }
     }
 }

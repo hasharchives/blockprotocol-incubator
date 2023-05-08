@@ -42,7 +42,7 @@ impl Inner1<'a> {
 
     fn into_owned(self) -> Inner0 {
         let Self(value) = self;
-        Inner0(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        Inner0(<<Number as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 #[derive(Debug, Serialize)]
@@ -58,7 +58,7 @@ impl Inner2<'a> {
 
     fn into_owned(self) -> Inner0 {
         let Self(value) = self;
-        Inner0(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        Inner0(<<Number as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 ///Contrived Property
@@ -154,7 +154,7 @@ impl TypeRef for ContrivedPropertyRef<'_> {
     fn into_owned(self) -> ContrivedProperty {
         match self {
             Self::Variant0(value) => <ContrivedProperty>::Variant0(
-                <<Number as Type>::Ref<'a> as TypeRef>::into_owned(value),
+                <<Number as Type>::Ref<'_> as TypeRef>::into_owned(value),
             ),
             Self::Variant1(value) => <ContrivedProperty>::Variant1(
                 value
@@ -220,7 +220,7 @@ impl TypeMut for ContrivedPropertyMut<'_> {
     fn into_owned(self) -> ContrivedProperty {
         match self {
             Self::Variant0(value) => <ContrivedProperty>::Variant0(
-                <<Number as Type>::Mut<'a> as TypeMut>::into_owned(value),
+                <<Number as Type>::Mut<'_> as TypeMut>::into_owned(value),
             ),
             Self::Variant1(value) => <ContrivedProperty>::Variant1(
                 value

@@ -51,7 +51,7 @@ impl _Inner1<'a> {
 
     fn into_owned(self) -> _Inner0 {
         let Self(value) = self;
-        _Inner0(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        _Inner0(<<Number as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 #[derive(Debug, Serialize)]
@@ -67,7 +67,7 @@ impl _Inner2<'a> {
 
     fn into_owned(self) -> _Inner0 {
         let Self(value) = self;
-        _Inner0(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        _Inner0(<<Number as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 ///User ID
@@ -159,7 +159,7 @@ impl TypeRef for UserIdRef<'_> {
     fn into_owned(self) -> UserId {
         match self {
             Self::Variant0(value) => {
-                <UserId>::Variant0(<<Inner as Type>::Ref<'a> as TypeRef>::into_owned(value))
+                <UserId>::Variant0(<<Inner as Type>::Ref<'_> as TypeRef>::into_owned(value))
             }
             Self::Variant1(value) => <UserId>::Variant1(
                 value
@@ -225,7 +225,7 @@ impl TypeMut for UserIdMut<'_> {
     fn into_owned(self) -> UserId {
         match self {
             Self::Variant0(value) => {
-                <UserId>::Variant0(<<Inner as Type>::Mut<'a> as TypeMut>::into_owned(value))
+                <UserId>::Variant0(<<Inner as Type>::Mut<'_> as TypeMut>::into_owned(value))
             }
             Self::Variant1(value) => <UserId>::Variant1(
                 value

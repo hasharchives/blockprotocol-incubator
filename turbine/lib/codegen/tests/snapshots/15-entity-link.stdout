@@ -31,7 +31,7 @@ impl Properties {
         PropertiesRef(PhantomData)
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOf {
     pub properties: Properties,
@@ -80,9 +80,9 @@ impl EntityType for PartOf {
     }
 }
 impl EntityProperties for PartOf {
-    type Properties < 'a > = Properties where Self : 'a ;
+    type Properties = Properties;
 
-    fn properties(&self) -> &Self::Properties<'_> {
+    fn properties(&self) -> &Self::Properties {
         &self.properties
     }
 }
@@ -106,7 +106,7 @@ impl<'a> PropertiesRef<'a> {
         Properties
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfRef<'a> {
     pub properties: PropertiesRef<'a>,
@@ -144,14 +144,14 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
         }
     }
 }
-impl<'a> EntityProperties for PartOf<'a> {
-    type Properties < 'b > = PropertiesRef < 'b > where Self : 'b ;
+impl<'a> EntityProperties for PartOfRef<'a> {
+    type Properties = PropertiesRef<'a>;
 
-    fn properties(&self) -> &Self::Properties<'_> {
-        self.properties
+    fn properties(&self) -> &Self::Properties {
+        &self.properties
     }
 }
-impl EntityLink for PartOf {
+impl EntityLink for PartOfRef<'_> {
     fn link_data(&self) -> &LinkData {
         self.link_data
     }
@@ -171,7 +171,7 @@ impl<'a> PropertiesMut<'a> {
         Properties
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfMut<'a> {
     pub properties: PropertiesMut<'a>,
@@ -209,14 +209,14 @@ impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {
         }
     }
 }
-impl<'a> EntityProperties for PartOf<'a> {
-    type Properties < 'b > = PropertiesMut < 'b > where Self : 'b ;
+impl<'a> EntityProperties for PartOfMut<'a> {
+    type Properties = PropertiesMut<'a>;
 
-    fn properties(&self) -> &Self::Properties<'_> {
-        &*self.properties
+    fn properties(&self) -> &Self::Properties {
+        &self.properties
     }
 }
-impl EntityLink for PartOf {
+impl EntityLink for PartOfMut<'_> {
     fn link_data(&self) -> &LinkData {
         &*self.link_data
     }

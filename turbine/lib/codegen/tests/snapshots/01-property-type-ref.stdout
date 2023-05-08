@@ -46,7 +46,7 @@ impl TypeRef for CountryCodeRef<'_> {
 
     fn into_owned(self) -> CountryCode {
         let Self(value) = self;
-        CountryCode(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        CountryCode(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for CountryCodeRef<'a> {
@@ -69,7 +69,7 @@ impl TypeMut for CountryCodeMut<'_> {
 
     fn into_owned(self) -> CountryCode {
         let Self(value) = self;
-        CountryCode(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        CountryCode(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for CountryCodeMut<'a> {

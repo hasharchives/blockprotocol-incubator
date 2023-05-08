@@ -66,7 +66,7 @@ impl Properties {
         }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Country {
     pub properties: Properties,
@@ -106,14 +106,14 @@ impl EntityType for Country {
     }
 }
 impl EntityProperties for Country {
-    type Properties < 'a > = Properties where Self : 'a ;
+    type Properties = Properties;
 
-    fn properties(&self) -> &Self::Properties<'_> {
+    fn properties(&self) -> &Self::Properties {
         &self.properties
     }
 }
 impl OptionalEntityLink for Country {
-    fn link_data_opt(&self) -> Option<&LinkData> {
+    fn link_data_opt(&self) -> Option<&turbine::entity::LinkData> {
         None
     }
 }
@@ -158,12 +158,12 @@ impl<'a> PropertiesRef<'a> {
     fn into_owned(self) -> Properties {
         let Self { name_0, name_1 } = self;
         Properties {
-            name_0: <Name0 as TypeRef>::into_owned(name_0),
-            name_1: <Name1 as TypeRef>::into_owned(name_1),
+            name_0: <<Name0 as Type>::Ref<'_> as TypeRef>::into_owned(name_0),
+            name_1: <<Name1 as Type>::Ref<'_> as TypeRef>::into_owned(name_1),
         }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     pub properties: PropertiesRef<'a>,
@@ -192,15 +192,15 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
         }
     }
 }
-impl<'a> EntityProperties for Country<'a> {
-    type Properties < 'b > = PropertiesRef < 'b > where Self : 'b ;
+impl<'a> EntityProperties for CountryRef<'a> {
+    type Properties = PropertiesRef<'a>;
 
-    fn properties(&self) -> &Self::Properties<'_> {
-        self.properties
+    fn properties(&self) -> &Self::Properties {
+        &self.properties
     }
 }
-impl OptionalEntityLink for Country {
-    fn link_data_opt(&self) -> Option<&LinkData> {
+impl OptionalEntityLink for CountryRef<'_> {
+    fn link_data_opt(&self) -> Option<&turbine::entity::LinkData> {
         None
     }
 }
@@ -255,8 +255,8 @@ impl<'a> PropertiesMut<'a> {
     fn into_owned(self) -> Properties {
         let Self { name_0, name_1 } = self;
         Properties {
-            name_0: <Name0 as TypeMut>::into_owned(name_0),
-            name_1: <Name1 as TypeMut>::into_owned(name_1),
+            name_0: <<Name0 as Type>::Mut<'_> as TypeMut>::into_owned(name_0),
+            name_1: <<Name1 as Type>::Mut<'_> as TypeMut>::into_owned(name_1),
         }
     }
 }
@@ -289,15 +289,15 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
         }
     }
 }
-impl<'a> EntityProperties for Country<'a> {
-    type Properties < 'b > = PropertiesMut < 'b > where Self : 'b ;
+impl<'a> EntityProperties for CountryMut<'a> {
+    type Properties = PropertiesMut<'a>;
 
-    fn properties(&self) -> &Self::Properties<'_> {
-        &*self.properties
+    fn properties(&self) -> &Self::Properties {
+        &self.properties
     }
 }
-impl OptionalEntityLink for Country {
-    fn link_data_opt(&self) -> Option<&LinkData> {
+impl OptionalEntityLink for CountryMut<'_> {
+    fn link_data_opt(&self) -> Option<&turbine::entity::LinkData> {
         None
     }
 }
@@ -353,7 +353,7 @@ impl TypeRef for NameRef<'_> {
 
     fn into_owned(self) -> Name {
         let Self(value) = self;
-        Name(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        Name(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
@@ -376,7 +376,7 @@ impl TypeMut for NameMut<'_> {
 
     fn into_owned(self) -> Name {
         let Self(value) = self;
-        Name(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        Name(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for NameMut<'a> {
@@ -443,7 +443,7 @@ impl TypeRef for NameRef<'_> {
 
     fn into_owned(self) -> Name {
         let Self(value) = self;
-        Name(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        Name(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for NameRef<'a> {
@@ -466,7 +466,7 @@ impl TypeMut for NameMut<'_> {
 
     fn into_owned(self) -> Name {
         let Self(value) = self;
-        Name(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        Name(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for NameMut<'a> {

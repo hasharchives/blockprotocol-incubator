@@ -42,7 +42,7 @@ impl Inner1<'a> {
 
     fn into_owned(self) -> Inner0 {
         let Self(value) = self;
-        Inner0(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        Inner0(<<Number as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 #[derive(Debug, Serialize)]
@@ -58,7 +58,7 @@ impl Inner2<'a> {
 
     fn into_owned(self) -> Inner0 {
         let Self(value) = self;
-        Inner0(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        Inner0(<<Number as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 ///Contrived Property

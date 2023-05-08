@@ -82,10 +82,10 @@ impl TypeRef for UserIdRef<'_> {
     fn into_owned(self) -> UserId {
         match self {
             Self::Variant0(value) => {
-                <UserId>::Variant0(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+                <UserId>::Variant0(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
             }
             Self::Variant1(value) => {
-                <UserId>::Variant1(<<Number as Type>::Ref<'a> as TypeRef>::into_owned(value))
+                <UserId>::Variant1(<<Number as Type>::Ref<'_> as TypeRef>::into_owned(value))
             }
         }
     }
@@ -137,10 +137,10 @@ impl TypeMut for UserIdMut<'_> {
     fn into_owned(self) -> UserId {
         match self {
             Self::Variant0(value) => {
-                <UserId>::Variant0(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+                <UserId>::Variant0(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
             }
             Self::Variant1(value) => {
-                <UserId>::Variant1(<<Number as Type>::Mut<'a> as TypeMut>::into_owned(value))
+                <UserId>::Variant1(<<Number as Type>::Mut<'_> as TypeMut>::into_owned(value))
             }
         }
     }

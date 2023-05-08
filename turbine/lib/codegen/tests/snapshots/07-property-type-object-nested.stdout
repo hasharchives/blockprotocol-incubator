@@ -47,7 +47,7 @@ impl TypeRef for FavoriteFilmRef<'_> {
 
     fn into_owned(self) -> FavoriteFilm {
         let Self(value) = self;
-        FavoriteFilm(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        FavoriteFilm(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for FavoriteFilmRef<'a> {
@@ -70,7 +70,7 @@ impl TypeMut for FavoriteFilmMut<'_> {
 
     fn into_owned(self) -> FavoriteFilm {
         let Self(value) = self;
-        FavoriteFilm(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        FavoriteFilm(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for FavoriteFilmMut<'a> {
@@ -138,7 +138,7 @@ impl TypeRef for FavoriteSongRef<'_> {
 
     fn into_owned(self) -> FavoriteSong {
         let Self(value) = self;
-        FavoriteSong(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        FavoriteSong(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for FavoriteSongRef<'a> {
@@ -161,7 +161,7 @@ impl TypeMut for FavoriteSongMut<'_> {
 
     fn into_owned(self) -> FavoriteSong {
         let Self(value) = self;
-        FavoriteSong(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        FavoriteSong(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for FavoriteSongMut<'a> {
@@ -228,7 +228,7 @@ impl TypeRef for HobbyRef<'_> {
 
     fn into_owned(self) -> Hobby {
         let Self(value) = self;
-        Hobby(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        Hobby(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for HobbyRef<'a> {
@@ -251,7 +251,7 @@ impl TypeMut for HobbyMut<'_> {
 
     fn into_owned(self) -> Hobby {
         let Self(value) = self;
-        Hobby(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        Hobby(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for HobbyMut<'a> {
@@ -443,14 +443,17 @@ impl TypeRef for InterestsRef<'_> {
             hobby,
         } = self;
         Interests {
-            favorite_film: favorite_film
-                .map(|favorite_film| <FavoriteFilm as TypeRef>::into_owned(favorite_film)),
-            favorite_song: favorite_song
-                .map(|favorite_song| <FavoriteSong as TypeRef>::into_owned(favorite_song)),
+            favorite_film: favorite_film.map(|favorite_film| {
+                <<FavoriteFilm as Type>::Ref<'_> as TypeRef>::into_owned(favorite_film)
+            }),
+            favorite_song: favorite_song.map(|favorite_song| {
+                <<FavoriteSong as Type>::Ref<'_> as TypeRef>::into_owned(favorite_song)
+            }),
             hobby: hobby.map(|hobby| {
                 hobby
+                    .into_vec()
                     .into_iter()
-                    .map(|hobby| <Hobby as TypeRef>::into_owned(hobby))
+                    .map(|hobby| <<Hobby as Type>::Ref<'_> as TypeRef>::into_owned(hobby))
                     .collect()
             }),
         }
@@ -551,14 +554,16 @@ impl TypeMut for InterestsMut<'_> {
             hobby,
         } = self;
         Interests {
-            favorite_film: favorite_film
-                .map(|favorite_film| <FavoriteFilm as TypeMut>::into_owned(favorite_film)),
-            favorite_song: favorite_song
-                .map(|favorite_song| <FavoriteSong as TypeMut>::into_owned(favorite_song)),
+            favorite_film: favorite_film.map(|favorite_film| {
+                <<FavoriteFilm as Type>::Mut<'_> as TypeMut>::into_owned(favorite_film)
+            }),
+            favorite_song: favorite_song.map(|favorite_song| {
+                <<FavoriteSong as Type>::Mut<'_> as TypeMut>::into_owned(favorite_song)
+            }),
             hobby: hobby.map(|hobby| {
                 hobby
                     .into_iter()
-                    .map(|hobby| <Hobby as TypeMut>::into_owned(hobby))
+                    .map(|hobby| <<Hobby as Type>::Mut<'_> as TypeMut>::into_owned(hobby))
                     .collect()
             }),
         }

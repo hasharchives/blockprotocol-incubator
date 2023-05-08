@@ -110,9 +110,10 @@ impl TypeRef for FullEmailRef<'_> {
             secondary_email,
         } = self;
         FullEmail {
-            primary_email: <PrimaryEmail as TypeRef>::into_owned(primary_email),
-            secondary_email: secondary_email
-                .map(|secondary_email| <SecondaryEmail as TypeRef>::into_owned(secondary_email)),
+            primary_email: <<PrimaryEmail as Type>::Ref<'_> as TypeRef>::into_owned(primary_email),
+            secondary_email: secondary_email.map(|secondary_email| {
+                <<SecondaryEmail as Type>::Ref<'_> as TypeRef>::into_owned(secondary_email)
+            }),
         }
     }
 }
@@ -173,9 +174,10 @@ impl TypeMut for FullEmailMut<'_> {
             secondary_email,
         } = self;
         FullEmail {
-            primary_email: <PrimaryEmail as TypeMut>::into_owned(primary_email),
-            secondary_email: secondary_email
-                .map(|secondary_email| <SecondaryEmail as TypeMut>::into_owned(secondary_email)),
+            primary_email: <<PrimaryEmail as Type>::Mut<'_> as TypeMut>::into_owned(primary_email),
+            secondary_email: secondary_email.map(|secondary_email| {
+                <<SecondaryEmail as Type>::Mut<'_> as TypeMut>::into_owned(secondary_email)
+            }),
         }
     }
 }
@@ -280,7 +282,7 @@ impl TypeRef for PrimaryEmailRef<'_> {
 
     fn into_owned(self) -> PrimaryEmail {
         let Self(value) = self;
-        PrimaryEmail(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        PrimaryEmail(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for PrimaryEmailRef<'a> {
@@ -303,7 +305,7 @@ impl TypeMut for PrimaryEmailMut<'_> {
 
     fn into_owned(self) -> PrimaryEmail {
         let Self(value) = self;
-        PrimaryEmail(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        PrimaryEmail(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for PrimaryEmailMut<'a> {
@@ -370,7 +372,7 @@ impl TypeRef for SecondaryEmailRef<'_> {
 
     fn into_owned(self) -> SecondaryEmail {
         let Self(value) = self;
-        SecondaryEmail(<<Text as Type>::Ref<'a> as TypeRef>::into_owned(value))
+        SecondaryEmail(<<Text as Type>::Ref<'_> as TypeRef>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeRef<'a> for SecondaryEmailRef<'a> {
@@ -393,7 +395,7 @@ impl TypeMut for SecondaryEmailMut<'_> {
 
     fn into_owned(self) -> SecondaryEmail {
         let Self(value) = self;
-        SecondaryEmail(<<Text as Type>::Mut<'a> as TypeMut>::into_owned(value))
+        SecondaryEmail(<<Text as Type>::Mut<'_> as TypeMut>::into_owned(value))
     }
 }
 impl<'a> PropertyTypeMut<'a> for SecondaryEmailMut<'a> {
