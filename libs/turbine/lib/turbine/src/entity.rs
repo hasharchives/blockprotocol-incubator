@@ -1,12 +1,13 @@
 use alloc::{
-    collections::BTreeMap,
+    collections::{btree_map::OccupiedEntry, BTreeMap},
     string::{String, ToString},
 };
-use core::fmt;
+use core::{fmt, fmt::Formatter};
 
 use hashbrown::HashMap;
 use serde::{
-    de::{value::StrDeserializer, Error},
+    de::{value::StrDeserializer, Error, MapAccess},
+    ser::SerializeMap,
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use serde_json::Value;
@@ -55,13 +56,13 @@ impl Serialize for EntityId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ProvenanceMetadata {
     pub record_created_by_id: Uuid,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EntityTemporalMetadata {
     // too lazy c:
@@ -69,7 +70,7 @@ pub struct EntityTemporalMetadata {
     pub transaction_time: Value,
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityRecordId {
     pub entity_id: EntityId,
@@ -94,7 +95,7 @@ pub struct LinkData {
     pub order: EntityLinkOrder,
 }
 
-#[derive(Debug, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub struct EntityProperties(pub HashMap<String, Value>);
 
 impl EntityProperties {
@@ -104,17 +105,17 @@ impl EntityProperties {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EntityMetadata {
     pub record_id: EntityRecordId,
-    temporal_versioning: EntityTemporalMetadata,
+    pub temporal_versioning: EntityTemporalMetadata,
     pub entity_type_id: VersionedUrl,
-    provenance: ProvenanceMetadata,
-    archived: bool,
+    pub provenance: ProvenanceMetadata,
+    pub archived: bool,
 }
 
-#[derive(Debug, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Entity {
     pub properties: EntityProperties,
@@ -123,16 +124,111 @@ pub struct Entity {
     pub metadata: EntityMetadata,
 }
 
-// TODO: versions and such, todo: parsing
-// TODO: filter from all entities (and their types) -> output of graph
-// TODO: important is also the serialization!
-pub struct EntityVertex<T>(BTreeMap<OffsetDateTime, T>);
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Serialize, Deserialize, Ord, PartialOrd)]
+pub struct RevisionId(#[serde(with = "time::serde::iso8601")] OffsetDateTime);
 
-impl<T> EntityVertex<T> {
-    fn latest(&self) -> &T {
+impl RevisionId {
+    pub(crate) fn now() -> Self {
+        Self(OffsetDateTime::now_utc())
+    }
+
+    #[must_use]
+    pub const fn time(&self) -> OffsetDateTime {
+        self.0
+    }
+}
+
+// This isn't super efficient, but by far the easiest way to implement serialization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Inner<T> {
+    inner: T,
+}
+
+impl From<Entity> for Inner<Entity> {
+    fn from(value: Entity) -> Self {
+        Self { inner: value }
+    }
+}
+
+impl From<Inner<Self>> for Entity {
+    fn from(value: Inner<Self>) -> Self {
+        value.inner
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct EntityVertexInner(BTreeMap<RevisionId, Inner<Entity>>);
+
+impl From<EntityVertexInner> for EntityVertex {
+    fn from(value: EntityVertexInner) -> Self {
+        Self(
+            value
+                .0
+                .into_iter()
+                .map(|(key, value)| (key, value.into()))
+                .collect(),
+        )
+    }
+}
+
+impl From<EntityVertex> for EntityVertexInner {
+    fn from(value: EntityVertex) -> Self {
+        Self(
+            value
+                .0
+                .into_iter()
+                .map(|(key, value)| (key, value.into()))
+                .collect(),
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[serde(from = "EntityVertexInner", into = "EntityVertexInner")]
+pub struct EntityVertex(BTreeMap<RevisionId, Entity>);
+
+impl EntityVertex {
+    #[must_use]
+    pub fn latest(&self) -> &Entity {
         self.0
             .last_key_value()
             .expect("should have at least one entry")
             .1
+    }
+
+    pub fn latest_mut(&mut self) -> &mut Entity {
+        self.0
+            .last_entry()
+            .map(OccupiedEntry::into_mut)
+            .expect("should have at least a single entry")
+    }
+
+    #[must_use]
+    pub fn into_latest(mut self) -> Entity {
+        self.0.pop_last().expect("should have at least on entry").1
+    }
+
+    #[must_use]
+    pub fn latest_version(&self) -> RevisionId {
+        *self
+            .0
+            .last_key_value()
+            .expect("should have at least one entry")
+            .0
+    }
+
+    #[must_use]
+    pub const fn versions(&self) -> &BTreeMap<RevisionId, Entity> {
+        &self.0
+    }
+
+    #[must_use]
+    pub fn entity_type_id(&self) -> &VersionedUrl {
+        &self.latest().metadata.entity_type_id
+    }
+
+    #[must_use]
+    pub fn entity_id(&self) -> EntityId {
+        self.latest().metadata.record_id.entity_id
     }
 }

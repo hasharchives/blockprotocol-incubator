@@ -21,7 +21,7 @@ pub mod types;
 pub use error::{GenericEntityError, GenericPropertyError};
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct BaseUrlRef<'a>(&'a str);
 
 impl<'a> BaseUrlRef<'a> {
@@ -50,7 +50,7 @@ impl<'a> BaseUrlRef<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct VersionedUrlRef<'a> {
     base: BaseUrlRef<'a>,
     version: u32,
