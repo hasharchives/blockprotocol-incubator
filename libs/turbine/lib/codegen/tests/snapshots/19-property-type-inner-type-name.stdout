@@ -13,7 +13,8 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Number, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
-    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl,
+    VersionedUrlRef,
 };
 
 use crate::blockprotocol::blockprotocol::data::inner::Inner;
@@ -77,12 +78,13 @@ pub enum UserId {
     Variant0(Inner),
     Variant1(Vec<_Inner0>),
 }
+impl TypeUrl for UserId {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+}
 impl Type for UserId {
     type Mut < 'a > = UserIdMut < 'a > where Self : 'a ;
     type Ref < 'a > = UserIdRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 
     fn as_mut(&mut self) -> UserIdMut<'_> {
         match self {
@@ -153,6 +155,10 @@ pub enum UserIdRef<'a> {
     Variant0(<Inner as Type>::Ref<'a>),
     Variant1(Vec<_Inner1<'a>>),
 }
+impl TypeUrl for UserIdRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+}
 impl TypeRef for UserIdRef<'_> {
     type Owned = UserId;
 
@@ -218,6 +224,10 @@ pub type UserIdV1Ref<'a> = UserIdRef<'a>;
 pub enum UserIdMut<'a> {
     Variant0(<Inner as Type>::Mut<'a>),
     Variant1(Vec<_Inner2<'a>>),
+}
+impl TypeUrl for UserIdMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }
 impl TypeMut for UserIdMut<'_> {
     type Owned = UserId;

@@ -10,7 +10,7 @@ use turbine::{
     entity::{Entity, LinkData},
     url, BaseUrl, EntityLink, EntityProperties, EntityType, EntityTypeMut, EntityTypeRef,
     GenericEntityError, OptionalEntityLink, PropertyType as _, PropertyTypeMut as _,
-    PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeRef as _, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Part Of
 #[derive(Debug, Clone)]
@@ -38,12 +38,13 @@ pub struct PartOf {
     pub link_data: LinkData,
 }
 pub type PartOfV1 = PartOf;
+impl TypeUrl for PartOf {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
+}
 impl Type for PartOf {
     type Mut < 'a > = PartOfMut < 'a > where Self : 'a ;
     type Ref < 'a > = PartOfRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         PartOfMut {
@@ -63,7 +64,7 @@ impl EntityType for PartOf {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == value.metadata.entity_type_id {
+        if Self::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = Properties::try_from_value(value.properties.0);
@@ -113,6 +114,10 @@ pub struct PartOfRef<'a> {
     pub link_data: &'a LinkData,
 }
 pub type PartOfV1Ref<'a> = PartOfRef<'a>;
+impl TypeUrl for PartOfRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
+}
 impl TypeRef for PartOfRef<'_> {
     type Owned = PartOf;
 
@@ -127,7 +132,7 @@ impl<'a> EntityTypeRef<'a> for PartOfRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::Owned::ID == value.metadata.entity_type_id {
+        if Self::Owned::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = PropertiesRef::try_from_value(&value.properties.0);
@@ -178,6 +183,10 @@ pub struct PartOfMut<'a> {
     pub link_data: &'a mut LinkData,
 }
 pub type PartOfV1Mut<'a> = PartOfMut<'a>;
+impl TypeUrl for PartOfMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
+}
 impl TypeMut for PartOfMut<'_> {
     type Owned = PartOf;
 
@@ -192,7 +201,7 @@ impl<'a> EntityTypeMut<'a> for PartOfMut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::Owned::ID == value.metadata.entity_type_id {
+        if Self::Owned::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = PropertiesMut::try_from_value(&mut value.properties.0);

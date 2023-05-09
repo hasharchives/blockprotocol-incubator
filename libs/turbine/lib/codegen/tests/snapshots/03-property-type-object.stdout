@@ -4,7 +4,7 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 
 use crate::localhost_3000::alice::property::{
@@ -18,12 +18,13 @@ pub struct FullEmail {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/secondaryEmail/")]
     pub secondary_email: Option<SecondaryEmail>,
 }
+impl TypeUrl for FullEmail {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
+}
 impl Type for FullEmail {
     type Mut < 'a > = FullEmailMut < 'a > where Self : 'a ;
     type Ref < 'a > = FullEmailRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
 
     fn as_mut(&mut self) -> FullEmailMut<'_> {
         let Self {
@@ -101,6 +102,10 @@ pub struct FullEmailRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/secondaryEmail/")]
     pub secondary_email: Option<<SecondaryEmail as Type>::Ref<'a>>,
 }
+impl TypeUrl for FullEmailRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
+}
 impl TypeRef for FullEmailRef<'_> {
     type Owned = FullEmail;
 
@@ -164,6 +169,10 @@ pub struct FullEmailMut<'a> {
     pub primary_email: <PrimaryEmail as Type>::Mut<'a>,
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/secondaryEmail/")]
     pub secondary_email: Option<<SecondaryEmail as Type>::Mut<'a>>,
+}
+impl TypeUrl for FullEmailMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
 }
 impl TypeMut for FullEmailMut<'_> {
     type Owned = FullEmail;
@@ -240,17 +249,18 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Primary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmail(pub Text);
+impl TypeUrl for PrimaryEmail {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
+}
 impl Type for PrimaryEmail {
     type Mut < 'a > = PrimaryEmailMut < 'a > where Self : 'a ;
     type Ref < 'a > = PrimaryEmailRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
 
     fn as_mut(&mut self) -> PrimaryEmailMut<'_> {
         let Self(value) = self;
@@ -277,6 +287,10 @@ pub type PrimaryEmailV1 = PrimaryEmail;
 ///Primary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for PrimaryEmailRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
+}
 impl TypeRef for PrimaryEmailRef<'_> {
     type Owned = PrimaryEmail;
 
@@ -300,6 +314,10 @@ pub type PrimaryEmailV1Ref<'a> = PrimaryEmailRef<'a>;
 ///Primary E-Mail
 #[derive(Debug, Serialize)]
 pub struct PrimaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for PrimaryEmailMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
+}
 impl TypeMut for PrimaryEmailMut<'_> {
     type Owned = PrimaryEmail;
 
@@ -330,17 +348,18 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Secondary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmail(pub Text);
+impl TypeUrl for SecondaryEmail {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
+}
 impl Type for SecondaryEmail {
     type Mut < 'a > = SecondaryEmailMut < 'a > where Self : 'a ;
     type Ref < 'a > = SecondaryEmailRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
 
     fn as_mut(&mut self) -> SecondaryEmailMut<'_> {
         let Self(value) = self;
@@ -367,6 +386,10 @@ pub type SecondaryEmailV1 = SecondaryEmail;
 ///Secondary E-Mail
 #[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for SecondaryEmailRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
+}
 impl TypeRef for SecondaryEmailRef<'_> {
     type Owned = SecondaryEmail;
 
@@ -390,6 +413,10 @@ pub type SecondaryEmailV1Ref<'a> = SecondaryEmailRef<'a>;
 ///Secondary E-Mail
 #[derive(Debug, Serialize)]
 pub struct SecondaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for SecondaryEmailMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
+}
 impl TypeMut for SecondaryEmailMut<'_> {
     type Owned = SecondaryEmail;
 

@@ -4,17 +4,18 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Country Code (ISO 3166-1 alpha-2)
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
+impl TypeUrl for CountryCode {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
+}
 impl Type for CountryCode {
     type Mut < 'a > = CountryCodeMut < 'a > where Self : 'a ;
     type Ref < 'a > = CountryCodeRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 
     fn as_mut(&mut self) -> CountryCodeMut<'_> {
         let Self(value) = self;
@@ -41,6 +42,10 @@ pub type CountryCodeV1 = CountryCode;
 ///Country Code (ISO 3166-1 alpha-2)
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for CountryCodeRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
+}
 impl TypeRef for CountryCodeRef<'_> {
     type Owned = CountryCode;
 
@@ -64,6 +69,10 @@ pub type CountryCodeV1Ref<'a> = CountryCodeRef<'a>;
 ///Country Code (ISO 3166-1 alpha-2)
 #[derive(Debug, Serialize)]
 pub struct CountryCodeMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for CountryCodeMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
+}
 impl TypeMut for CountryCodeMut<'_> {
     type Owned = CountryCode;
 

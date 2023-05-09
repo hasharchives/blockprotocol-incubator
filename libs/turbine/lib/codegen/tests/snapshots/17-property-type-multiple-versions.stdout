@@ -4,17 +4,19 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Number, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
-    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl,
+    VersionedUrlRef,
 };
 ///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct UserId(pub Number);
+impl TypeUrl for UserId {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
+}
 impl Type for UserId {
     type Mut < 'a > = UserIdMut < 'a > where Self : 'a ;
     type Ref < 'a > = UserIdRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
 
     fn as_mut(&mut self) -> UserIdMut<'_> {
         let Self(value) = self;
@@ -41,6 +43,10 @@ pub type UserIdV2 = UserId;
 ///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct UserIdRef<'a>(pub <Number as Type>::Ref<'a>);
+impl TypeUrl for UserIdRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
+}
 impl TypeRef for UserIdRef<'_> {
     type Owned = UserId;
 
@@ -64,6 +70,10 @@ pub type UserIdV2Ref<'a> = UserIdRef<'a>;
 ///User ID
 #[derive(Debug, Serialize)]
 pub struct UserIdMut<'a>(pub <Number as Type>::Mut<'a>);
+impl TypeUrl for UserIdMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
+}
 impl TypeMut for UserIdMut<'_> {
     type Owned = UserId;
 
@@ -96,17 +106,18 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct UserIdV1(pub Text);
+impl TypeUrl for UserIdV1 {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+}
 impl Type for UserIdV1 {
     type Mut < 'a > = UserIdV1Mut < 'a > where Self : 'a ;
     type Ref < 'a > = UserIdV1Ref < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 
     fn as_mut(&mut self) -> UserIdV1Mut<'_> {
         let Self(value) = self;
@@ -132,6 +143,10 @@ impl PropertyType for UserIdV1 {
 ///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct UserIdV1Ref<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for UserIdV1Ref<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+}
 impl TypeRef for UserIdV1Ref<'_> {
     type Owned = UserIdV1;
 
@@ -154,6 +169,10 @@ impl<'a> PropertyTypeRef<'a> for UserIdV1Ref<'a> {
 ///User ID
 #[derive(Debug, Serialize)]
 pub struct UserIdV1Mut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for UserIdV1Mut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+}
 impl TypeMut for UserIdV1Mut<'_> {
     type Owned = UserIdV1;
 

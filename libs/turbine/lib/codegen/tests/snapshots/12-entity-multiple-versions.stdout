@@ -8,7 +8,7 @@ use serde::Serialize;
 use turbine::{
     entity::Entity, url, BaseUrl, EntityLink, EntityProperties, EntityType, EntityTypeMut,
     EntityTypeRef, GenericEntityError, OptionalEntityLink, PropertyType as _, PropertyTypeMut as _,
-    PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeRef as _, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 
 use crate::localhost_3000::alice::property::{country_code::CountryCode, name::Name};
@@ -70,12 +70,13 @@ pub struct Country {
     pub properties: Properties,
 }
 pub type CountryV2 = Country;
+impl TypeUrl for Country {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 2u32);
+}
 impl Type for Country {
     type Mut < 'a > = CountryMut < 'a > where Self : 'a ;
     type Ref < 'a > = CountryRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 2u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         CountryMut {
@@ -93,7 +94,7 @@ impl EntityType for Country {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == value.metadata.entity_type_id {
+        if Self::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = Properties::try_from_value(value.properties.0);
@@ -168,6 +169,10 @@ pub struct CountryRef<'a> {
     pub properties: PropertiesRef<'a>,
 }
 pub type CountryV2Ref<'a> = CountryRef<'a>;
+impl TypeUrl for CountryRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 2u32);
+}
 impl TypeRef for CountryRef<'_> {
     type Owned = Country;
 
@@ -181,7 +186,7 @@ impl<'a> EntityTypeRef<'a> for CountryRef<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::Owned::ID == value.metadata.entity_type_id {
+        if Self::Owned::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = PropertiesRef::try_from_value(&value.properties.0);
@@ -265,6 +270,10 @@ pub struct CountryMut<'a> {
     pub properties: PropertiesMut<'a>,
 }
 pub type CountryV2Mut<'a> = CountryMut<'a>;
+impl TypeUrl for CountryMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 2u32);
+}
 impl TypeMut for CountryMut<'_> {
     type Owned = Country;
 
@@ -278,7 +287,7 @@ impl<'a> EntityTypeMut<'a> for CountryMut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::Owned::ID == value.metadata.entity_type_id {
+        if Self::Owned::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = PropertiesMut::try_from_value(&mut value.properties.0);
@@ -316,7 +325,7 @@ use serde::Serialize;
 use turbine::{
     entity::Entity, url, BaseUrl, EntityLink, EntityProperties, EntityType, EntityTypeMut,
     EntityTypeRef, GenericEntityError, OptionalEntityLink, PropertyType as _, PropertyTypeMut as _,
-    PropertyTypeRef as _, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeRef as _, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 
 use crate::localhost_3000::alice::property::name::Name;
@@ -363,12 +372,13 @@ impl Properties {
 pub struct CountryV1 {
     pub properties: Properties,
 }
+impl TypeUrl for CountryV1 {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
+}
 impl Type for CountryV1 {
     type Mut < 'a > = CountryV1Mut < 'a > where Self : 'a ;
     type Ref < 'a > = CountryV1Ref < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 
     fn as_mut(&mut self) -> Self::Mut<'_> {
         CountryV1Mut {
@@ -386,7 +396,7 @@ impl EntityType for CountryV1 {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::ID == value.metadata.entity_type_id {
+        if Self::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = Properties::try_from_value(value.properties.0);
@@ -446,6 +456,10 @@ impl<'a> PropertiesRef<'a> {
 pub struct CountryV1Ref<'a> {
     pub properties: PropertiesRef<'a>,
 }
+impl TypeUrl for CountryV1Ref<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
+}
 impl TypeRef for CountryV1Ref<'_> {
     type Owned = CountryV1;
 
@@ -459,7 +473,7 @@ impl<'a> EntityTypeRef<'a> for CountryV1Ref<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::Owned::ID == value.metadata.entity_type_id {
+        if Self::Owned::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = PropertiesRef::try_from_value(&value.properties.0);
@@ -524,6 +538,10 @@ impl<'a> PropertiesMut<'a> {
 pub struct CountryV1Mut<'a> {
     pub properties: PropertiesMut<'a>,
 }
+impl TypeUrl for CountryV1Mut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
+}
 impl TypeMut for CountryV1Mut<'_> {
     type Owned = CountryV1;
 
@@ -537,7 +555,7 @@ impl<'a> EntityTypeMut<'a> for CountryV1Mut<'a> {
     type Error = GenericEntityError;
 
     fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-        if Self::Owned::ID == value.metadata.entity_type_id {
+        if Self::Owned::ID != value.metadata.entity_type_id {
             return None;
         }
         let properties = PropertiesMut::try_from_value(&mut value.properties.0);
@@ -569,19 +587,20 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Country Code
 ///
 ///(ISO 3166-1 alpha-2)
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
+impl TypeUrl for CountryCode {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
+}
 impl Type for CountryCode {
     type Mut < 'a > = CountryCodeMut < 'a > where Self : 'a ;
     type Ref < 'a > = CountryCodeRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 
     fn as_mut(&mut self) -> CountryCodeMut<'_> {
         let Self(value) = self;
@@ -610,6 +629,10 @@ pub type CountryCodeV1 = CountryCode;
 ///(ISO 3166-1 alpha-2)
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for CountryCodeRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
+}
 impl TypeRef for CountryCodeRef<'_> {
     type Owned = CountryCode;
 
@@ -635,6 +658,10 @@ pub type CountryCodeV1Ref<'a> = CountryCodeRef<'a>;
 ///(ISO 3166-1 alpha-2)
 #[derive(Debug, Serialize)]
 pub struct CountryCodeMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for CountryCodeMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
+}
 impl TypeMut for CountryCodeMut<'_> {
     type Owned = CountryCode;
 
@@ -665,17 +692,18 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Name
 #[derive(Debug, Clone, Serialize)]
 pub struct Name(pub Text);
+impl TypeUrl for Name {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/name/" / v / 1u32);
+}
 impl Type for Name {
     type Mut < 'a > = NameMut < 'a > where Self : 'a ;
     type Ref < 'a > = NameRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("http://localhost:3000/@alice/types/property-type/name/" / v / 1u32);
 
     fn as_mut(&mut self) -> NameMut<'_> {
         let Self(value) = self;
@@ -702,6 +730,10 @@ pub type NameV1 = Name;
 ///Name
 #[derive(Debug, Clone, Serialize)]
 pub struct NameRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for NameRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/name/" / v / 1u32);
+}
 impl TypeRef for NameRef<'_> {
     type Owned = Name;
 
@@ -725,6 +757,10 @@ pub type NameV1Ref<'a> = NameRef<'a>;
 ///Name
 #[derive(Debug, Serialize)]
 pub struct NameMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for NameMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("http://localhost:3000/@alice/types/property-type/name/" / v / 1u32);
+}
 impl TypeMut for NameMut<'_> {
     type Owned = Name;
 

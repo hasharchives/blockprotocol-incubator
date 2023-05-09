@@ -4,17 +4,19 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text as Text0, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
-    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl,
+    VersionedUrlRef,
 };
 ///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct Text(pub Text0);
+impl TypeUrl for Text {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/types/property-type/text/" / v / 1u32);
+}
 impl Type for Text {
     type Mut < 'a > = TextMut < 'a > where Self : 'a ;
     type Ref < 'a > = TextRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@alice/types/property-type/text/" / v / 1u32);
 
     fn as_mut(&mut self) -> TextMut<'_> {
         let Self(value) = self;
@@ -41,6 +43,10 @@ pub type TextV1 = Text;
 ///User ID
 #[derive(Debug, Clone, Serialize)]
 pub struct TextRef<'a>(pub <Text0 as Type>::Ref<'a>);
+impl TypeUrl for TextRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/types/property-type/text/" / v / 1u32);
+}
 impl TypeRef for TextRef<'_> {
     type Owned = Text;
 
@@ -64,6 +70,10 @@ pub type TextV1Ref<'a> = TextRef<'a>;
 ///User ID
 #[derive(Debug, Serialize)]
 pub struct TextMut<'a>(pub <Text0 as Type>::Mut<'a>);
+impl TypeUrl for TextMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/types/property-type/text/" / v / 1u32);
+}
 impl TypeMut for TextMut<'_> {
     type Owned = Text;
 
@@ -94,7 +104,8 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text as Text1, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError,
-    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl,
+    VersionedUrlRef,
 };
 
 use crate::blockprotocol::alice::property::text::Text as Text0;
@@ -108,12 +119,13 @@ pub enum UserId {
         text: Option<Text0>,
     },
 }
+impl TypeUrl for UserId {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+}
 impl Type for UserId {
     type Mut < 'a > = UserIdMut < 'a > where Self : 'a ;
     type Ref < 'a > = UserIdRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 
     fn as_mut(&mut self) -> UserIdMut<'_> {
         match self {
@@ -192,6 +204,10 @@ pub enum UserIdRef<'a> {
         text: Option<<Text0 as Type>::Ref<'a>>,
     },
 }
+impl TypeUrl for UserIdRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
+}
 impl TypeRef for UserIdRef<'_> {
     type Owned = UserId;
 
@@ -265,6 +281,10 @@ pub enum UserIdMut<'a> {
         #[serde(rename = "https://blockprotocol.org/@alice/types/property-type/text/")]
         text: Option<<Text0 as Type>::Mut<'a>>,
     },
+}
+impl TypeUrl for UserIdMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }
 impl TypeMut for UserIdMut<'_> {
     type Owned = UserId;

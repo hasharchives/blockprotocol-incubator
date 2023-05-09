@@ -4,18 +4,19 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Favorite Film
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilm(pub Text);
-impl Type for FavoriteFilm {
-    type Mut < 'a > = FavoriteFilmMut < 'a > where Self : 'a ;
-    type Ref < 'a > = FavoriteFilmRef < 'a > where Self : 'a ;
-
+impl TypeUrl for FavoriteFilm {
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
     );
+}
+impl Type for FavoriteFilm {
+    type Mut < 'a > = FavoriteFilmMut < 'a > where Self : 'a ;
+    type Ref < 'a > = FavoriteFilmRef < 'a > where Self : 'a ;
 
     fn as_mut(&mut self) -> FavoriteFilmMut<'_> {
         let Self(value) = self;
@@ -42,6 +43,11 @@ pub type FavoriteFilmV1 = FavoriteFilm;
 ///Favorite Film
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilmRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for FavoriteFilmRef<'_> {
+    const ID: VersionedUrlRef<'static> = url!(
+        "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
+    );
+}
 impl TypeRef for FavoriteFilmRef<'_> {
     type Owned = FavoriteFilm;
 
@@ -65,6 +71,11 @@ pub type FavoriteFilmV1Ref<'a> = FavoriteFilmRef<'a>;
 ///Favorite Film
 #[derive(Debug, Serialize)]
 pub struct FavoriteFilmMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for FavoriteFilmMut<'_> {
+    const ID: VersionedUrlRef<'static> = url!(
+        "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
+    );
+}
 impl TypeMut for FavoriteFilmMut<'_> {
     type Owned = FavoriteFilm;
 
@@ -95,18 +106,19 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Favorite Song
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSong(pub Text);
-impl Type for FavoriteSong {
-    type Mut < 'a > = FavoriteSongMut < 'a > where Self : 'a ;
-    type Ref < 'a > = FavoriteSongRef < 'a > where Self : 'a ;
-
+impl TypeUrl for FavoriteSong {
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
     );
+}
+impl Type for FavoriteSong {
+    type Mut < 'a > = FavoriteSongMut < 'a > where Self : 'a ;
+    type Ref < 'a > = FavoriteSongRef < 'a > where Self : 'a ;
 
     fn as_mut(&mut self) -> FavoriteSongMut<'_> {
         let Self(value) = self;
@@ -133,6 +145,11 @@ pub type FavoriteSongV1 = FavoriteSong;
 ///Favorite Song
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSongRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for FavoriteSongRef<'_> {
+    const ID: VersionedUrlRef<'static> = url!(
+        "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
+    );
+}
 impl TypeRef for FavoriteSongRef<'_> {
     type Owned = FavoriteSong;
 
@@ -156,6 +173,11 @@ pub type FavoriteSongV1Ref<'a> = FavoriteSongRef<'a>;
 ///Favorite Song
 #[derive(Debug, Serialize)]
 pub struct FavoriteSongMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for FavoriteSongMut<'_> {
+    const ID: VersionedUrlRef<'static> = url!(
+        "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
+    );
+}
 impl TypeMut for FavoriteSongMut<'_> {
     type Owned = FavoriteSong;
 
@@ -186,17 +208,18 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     types::data::Text, url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType,
-    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Hobby
 #[derive(Debug, Clone, Serialize)]
 pub struct Hobby(pub Text);
+impl TypeUrl for Hobby {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
+}
 impl Type for Hobby {
     type Mut < 'a > = HobbyMut < 'a > where Self : 'a ;
     type Ref < 'a > = HobbyRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
 
     fn as_mut(&mut self) -> HobbyMut<'_> {
         let Self(value) = self;
@@ -223,6 +246,10 @@ pub type HobbyV1 = Hobby;
 ///Hobby
 #[derive(Debug, Clone, Serialize)]
 pub struct HobbyRef<'a>(pub <Text as Type>::Ref<'a>);
+impl TypeUrl for HobbyRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
+}
 impl TypeRef for HobbyRef<'_> {
     type Owned = Hobby;
 
@@ -246,6 +273,10 @@ pub type HobbyV1Ref<'a> = HobbyRef<'a>;
 ///Hobby
 #[derive(Debug, Serialize)]
 pub struct HobbyMut<'a>(pub <Text as Type>::Mut<'a>);
+impl TypeUrl for HobbyMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
+}
 impl TypeMut for HobbyMut<'_> {
     type Owned = Hobby;
 
@@ -278,7 +309,7 @@ use error_stack::{Report, Result, ResultExt as _};
 use serde::Serialize;
 use turbine::{
     url, DataType, DataTypeMut, DataTypeRef, GenericPropertyError, PropertyType, PropertyTypeMut,
-    PropertyTypeRef, Type, TypeMut, TypeRef, VersionedUrlRef,
+    PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 
 use crate::blockprotocol::blockprotocol::property::{
@@ -298,12 +329,13 @@ pub struct Interests {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Vec<Hobby>>,
 }
+impl TypeUrl for Interests {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
+}
 impl Type for Interests {
     type Mut < 'a > = InterestsMut < 'a > where Self : 'a ;
     type Ref < 'a > = InterestsRef < 'a > where Self : 'a ;
-
-    const ID: VersionedUrlRef<'static> =
-        url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
 
     fn as_mut(&mut self) -> InterestsMut<'_> {
         let Self {
@@ -433,6 +465,10 @@ pub struct InterestsRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Box<[<Hobby as Type>::Ref<'a>]>>,
 }
+impl TypeUrl for InterestsRef<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
+}
 impl TypeRef for InterestsRef<'_> {
     type Owned = Interests;
 
@@ -543,6 +579,10 @@ pub struct InterestsMut<'a> {
     pub favorite_song: Option<<FavoriteSong as Type>::Mut<'a>>,
     #[serde(rename = "https://blockprotocol.org/@blockprotocol/types/property-type/hobby/")]
     pub hobby: Option<Vec<<Hobby as Type>::Mut<'a>>>,
+}
+impl TypeUrl for InterestsMut<'_> {
+    const ID: VersionedUrlRef<'static> =
+        url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
 }
 impl TypeMut for InterestsMut<'_> {
     type Owned = Interests;
