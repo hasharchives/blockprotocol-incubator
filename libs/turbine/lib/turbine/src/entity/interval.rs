@@ -1,4 +1,4 @@
-//! Adapted copy of: https://github.com/hashintel/hash/blob/715b69a7ae583036f989f5073acd6dc7022a1625/apps/hash-graph/lib/graph/src/shared/identifier/time.rs
+//! Adapted copy of: <https://github.com/hashintel/hash/blob/715b69a7ae583036f989f5073acd6dc7022a1625/apps/hash-graph/lib/graph/src/shared/identifier/time.rs>
 
 use serde::{Deserialize, Serialize};
 use time::{serde::iso8601, OffsetDateTime};
