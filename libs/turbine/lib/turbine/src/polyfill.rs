@@ -79,11 +79,19 @@ macro_rules! impl_tuple_ext {
 
 all_the_tuples!(impl_tuple_ext);
 
+/// # Errors
+///
+/// accumulates all errors in the tuple and either returns the errors received or returns the tuples
+/// [`Ok`] values
 pub fn fold_tuple_reports<T: TupleExt>(value: T) -> Result<T::Ok, Report<T::Context>> {
     value.fold_reports()
 }
 
 // TODO: in theory we could also use `FromIterator` here
+/// # Errors
+///
+/// accumulates all errors, returns [`Vec<T>`] if no item has reported an error, otherwise will try
+/// to catch all errors.
 pub fn fold_iter_reports<I: IntoIterator<Item = Result<T, Report<C>>>, T, C>(
     iter: I,
 ) -> Result<Vec<T>, Report<C>> {
