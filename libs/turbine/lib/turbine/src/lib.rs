@@ -46,7 +46,7 @@ impl<'a> BaseUrlRef<'a> {
     }
 
     #[must_use]
-    pub const fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &'a str {
         self.0
     }
 }
@@ -163,12 +163,18 @@ pub trait Type: TypeUrl + Sized {
 pub trait DataTypeRef<'a>: Serialize + TypeRef {
     type Error: Context;
 
+    /// # Errors
+    ///
+    /// if the value is malformed and not of the correct shape
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
 pub trait DataTypeMut<'a>: Serialize + TypeMut {
     type Error: Context;
 
+    /// # Errors
+    ///
+    /// if the value is malformed and not of the correct shape
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error>;
 }
 
@@ -179,18 +185,27 @@ where
 {
     type Error: Context;
 
+    /// # Errors
+    ///
+    /// if the value is malformed and not of the correct shape
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
 }
 
 pub trait PropertyTypeRef<'a>: Serialize + TypeRef {
     type Error: Context;
 
+    /// # Errors
+    ///
+    /// if the value is malformed and not of the correct shape
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error>;
 }
 
 pub trait PropertyTypeMut<'a>: Serialize + TypeMut {
     type Error: Context;
 
+    /// # Errors
+    ///
+    /// if the value is malformed and not of the correct shape
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error>;
 }
 
@@ -201,6 +216,9 @@ where
 {
     type Error: Context;
 
+    /// # Errors
+    ///
+    /// if the value is malformed and not of the correct shape
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
 }
 
