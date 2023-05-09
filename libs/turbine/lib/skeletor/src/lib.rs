@@ -10,10 +10,10 @@ use std::{
 };
 
 use cargo::{
-    core::{compiler::CompileMode, SourceId, Workspace},
+    core::{SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
-        CompileOptions, FixOptions, NewOptions, VersionControl,
+        NewOptions, VersionControl,
     },
     util::toml_mut::manifest::DepTable,
 };
@@ -244,7 +244,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
     })
     .change_context(Error::Codegen)?;
 
-    let (abs_root, cargo_config) = setup(&config.root, config.name, config.force, config.turbine)?;
+    setup(&config.root, config.name, config.force, config.turbine)?;
 
     let mut folder = VirtualFolder::new("src".to_owned());
 
