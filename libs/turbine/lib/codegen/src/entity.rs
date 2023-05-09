@@ -417,7 +417,7 @@ fn generate_owned(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>> {
-                if Self::ID == value.metadata.entity_type_id {
+                if Self::ID != value.metadata.entity_type_id {
                     return None;
                 }
 
@@ -515,7 +515,7 @@ fn generate_ref(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: &'a Entity) -> Option<Result<Self, Self::Error>> {
-                if Self::Owned::ID == value.metadata.entity_type_id {
+                if Self::Owned::ID != value.metadata.entity_type_id {
                     return None;
                 }
 
@@ -614,7 +614,7 @@ fn generate_mut(
             type Error = GenericEntityError;
 
             fn try_from_entity(value: &'a mut Entity) -> Option<Result<Self, Self::Error>> {
-                if Self::Owned::ID == value.metadata.entity_type_id {
+                if Self::Owned::ID != value.metadata.entity_type_id {
                     return None;
                 }
 
