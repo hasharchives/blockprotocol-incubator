@@ -261,23 +261,23 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         .into_report()
         .change_context(Error::Io)?;
 
-    let workspace = Workspace::new(&abs_root.join("Cargo.toml"), &cargo_config)
-        .into_report()
-        .change_context(Error::Codegen)?;
+    // let workspace = Workspace::new(&abs_root.join("Cargo.toml"), &cargo_config)
+    //     .into_report()
+    //     .change_context(Error::Codegen)?;
 
-    cargo::ops::fix(&workspace, &mut FixOptions {
-        edition: true,
-        idioms: true,
-        compile_opts: CompileOptions::new(&cargo_config, CompileMode::Check { test: true })
-            .into_report()
-            .change_context(Error::Codegen)?,
-        allow_dirty: true,
-        allow_no_vcs: true,
-        allow_staged: true,
-        broken_code: false,
-    })
-    .into_report()
-    .change_context(Error::Codegen)?;
+    // cargo::ops::fix(&workspace, &mut FixOptions {
+    //     edition: true,
+    //     idioms: true,
+    //     compile_opts: CompileOptions::new(&cargo_config, CompileMode::Check { test: true })
+    //         .into_report()
+    //         .change_context(Error::Codegen)?,
+    //     allow_dirty: true,
+    //     allow_no_vcs: true,
+    //     allow_staged: true,
+    //     broken_code: false,
+    // })
+    // .into_report()
+    // .change_context(Error::Codegen)?;
 
     let mut child = Command::new("cargo-fmt")
         .arg("--all")

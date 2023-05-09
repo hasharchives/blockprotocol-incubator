@@ -1,13 +1,17 @@
+pub mod interval;
+
 use alloc::{
     collections::{btree_map::OccupiedEntry, BTreeMap},
     string::{String, ToString},
 };
-use core::{fmt, fmt::Formatter};
+use core::fmt;
 
 use hashbrown::HashMap;
+pub use interval::{
+    ClosedTemporalBound, Interval, LeftClosedTemporalInterval, OpenTemporalBound, Timestamp,
+};
 use serde::{
-    de::{value::StrDeserializer, Error, MapAccess},
-    ser::SerializeMap,
+    de::{value::StrDeserializer, Error},
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use serde_json::Value;
@@ -65,9 +69,8 @@ pub struct ProvenanceMetadata {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EntityTemporalMetadata {
-    // too lazy c:
-    pub decision_time: Value,
-    pub transaction_time: Value,
+    pub decision_time: LeftClosedTemporalInterval,
+    pub transaction_time: LeftClosedTemporalInterval,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Deserialize, serde::Serialize)]

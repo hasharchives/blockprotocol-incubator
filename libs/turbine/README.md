@@ -38,7 +38,7 @@ force = false
 #kind = "git"
 #value = {url = "...", rev = "...", tag = "...", branch = "..."} # rev, tag, branch are optional
 kind = "path"
-value = "../turbine" # relative path from the generated crate
+value = "../turbine" # relative path your CWD
 
 # Origin where types are to be fetched, either `remote` (will query the HASH-Graph) or `local`, pointing to a JSON file
 [origin]
