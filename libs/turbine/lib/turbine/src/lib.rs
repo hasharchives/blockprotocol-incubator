@@ -46,7 +46,7 @@ impl<'a> BaseUrlRef<'a> {
     }
 
     #[must_use]
-    pub const fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &'a str {
         self.0
     }
 }
