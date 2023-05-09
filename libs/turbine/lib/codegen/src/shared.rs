@@ -194,14 +194,6 @@ impl Variant {
             Self::Ref | Self::Mut => Some(Lifetime::new("'a", Span::call_site())),
         }
     }
-
-    fn into_keyword(self) -> Option<TokenStream> {
-        match self {
-            Self::Owned => None,
-            Self::Ref => Some(quote!(ref)),
-            Self::Mut => Some(quote!(mut)),
-        }
-    }
 }
 
 #[derive(Debug, Copy, Clone)]

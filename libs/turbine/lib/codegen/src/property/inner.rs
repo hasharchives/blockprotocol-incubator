@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::Ident;
 use quote::{format_ident, quote, ToTokens};
 use type_system::{url::VersionedUrl, PropertyValues};
 
@@ -87,10 +87,6 @@ impl InnerTypes {
             lookup: HashMap::new(),
             prefix,
         }
-    }
-
-    fn find(&self, path: &[PathSegment]) -> Option<&NameVariants> {
-        self.lookup.get(path)
     }
 
     fn len(&self) -> usize {

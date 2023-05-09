@@ -611,16 +611,6 @@ impl<'a> NameResolver<'a> {
         output
     }
 
-    /// Return the name of the structure or enum for the specified URL, if there are multiple
-    /// versions, older versions will have `V<n>` appended to their name
-    pub(crate) fn name(&self, url: &VersionedUrl) -> Name {
-        let versions = self.other_versions_of_url(url);
-        let base_url = url.base_url.to_url();
-        let parts = self.url_into_parts(&base_url);
-
-        self.determine_name(url, parts.as_ref(), &versions)
-    }
-
     /// Returns the name for the accessor or property for the specified URL
     pub(crate) fn property_name(&self, url: &VersionedUrl) -> PropertyName {
         let base_url = url.base_url.to_url();
