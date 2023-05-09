@@ -5,6 +5,7 @@
 extern crate alloc;
 
 use alloc::borrow::ToOwned;
+use core::fmt;
 
 use error_stack::{Context, Result};
 use serde::Serialize;
@@ -88,6 +89,12 @@ impl<'a> VersionedUrlRef<'a> {
     }
 }
 
+impl fmt::Display for VersionedUrlRef<'_> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}v/{}", self.base.0, self.version)
+    }
+}
+
 impl PartialEq<VersionedUrl> for VersionedUrlRef<'_> {
     fn eq(&self, other: &VersionedUrl) -> bool {
         self.version == other.version && self.base.as_str() == other.base_url.as_str()
@@ -103,6 +110,15 @@ impl<'a> PartialEq<BaseUrlRef<'a>> for VersionedUrlRef<'a> {
 impl<'a> PartialEq<VersionedUrlRef<'a>> for BaseUrlRef<'a> {
     fn eq(&self, other: &VersionedUrlRef<'a>) -> bool {
         *self == other.base
+    }
+}
+
+impl<'a> From<&'a VersionedUrl> for VersionedUrlRef<'a> {
+    fn from(value: &'a VersionedUrl) -> Self {
+        Self {
+            base: BaseUrlRef(value.base_url.as_str()),
+            version: value.version,
+        }
     }
 }
 

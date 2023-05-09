@@ -128,7 +128,8 @@ pub struct Entity {
 pub struct RevisionId(#[serde(with = "time::serde::iso8601")] OffsetDateTime);
 
 impl RevisionId {
-    pub(crate) fn now() -> Self {
+    #[must_use]
+    pub fn now() -> Self {
         Self(OffsetDateTime::now_utc())
     }
 

@@ -82,6 +82,13 @@ impl DataType for Text {
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct TextRef<'a>(&'a str);
 
+impl<'a> TextRef<'a> {
+    #[must_use]
+    pub const fn as_str(&self) -> &'a str {
+        self.0
+    }
+}
+
 impl Deref for TextRef<'_> {
     type Target = str;
 
