@@ -28,6 +28,14 @@ pub(crate) enum AnalysisError {
         received: NodeKind,
         url: VersionedUrl,
     },
+    #[error("While trying to unify types, a cycle has been detected")]
+    UnificationCycle,
+    #[error("Unable to merge types")]
+    UnificationMerge,
+    #[error("Unable to convert back from `repr::*Type` to `*Type`")]
+    UnificationConvert,
+    #[error("Unable to convert `repr::*Type` to `serde_json::Value` and back")]
+    UnificationSerde,
 }
 
 #[derive(Debug, Copy, Clone)]
