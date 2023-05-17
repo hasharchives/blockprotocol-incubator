@@ -9,6 +9,7 @@ mod graph;
 mod name;
 mod property;
 mod shared;
+mod utilities;
 
 use std::{
     cmp::Ordering,
@@ -147,13 +148,15 @@ pub struct Config {
     pub flavors: Vec<Flavor>,
 }
 
+pub struct Output {
+    pub files: BTreeMap<OutputPath, TokenStream>,
+    pub utilities: TokenStream,
+}
+
 /// ## Errors
 ///
 /// if `AnyTypeRepr` is malformed, or an error occurred while generating code
-pub fn process(
-    values: Vec<AnyTypeRepr>,
-    config: Config,
-) -> Result<BTreeMap<OutputPath, TokenStream>, Error> {
+pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error> {
     let values: Result<Vec<_>, _> = values
         .into_iter()
         .map(|any| match any {
@@ -189,7 +192,8 @@ pub fn process(
         names.with_module_flavor(module);
     }
 
-    let mut output = BTreeMap::new();
+    let mut files = BTreeMap::new();
+    let mut entities = vec![];
 
     for value in lookup.values() {
         let location = names.location(value.id());
@@ -201,13 +205,19 @@ pub fn process(
         let contents = match value {
             AnyType::Data(data) => data::generate(data, &names),
             AnyType::Property(property) => Some(property::generate(property, &names)),
-            AnyType::Entity(entity) => Some(entity::generate(entity, &names)),
+            AnyType::Entity(entity) => {
+                entities.push(entity);
+                Some(entity::generate(entity, &names))
+            }
         };
 
         if let Some(contents) = contents {
-            output.insert(file, contents);
+            files.insert(file, contents);
         }
     }
 
-    Ok(output)
+    Ok(Output {
+        files,
+        utilities: utilities::generate(entities, &names),
+    })
 }

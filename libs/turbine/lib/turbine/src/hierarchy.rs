@@ -51,15 +51,15 @@ impl TypeHierarchyResolution for () {
 
 macro_rules! impl_inherits_from {
     ($($name:ident),*) => {
-        impl<$($name),*> InheritsFrom for ($($name,)*)
+        impl<$($name),*> TypeHierarchyResolution for ($($name,)*)
         where
-            $($name: InheritsFrom,)*
+            $($name: TypeHierarchyResolution,)*
         {
             type Iterator = impl Iterator<Item = VersionedUrlRef<'static>>;
 
-            fn all() -> Self::Iterator {
+            fn resolve() -> Self::Iterator {
                 let iter = empty();
-                $(let iter = iter.chain($name::all());)*
+                $(let iter = iter.chain($name::resolve());)*
                 iter
             }
         }

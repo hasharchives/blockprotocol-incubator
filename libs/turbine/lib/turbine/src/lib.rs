@@ -2,6 +2,8 @@
 #![feature(error_in_core)]
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
+#![allow(incomplete_features)] // generic_const_exprs are needed for array
+#![feature(generic_const_exprs)]
 
 extern crate alloc;
 
