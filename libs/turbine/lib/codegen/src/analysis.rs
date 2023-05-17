@@ -28,8 +28,6 @@ pub(crate) enum AnalysisError {
         received: NodeKind,
         url: VersionedUrl,
     },
-    #[error("unable to unify {kind:?} values just yet")]
-    UnsupportedUnification { kind: NodeKind },
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -41,7 +39,7 @@ pub(crate) enum NodeKind {
 }
 
 impl NodeKind {
-    fn from_any(any: &AnyType) -> Self {
+    const fn from_any(any: &AnyType) -> Self {
         match any {
             AnyType::Data(_) => Self::DataType,
             AnyType::Property(_) => Self::PropertyType,

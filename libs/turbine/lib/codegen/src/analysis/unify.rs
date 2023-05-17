@@ -66,11 +66,13 @@ impl UnificationAnalyzer {
             return Err(Report::new(AnalysisError::IncompleteGraph));
         }
 
-        if let Some(any) = self.cache.get(id) {
-            return Ok(any);
+        // I'd like to use `.get()` here, but then we get a lifetime error
+        if self.cache.contains_key(id) {
+            return Ok(&self.cache[id]);
         }
 
         let Some(fetch) = &mut self.fetch else {
+            println!("{:?}", id);
             self.missing.insert(id.clone());
             return Err(Report::new(AnalysisError::IncompleteGraph))
         };
@@ -81,31 +83,38 @@ impl UnificationAnalyzer {
         };
 
         self.stack.push(any.id().clone());
-        Ok(&*self.cache.entry(any.id().clone()).or_insert(any))
+        self.cache.insert(any.id().clone(), any);
+
+        Ok(&self.cache[id])
     }
 
-    pub(crate) fn unify_entity(
-        &mut self,
-        id: &VersionedUrl,
-        entity: &mut EntityType,
-    ) -> Result<(), AnalysisError> {
-        let mut errors = ErrorAccumulator::new();
-        let inherits_from = entity.inherits_from();
+    pub(crate) fn entity_or_panic(&self, id: &VersionedUrl) -> &EntityType {
+        let any = &self.cache[id];
 
+        match any {
+            AnyType::Entity(entity) => entity,
+            _ => panic!("expected entity"),
+        }
+    }
+
+    pub(crate) fn unify_entity(&mut self, id: &VersionedUrl) -> Result<(), AnalysisError> {
+        let mut errors = ErrorAccumulator::new();
+
+        let inherits_from = self.entity_or_panic(id).inherits_from();
         let mut stack = inherits_from.all_of().to_vec();
 
         while let Some(entry) = stack.pop() {
             let url = entry.url();
 
+            if url == LINK_REF.url() {
+                self.facts.links.insert(id.clone());
+
+                continue;
+            }
+
             if let Some(ok) = errors.push(self.fetch(url)) {
                 match ok {
                     AnyType::Entity(entity) => {
-                        if entity.id() == LINK_REF.url() {
-                            self.facts.links.insert(id.clone());
-
-                            continue;
-                        }
-
                         let properties = entity.properties().clone();
                         entity.properties();
 
@@ -133,13 +142,12 @@ impl UnificationAnalyzer {
             return Ok(());
         }
 
-        let any = &mut self.cache[&id];
+        let any = &self.cache[&id];
 
         let result = match any {
-            AnyType::Entity(entity) => self.unify_entity(&id, entity),
-            other => Err(Report::new(AnalysisError::UnsupportedUnification {
-                kind: NodeKind::from_any(other),
-            })),
+            AnyType::Entity(_) => self.unify_entity(&id),
+            // currently not supported, so we skip
+            _ => Ok(()),
         };
 
         self.visited.insert(id);

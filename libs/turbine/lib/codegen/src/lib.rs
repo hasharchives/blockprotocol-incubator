@@ -12,7 +12,7 @@ mod shared;
 
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     hash::{Hash, Hasher},
     path::PathBuf,
 };
