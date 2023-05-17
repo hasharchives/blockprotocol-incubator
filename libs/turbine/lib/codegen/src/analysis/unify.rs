@@ -146,13 +146,14 @@ impl UnificationAnalyzer {
         result
     }
 
-    pub(crate) fn run(mut self) -> (HashMap<VersionedUrl, AnyType>, Facts) {
+    pub(crate) fn run(mut self) -> Result<(HashMap<VersionedUrl, AnyType>, Facts), AnalysisError> {
         let mut errors = ErrorAccumulator::new();
 
         while let Some(id) = self.stack.pop() {
             errors.push(self.unify(id));
         }
 
-        (self.cache, self.facts)
+        errors.into_result()?;
+        Ok((self.cache, self.facts))
     }
 }

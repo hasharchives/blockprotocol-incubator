@@ -1,5 +1,5 @@
-mod facts;
-mod unify;
+pub(crate) mod facts;
+pub(crate) mod unify;
 
 use std::collections::HashMap;
 

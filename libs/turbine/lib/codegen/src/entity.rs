@@ -675,11 +675,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
     let properties = properties(entity, resolver, &property_names, &locations);
 
-    let is_link = entity
-        .inherits_from()
-        .all_of()
-        .iter()
-        .any(|reference| reference == &*LINK_REF);
+    let is_link = resolver.facts().links().contains(url);
 
     let mut state = State {
         is_link,

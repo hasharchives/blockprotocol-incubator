@@ -23,7 +23,10 @@ use thiserror::Error;
 use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
 
 pub use crate::name::{Directory, File, Flavor, ModuleFlavor, Override, OverrideAction, Path};
-use crate::{analysis::DependencyAnalyzer, name::NameResolver};
+use crate::{
+    analysis::{unify::UnificationAnalyzer, DependencyAnalyzer},
+    name::NameResolver,
+};
 
 // what we need to do:
 // 1) Configuration:
@@ -169,15 +172,13 @@ pub fn process(
         })
         .collect();
 
-    let lookup: HashMap<_, _> = values?
-        .into_iter()
-        .map(|value| (value.id().clone(), value))
-        .collect();
+    let analyzer = UnificationAnalyzer::new(values?);
+    let (lookup, facts) = analyzer.run().change_context(Error::DependencyAnalysis)?;
 
     let analyzer =
         DependencyAnalyzer::new(lookup.values()).change_context(Error::DependencyAnalysis)?;
 
-    let mut names = NameResolver::new(&lookup, &analyzer);
+    let mut names = NameResolver::new(&lookup, &analyzer, &facts);
     for value in config.overrides {
         names.with_override(value);
     }

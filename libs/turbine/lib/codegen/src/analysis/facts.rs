@@ -7,9 +7,13 @@ pub(crate) struct Facts {
 }
 
 impl Facts {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             links: HashSet::new(),
         }
+    }
+
+    pub(crate) fn links(&self) -> &HashSet<VersionedUrl> {
+        &self.links
     }
 }

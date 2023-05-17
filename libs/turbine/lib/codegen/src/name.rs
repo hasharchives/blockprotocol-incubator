@@ -12,7 +12,10 @@ use regex::Regex;
 use reqwest::Url;
 use type_system::url::VersionedUrl;
 
-use crate::{analysis::DependencyAnalyzer, AnyType};
+use crate::{
+    analysis::{facts::Facts, DependencyAnalyzer},
+    AnyType,
+};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ModuleFlavor {
@@ -330,6 +333,7 @@ pub(crate) struct PropertyName(pub(crate) String);
 pub(crate) struct NameResolver<'a> {
     lookup: &'a HashMap<VersionedUrl, AnyType>,
     analyzer: &'a DependencyAnalyzer<'a>,
+    facts: &'a Facts,
 
     overrides: Vec<Override>,
     module: ModuleFlavor,
@@ -340,10 +344,12 @@ impl<'a> NameResolver<'a> {
     pub(crate) const fn new(
         lookup: &'a HashMap<VersionedUrl, AnyType>,
         analyzer: &'a DependencyAnalyzer<'a>,
+        facts: &'a Facts,
     ) -> Self {
         Self {
             lookup,
             analyzer,
+            facts,
 
             overrides: Vec::new(),
             module: ModuleFlavor::ModRs,
@@ -663,6 +669,10 @@ impl<'a> NameResolver<'a> {
 
     pub(crate) const fn analyzer(&self) -> &'a DependencyAnalyzer<'a> {
         self.analyzer
+    }
+
+    pub(crate) fn facts(&self) -> &'a Facts {
+        self.facts
     }
 }
 
