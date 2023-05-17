@@ -10,6 +10,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilm(pub Text);
 impl TypeUrl for FavoriteFilm {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
     );
@@ -44,6 +46,8 @@ pub type FavoriteFilmV1 = FavoriteFilm;
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteFilmRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for FavoriteFilmRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
     );
@@ -72,6 +76,8 @@ pub type FavoriteFilmV1Ref<'a> = FavoriteFilmRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct FavoriteFilmMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for FavoriteFilmMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/" / v / 1u32
     );
@@ -112,6 +118,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSong(pub Text);
 impl TypeUrl for FavoriteSong {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
     );
@@ -146,6 +154,8 @@ pub type FavoriteSongV1 = FavoriteSong;
 #[derive(Debug, Clone, Serialize)]
 pub struct FavoriteSongRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for FavoriteSongRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
     );
@@ -174,6 +184,8 @@ pub type FavoriteSongV1Ref<'a> = FavoriteSongRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct FavoriteSongMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for FavoriteSongMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> = url!(
         "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/" / v / 1u32
     );
@@ -214,6 +226,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct Hobby(pub Text);
 impl TypeUrl for Hobby {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
 }
@@ -247,6 +261,8 @@ pub type HobbyV1 = Hobby;
 #[derive(Debug, Clone, Serialize)]
 pub struct HobbyRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for HobbyRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
 }
@@ -274,6 +290,8 @@ pub type HobbyV1Ref<'a> = HobbyRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct HobbyMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for HobbyMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/" / v / 1u32);
 }
@@ -330,6 +348,8 @@ pub struct Interests {
     pub hobby: Option<Vec<Hobby>>,
 }
 impl TypeUrl for Interests {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
 }
@@ -466,6 +486,8 @@ pub struct InterestsRef<'a> {
     pub hobby: Option<Box<[<Hobby as Type>::Ref<'a>]>>,
 }
 impl TypeUrl for InterestsRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
 }
@@ -581,6 +603,8 @@ pub struct InterestsMut<'a> {
     pub hobby: Option<Vec<<Hobby as Type>::Mut<'a>>>,
 }
 impl TypeUrl for InterestsMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/interests/" / v / 1u32);
 }

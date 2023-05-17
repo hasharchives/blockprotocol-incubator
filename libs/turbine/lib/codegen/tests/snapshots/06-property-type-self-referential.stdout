@@ -10,6 +10,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct Email(pub Text);
 impl TypeUrl for Email {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/email/" / v / 1u32);
 }
@@ -43,6 +45,8 @@ pub type EmailV1 = Email;
 #[derive(Debug, Clone, Serialize)]
 pub struct EmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for EmailRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/email/" / v / 1u32);
 }
@@ -70,6 +74,8 @@ pub type EmailV1Ref<'a> = EmailRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct EmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for EmailMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/property-type/email/" / v / 1u32);
 }
@@ -121,6 +127,8 @@ pub struct ContactInformation {
     pub email: Email,
 }
 impl TypeUrl for ContactInformation {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contact-information/" / v / 1u32);
 }
@@ -204,6 +212,8 @@ pub struct ContactInformationRef<'a> {
     pub email: <Email as Type>::Ref<'a>,
 }
 impl TypeUrl for ContactInformationRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contact-information/" / v / 1u32);
 }
@@ -278,6 +288,8 @@ pub struct ContactInformationMut<'a> {
     pub email: <Email as Type>::Mut<'a>,
 }
 impl TypeUrl for ContactInformationMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contact-information/" / v / 1u32);
 }

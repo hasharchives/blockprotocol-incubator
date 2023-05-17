@@ -75,6 +75,22 @@ pub(crate) fn properties<'a>(
         .collect()
 }
 
+pub(crate) fn determine_import_path(location: &Location) -> Vec<Ident> {
+    let mut path: Vec<_> = location
+        .path
+        .directories()
+        .iter()
+        .map(|directory| Ident::new(directory.name(), Span::call_site()))
+        .collect();
+
+    // only add to path if we're not a mod.rs file, otherwise it will lead to import errors
+    if !location.path.file().is_mod() {
+        path.push(Ident::new(location.path.file().name(), Span::call_site()));
+    }
+
+    path
+}
+
 pub(crate) fn imports<'a>(
     references: impl IntoIterator<Item = &'a &'a VersionedUrl> + 'a,
     locations: &'a HashMap<&'a VersionedUrl, Location<'a>>,
@@ -97,17 +113,7 @@ pub(crate) fn imports<'a>(
             return quote!(#tokens;);
         }
 
-        let mut path: Vec<_> = location
-            .path
-            .directories()
-            .iter()
-            .map(|directory| Ident::new(directory.name(), Span::call_site()))
-            .collect();
-
-        // only add to path if we're not a mod.rs file, otherwise it will lead to import errors
-        if !location.path.file().is_mod() {
-            path.push(Ident::new(location.path.file().name(), Span::call_site()));
-        }
+        let path = determine_import_path(location);
 
         let mut name = Ident::new(&location.name.value, Span::call_site()).to_token_stream();
 

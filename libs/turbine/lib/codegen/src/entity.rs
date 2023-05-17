@@ -15,8 +15,9 @@ use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
     shared::{
-        generate_mod, generate_property, generate_property_object_conversion_body, imports,
-        ConversionFunction, Import, IncludeLifetime, Property, Variant,
+        determine_import_path, generate_mod, generate_property,
+        generate_property_object_conversion_body, imports, ConversionFunction, Import,
+        IncludeLifetime, Property, Variant,
     },
 };
 
@@ -334,11 +335,40 @@ fn generate_doc(entity: &EntityType) -> TokenStream {
     )
 }
 
+// we don't need pretty imports for these types, they are just tuples and are not meant to be
+// accessed directly
+fn generate_absolute_import(location: &Location) -> TokenStream {
+    let path = determine_import_path(location);
+    let name = Ident::new(&location.name.value, Span::call_site());
+
+    quote!(crate #(:: #path)* :: #name)
+}
+
+fn generate_type_url_inherits_from(entity: &EntityType, resolver: &NameResolver) -> TokenStream {
+    let all_of = entity
+        .inherits_from()
+        .all_of()
+        .iter()
+        .filter_map(|reference| {
+            let url = reference.url();
+
+            if resolver.facts().should_skip(url) {
+                return None;
+            }
+
+            let location = resolver.location(url);
+            Some(generate_absolute_import(&location))
+        });
+
+    quote!(type InheritsFrom = (#(<#all_of as TypeUrl>::InheritsFrom,)*);)
+}
+
 fn generate_owned(
     entity: &EntityType,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
+    resolver: &NameResolver,
 ) -> TokenStream {
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
@@ -375,11 +405,15 @@ fn generate_owned(
         }
     };
 
+    let inherits_from = generate_type_url_inherits_from(entity, resolver);
+
     quote! {
         #doc
         #def
 
         impl TypeUrl for #name {
+            #inherits_from
+
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
         }
 
@@ -446,6 +480,7 @@ fn generate_ref(
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
+    resolver: &NameResolver,
 ) -> TokenStream {
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
@@ -481,11 +516,15 @@ fn generate_ref(
         }
     };
 
+    let inherits_from = generate_type_url_inherits_from(entity, resolver);
+
     quote! {
         #doc
         #def
 
         impl TypeUrl for #name_ref<'_> {
+            #inherits_from
+
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
         }
 
@@ -545,6 +584,7 @@ fn generate_mut(
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
+    resolver: &NameResolver,
 ) -> TokenStream {
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
@@ -580,11 +620,15 @@ fn generate_mut(
         }
     };
 
+    let inherits_from = generate_type_url_inherits_from(entity, resolver);
+
     quote! {
         #doc
         #def
 
         impl TypeUrl for #name_mut<'_> {
+            #inherits_from
+
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
         }
 
@@ -684,9 +728,9 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         },
     };
 
-    let owned = generate_owned(entity, &location, &properties, &mut state);
-    let ref_ = generate_ref(entity, &location, &properties, &mut state);
-    let mut_ = generate_mut(entity, &location, &properties, &mut state);
+    let owned = generate_owned(entity, &location, &properties, &mut state, resolver);
+    let ref_ = generate_ref(entity, &location, &properties, &mut state, resolver);
+    let mut_ = generate_mut(entity, &location, &properties, &mut state, resolver);
 
     let mod_ = generate_mod(&location.kind, resolver);
     let use_ = generate_use(&references, &locations, &state);

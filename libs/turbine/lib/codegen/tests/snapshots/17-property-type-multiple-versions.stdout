@@ -11,6 +11,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct UserId(pub Number);
 impl TypeUrl for UserId {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
 }
@@ -44,6 +46,8 @@ pub type UserIdV2 = UserId;
 #[derive(Debug, Clone, Serialize)]
 pub struct UserIdRef<'a>(pub <Number as Type>::Ref<'a>);
 impl TypeUrl for UserIdRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
 }
@@ -71,6 +75,8 @@ pub type UserIdV2Ref<'a> = UserIdRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct UserIdMut<'a>(pub <Number as Type>::Mut<'a>);
 impl TypeUrl for UserIdMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 2u32);
 }
@@ -112,6 +118,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct UserIdV1(pub Text);
 impl TypeUrl for UserIdV1 {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }
@@ -144,6 +152,8 @@ impl PropertyType for UserIdV1 {
 #[derive(Debug, Clone, Serialize)]
 pub struct UserIdV1Ref<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for UserIdV1Ref<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }
@@ -170,6 +180,8 @@ impl<'a> PropertyTypeRef<'a> for UserIdV1Ref<'a> {
 #[derive(Debug, Serialize)]
 pub struct UserIdV1Mut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for UserIdV1Mut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }

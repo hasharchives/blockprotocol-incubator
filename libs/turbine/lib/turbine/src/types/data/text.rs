@@ -50,6 +50,8 @@ impl DerefMut for Text {
 }
 
 impl TypeUrl for Text {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
@@ -98,6 +100,8 @@ impl Deref for TextRef<'_> {
 }
 
 impl TypeUrl for TextRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
@@ -139,6 +143,8 @@ impl DerefMut for TextMut<'_> {
 }
 
 impl TypeUrl for TextMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }

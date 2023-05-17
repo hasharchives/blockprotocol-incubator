@@ -29,6 +29,8 @@ impl Serialize for EmptyList {
 }
 
 impl TypeUrl for EmptyList {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/emptyList/" / v / 1);
 }

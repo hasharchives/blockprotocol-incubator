@@ -39,6 +39,8 @@ pub struct PartOf {
 }
 pub type PartOfV1 = PartOf;
 impl TypeUrl for PartOf {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
 }
@@ -115,6 +117,8 @@ pub struct PartOfRef<'a> {
 }
 pub type PartOfV1Ref<'a> = PartOfRef<'a>;
 impl TypeUrl for PartOfRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
 }
@@ -184,6 +188,8 @@ pub struct PartOfMut<'a> {
 }
 pub type PartOfV1Mut<'a> = PartOfMut<'a>;
 impl TypeUrl for PartOfMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/partOf/" / v / 1u32);
 }

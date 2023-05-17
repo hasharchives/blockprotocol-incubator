@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(error_in_core)]
 #![feature(never_type)]
+#![feature(type_alias_impl_trait)]
 
 extern crate alloc;
 
@@ -15,12 +16,15 @@ use crate::entity::{Entity, LinkData};
 
 pub mod entity;
 mod error;
+mod hierarchy;
 mod polyfill;
 mod serialize;
 pub mod types;
 
 pub use error::{GenericEntityError, GenericPropertyError};
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
+
+pub use crate::hierarchy::TypeHierarchyResolution;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct BaseUrlRef<'a>(&'a str);
@@ -130,6 +134,8 @@ macro_rules! url {
 }
 
 pub trait TypeUrl {
+    type InheritsFrom: TypeHierarchyResolution;
+
     const ID: VersionedUrlRef<'static>;
 }
 

@@ -13,7 +13,7 @@ use crate::{
     AnyType,
 };
 
-static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
+pub(super) static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
     EntityTypeReference::new(
         VersionedUrl::from_str(
             "https://blockprotocol.org/@blockprotocol/types/entity-type/link/v/1",
@@ -22,12 +22,14 @@ static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
     )
 });
 
+type FetchFn = Box<dyn FnMut(&VersionedUrl) -> Option<AnyType>>;
+
 // We cannot handle lifetimes here, because we own the data already, doing so would create a
 // self-referential struct, which is considered a war crime in some states.
 pub(crate) struct UnificationAnalyzer {
     stack: Vec<VersionedUrl>,
     cache: HashMap<VersionedUrl, AnyType>,
-    fetch: Option<Box<dyn FnMut(&VersionedUrl) -> Option<AnyType>>>,
+    fetch: Option<FetchFn>,
     facts: Facts,
 
     visited: HashSet<VersionedUrl>,
@@ -72,7 +74,6 @@ impl UnificationAnalyzer {
         }
 
         let Some(fetch) = &mut self.fetch else {
-            println!("{:?}", id);
             self.missing.insert(id.clone());
             return Err(Report::new(AnalysisError::IncompleteGraph))
         };
@@ -118,7 +119,7 @@ impl UnificationAnalyzer {
                         let properties = entity.properties().clone();
                         entity.properties();
 
-                        stack.extend(entity.inherits_from().all_of().into_iter().cloned());
+                        stack.extend(entity.inherits_from().all_of().iter().cloned());
                     }
                     other => errors.extend_one(Report::new(AnalysisError::ExpectedNodeKind {
                         expected: NodeKind::EntityType,

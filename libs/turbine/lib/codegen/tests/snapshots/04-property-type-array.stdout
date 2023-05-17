@@ -66,6 +66,8 @@ impl Inner2<'a> {
 #[derive(Debug, Clone, Serialize)]
 pub struct ContrivedProperty(pub Vec<Inner0>);
 impl TypeUrl for ContrivedProperty {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 }
@@ -111,6 +113,8 @@ pub type ContrivedPropertyV1 = ContrivedProperty;
 #[derive(Debug, Clone, Serialize)]
 pub struct ContrivedPropertyRef<'a>(pub Vec<Inner1<'a>>);
 impl TypeUrl for ContrivedPropertyRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 }
@@ -151,6 +155,8 @@ pub type ContrivedPropertyV1Ref<'a> = ContrivedPropertyRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct ContrivedPropertyMut<'a>(pub Vec<Inner2<'a>>);
 impl TypeUrl for ContrivedPropertyMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 }

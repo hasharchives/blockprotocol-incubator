@@ -40,6 +40,8 @@ impl DerefMut for Boolean {
 }
 
 impl TypeUrl for Boolean {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
 }
@@ -106,6 +108,8 @@ impl DerefMut for BooleanMut<'_> {
 }
 
 impl TypeUrl for BooleanMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
 }

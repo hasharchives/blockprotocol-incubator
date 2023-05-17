@@ -59,6 +59,8 @@ pub struct Country {
 }
 pub type CountryV1 = Country;
 impl TypeUrl for Country {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 }
@@ -145,6 +147,8 @@ pub struct CountryRef<'a> {
 }
 pub type CountryV1Ref<'a> = CountryRef<'a>;
 impl TypeUrl for CountryRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 }
@@ -228,6 +232,8 @@ pub struct CountryMut<'a> {
 }
 pub type CountryV1Mut<'a> = CountryMut<'a>;
 impl TypeUrl for CountryMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/entity-type/country/" / v / 1u32);
 }
@@ -282,6 +288,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct Properties(pub Text);
 impl TypeUrl for Properties {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/properties/" / v / 1u32);
 }
@@ -315,6 +323,8 @@ pub type PropertiesV1 = Properties;
 #[derive(Debug, Clone, Serialize)]
 pub struct PropertiesRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for PropertiesRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/properties/" / v / 1u32);
 }
@@ -342,6 +352,8 @@ pub type PropertiesV1Ref<'a> = PropertiesRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for PropertiesMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/properties/" / v / 1u32);
 }

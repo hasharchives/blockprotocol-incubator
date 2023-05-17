@@ -50,6 +50,8 @@ impl DerefMut for Object {
 }
 
 impl TypeUrl for Object {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
@@ -91,6 +93,8 @@ impl Deref for ObjectRef<'_> {
 }
 
 impl TypeUrl for ObjectRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
@@ -131,6 +135,8 @@ impl DerefMut for ObjectMut<'_> {
 }
 
 impl TypeUrl for ObjectMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
