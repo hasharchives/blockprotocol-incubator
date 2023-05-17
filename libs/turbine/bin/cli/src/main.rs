@@ -21,6 +21,7 @@ pub(crate) struct Cli {
 #[error("unable to execute cli command")]
 pub struct Error;
 
+// TODO: init tracing
 fn main() -> Result<(), Error> {
     let cli: Cli = Cli::parse();
 

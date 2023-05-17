@@ -1,3 +1,6 @@
+mod facts;
+mod unify;
+
 use std::collections::HashMap;
 
 use error_stack::{Report, Result};
@@ -10,7 +13,7 @@ use crate::{
     AnyType,
 };
 
-#[derive(Debug, Copy, Clone, Error)]
+#[derive(Debug, Clone, Error)]
 pub(crate) enum AnalysisError {
     #[error(
         "while trying to remove all cycles, the max iteration count of {iterations} has been \
@@ -19,6 +22,14 @@ pub(crate) enum AnalysisError {
     CycleMaxIterationCountReached { iterations: usize },
     #[error("Received collection of types is incomplete")]
     IncompleteGraph,
+    #[error("Expected {expected:?}, but received {received:?} (`{url}`)")]
+    ExpectedNodeKind {
+        expected: NodeKind,
+        received: NodeKind,
+        url: VersionedUrl,
+    },
+    #[error("unable to unify {kind:?} values just yet")]
+    UnsupportedUnification { kind: NodeKind },
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -27,6 +38,16 @@ pub(crate) enum NodeKind {
     DataType,
     PropertyType,
     EntityType,
+}
+
+impl NodeKind {
+    fn from_any(any: &AnyType) -> Self {
+        match any {
+            AnyType::Data(_) => Self::DataType,
+            AnyType::Property(_) => Self::PropertyType,
+            AnyType::Entity(_) => Self::EntityType,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -278,13 +299,12 @@ impl<'a> DependencyAnalyzer<'a> {
                 .map(|(key, value)| (value, key))
                 .collect();
 
-            println!(
-                "{:?}",
-                missing
-                    .into_iter()
-                    .map(|missing| reverse.get(&missing))
-                    .collect::<Vec<_>>()
-            );
+            let missing: Vec<_> = missing
+                .into_iter()
+                .filter_map(|missing| reverse.get(&missing))
+                .collect();
+
+            tracing::error!(?missing, "incomplete graph");
 
             return Err(Report::new(AnalysisError::IncompleteGraph));
         }

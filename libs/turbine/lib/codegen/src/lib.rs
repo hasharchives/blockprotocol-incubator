@@ -4,6 +4,7 @@
 mod analysis;
 mod data;
 mod entity;
+mod error;
 mod graph;
 mod name;
 mod property;

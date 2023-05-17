@@ -44,15 +44,6 @@ const RESERVED: &[&str] = &[
     "String",
 ];
 
-static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
-    EntityTypeReference::new(
-        VersionedUrl::from_str(
-            "https://blockprotocol.org/@blockprotocol/types/entity-type/link/v/1",
-        )
-        .expect("should be valid url"),
-    )
-});
-
 struct State {
     is_link: bool,
     import: Import,
