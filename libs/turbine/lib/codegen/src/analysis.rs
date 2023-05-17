@@ -22,12 +22,6 @@ pub(crate) enum AnalysisError {
     CycleMaxIterationCountReached { iterations: usize },
     #[error("Received collection of types is incomplete")]
     IncompleteGraph,
-    #[error("Expected {expected:?}, but received {received:?} (`{url}`)")]
-    ExpectedNodeKind {
-        expected: NodeKind,
-        received: NodeKind,
-        url: VersionedUrl,
-    },
     #[error("While trying to unify types, a cycle has been detected")]
     UnificationCycle,
     #[error("Unable to merge types")]

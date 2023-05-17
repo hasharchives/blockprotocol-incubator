@@ -9,7 +9,7 @@ use petgraph::{algo::toposort, graph::DiGraph};
 use type_system::{repr, url::VersionedUrl, EntityType, EntityTypeReference};
 
 use crate::{
-    analysis::{facts::Facts, AnalysisError, NodeKind},
+    analysis::{facts::Facts, AnalysisError},
     error::ErrorAccumulator,
     AnyType,
 };
@@ -165,6 +165,7 @@ impl UnificationAnalyzer {
 
         self.cache
             .insert(entity.id().clone(), AnyType::Entity(entity));
+
         Ok(())
     }
 
