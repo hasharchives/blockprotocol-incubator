@@ -203,6 +203,7 @@ fn generate_properties_convert(
 
 #[allow(clippy::too_many_lines)]
 fn generate_type(
+    entity: &EntityType,
     variant: Variant,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
@@ -237,6 +238,8 @@ fn generate_type(
 
         quote!(pub type #alias #lifetime = #name #lifetime;)
     });
+
+    let doc = generate_doc(entity);
 
     let name = Ident::new(&name.value, Span::call_site());
 
@@ -311,6 +314,7 @@ fn generate_type(
             #conversion
         }
 
+        #doc
         #derive
         #[serde(rename_all = "camelCase")]
         pub struct #name #lifetime {
@@ -377,8 +381,7 @@ fn generate_owned(
     let base_url = entity.id().base_url.as_str();
     let version = entity.id().version;
 
-    let doc = generate_doc(entity);
-    let def = generate_type(Variant::Owned, location, properties, state);
+    let def = generate_type(entity, Variant::Owned, location, properties, state);
 
     // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
     let link_data: Vec<_> = state
@@ -408,7 +411,6 @@ fn generate_owned(
     let inherits_from = generate_type_url_inherits_from(entity, resolver);
 
     quote! {
-        #doc
         #def
 
         impl TypeUrl for #name {
@@ -485,8 +487,7 @@ fn generate_ref(
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
 
-    let doc = generate_doc(entity);
-    let def = generate_type(Variant::Ref, location, properties, state);
+    let def = generate_type(entity, Variant::Ref, location, properties, state);
 
     let base_url = entity.id().base_url.as_str();
     let version = entity.id().version;
@@ -519,7 +520,6 @@ fn generate_ref(
     let inherits_from = generate_type_url_inherits_from(entity, resolver);
 
     quote! {
-        #doc
         #def
 
         impl TypeUrl for #name_ref<'_> {
@@ -589,8 +589,7 @@ fn generate_mut(
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
 
-    let doc = generate_doc(entity);
-    let def = generate_type(Variant::Mut, location, properties, state);
+    let def = generate_type(entity, Variant::Mut, location, properties, state);
 
     let base_url = entity.id().base_url.as_str();
     let version = entity.id().version;
@@ -623,7 +622,6 @@ fn generate_mut(
     let inherits_from = generate_type_url_inherits_from(entity, resolver);
 
     quote! {
-        #doc
         #def
 
         impl TypeUrl for #name_mut<'_> {
