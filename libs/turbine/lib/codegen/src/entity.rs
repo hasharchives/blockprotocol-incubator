@@ -360,7 +360,7 @@ fn generate_type_url_inherits_from(entity: &EntityType, resolver: &NameResolver)
             Some(generate_absolute_import(&location))
         });
 
-    quote!(type InheritsFrom = (#(<#all_of as TypeUrl>::InheritsFrom,)*);)
+    quote!(type InheritsFrom = (#(<#all_of as TypeUrl>, <#all_of as TypeUrl>::InheritsFrom,)*);)
 }
 
 fn generate_owned(
