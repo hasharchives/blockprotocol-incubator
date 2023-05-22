@@ -257,7 +257,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         folder.insert(VecDeque::from(directories), file, contents);
     }
 
-    folder.normalize_top_level(config.style, utilities);
+    folder.normalize_top_level(config.style, &utilities);
 
     folder
         .output(config.root.join("src"))
