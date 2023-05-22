@@ -169,6 +169,7 @@ impl VirtualFolder {
             #![allow(unused_imports)]
 
             use turbine::TypeUrl as _;
+            use turbine::TypeHierarchyResolution as _;
 
             #utilities
 
