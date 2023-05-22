@@ -15,6 +15,8 @@ pub enum UserId {
     Variant1(Number),
 }
 impl TypeUrl for UserId {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }
@@ -78,6 +80,8 @@ pub enum UserIdRef<'a> {
     Variant1(<Number as Type>::Ref<'a>),
 }
 impl TypeUrl for UserIdRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }
@@ -137,6 +141,8 @@ pub enum UserIdMut<'a> {
     Variant1(<Number as Type>::Mut<'a>),
 }
 impl TypeUrl for UserIdMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/user-id/" / v / 1u32);
 }

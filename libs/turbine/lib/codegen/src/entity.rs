@@ -1,24 +1,23 @@
 use std::{
     collections::{BTreeMap, HashMap},
     ops::Deref,
-    str::FromStr,
 };
 
-use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{Token, Visibility};
 use type_system::{
     url::{BaseUrl, VersionedUrl},
-    EntityType, EntityTypeReference,
+    EntityType,
 };
 
 use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
     shared::{
-        generate_mod, generate_property, generate_property_object_conversion_body, imports,
-        ConversionFunction, Import, IncludeLifetime, Property, Variant,
+        determine_import_path, generate_mod, generate_property,
+        generate_property_object_conversion_body, imports, ConversionFunction, Import,
+        IncludeLifetime, Property, Variant,
     },
 };
 
@@ -43,15 +42,6 @@ const RESERVED: &[&str] = &[
     "BaseUrl",
     "String",
 ];
-
-static LINK_REF: Lazy<EntityTypeReference> = Lazy::new(|| {
-    EntityTypeReference::new(
-        VersionedUrl::from_str(
-            "https://blockprotocol.org/@blockprotocol/types/entity-type/link/v/1",
-        )
-        .expect("should be valid url"),
-    )
-});
 
 struct State {
     is_link: bool,
@@ -213,6 +203,7 @@ fn generate_properties_convert(
 
 #[allow(clippy::too_many_lines)]
 fn generate_type(
+    entity: &EntityType,
     variant: Variant,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
@@ -247,6 +238,8 @@ fn generate_type(
 
         quote!(pub type #alias #lifetime = #name #lifetime;)
     });
+
+    let doc = generate_doc(entity);
 
     let name = Ident::new(&name.value, Span::call_site());
 
@@ -321,6 +314,7 @@ fn generate_type(
             #conversion
         }
 
+        #doc
         #derive
         #[serde(rename_all = "camelCase")]
         pub struct #name #lifetime {
@@ -345,11 +339,40 @@ fn generate_doc(entity: &EntityType) -> TokenStream {
     )
 }
 
+// we don't need pretty imports for these types, they are just tuples and are not meant to be
+// accessed directly
+fn generate_absolute_import(location: &Location) -> TokenStream {
+    let path = determine_import_path(location);
+    let name = Ident::new(&location.name.value, Span::call_site());
+
+    quote!(crate #(:: #path)* :: #name)
+}
+
+fn generate_type_url_inherits_from(entity: &EntityType, resolver: &NameResolver) -> TokenStream {
+    let all_of = entity
+        .inherits_from()
+        .all_of()
+        .iter()
+        .filter_map(|reference| {
+            let url = reference.url();
+
+            if resolver.facts().should_skip(url) {
+                return None;
+            }
+
+            let location = resolver.location(url);
+            Some(generate_absolute_import(&location))
+        });
+
+    quote!(type InheritsFrom = (#(#all_of, <#all_of as TypeUrl>::InheritsFrom,)*);)
+}
+
 fn generate_owned(
     entity: &EntityType,
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
+    resolver: &NameResolver,
 ) -> TokenStream {
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
@@ -358,8 +381,7 @@ fn generate_owned(
     let base_url = entity.id().base_url.as_str();
     let version = entity.id().version;
 
-    let doc = generate_doc(entity);
-    let def = generate_type(Variant::Owned, location, properties, state);
+    let def = generate_type(entity, Variant::Owned, location, properties, state);
 
     // we emulate `#(...)?` which doesn't exist, see https://github.com/dtolnay/quote/issues/213
     let link_data: Vec<_> = state
@@ -386,11 +408,14 @@ fn generate_owned(
         }
     };
 
+    let inherits_from = generate_type_url_inherits_from(entity, resolver);
+
     quote! {
-        #doc
         #def
 
         impl TypeUrl for #name {
+            #inherits_from
+
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
         }
 
@@ -457,12 +482,12 @@ fn generate_ref(
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
+    resolver: &NameResolver,
 ) -> TokenStream {
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_ref = Ident::new(&location.name_ref.value, Span::call_site());
 
-    let doc = generate_doc(entity);
-    let def = generate_type(Variant::Ref, location, properties, state);
+    let def = generate_type(entity, Variant::Ref, location, properties, state);
 
     let base_url = entity.id().base_url.as_str();
     let version = entity.id().version;
@@ -492,11 +517,14 @@ fn generate_ref(
         }
     };
 
+    let inherits_from = generate_type_url_inherits_from(entity, resolver);
+
     quote! {
-        #doc
         #def
 
         impl TypeUrl for #name_ref<'_> {
+            #inherits_from
+
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
         }
 
@@ -556,12 +584,12 @@ fn generate_mut(
     location: &Location,
     properties: &BTreeMap<&BaseUrl, Property>,
     state: &mut State,
+    resolver: &NameResolver,
 ) -> TokenStream {
     let name = Ident::new(&location.name.value, Span::call_site());
     let name_mut = Ident::new(&location.name_mut.value, Span::call_site());
 
-    let doc = generate_doc(entity);
-    let def = generate_type(Variant::Mut, location, properties, state);
+    let def = generate_type(entity, Variant::Mut, location, properties, state);
 
     let base_url = entity.id().base_url.as_str();
     let version = entity.id().version;
@@ -591,11 +619,14 @@ fn generate_mut(
         }
     };
 
+    let inherits_from = generate_type_url_inherits_from(entity, resolver);
+
     quote! {
-        #doc
         #def
 
         impl TypeUrl for #name_mut<'_> {
+            #inherits_from
+
             const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
         }
 
@@ -684,11 +715,7 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
 
     let properties = properties(entity, resolver, &property_names, &locations);
 
-    let is_link = entity
-        .inherits_from()
-        .all_of()
-        .iter()
-        .any(|reference| reference == &*LINK_REF);
+    let is_link = resolver.facts().links().contains(url);
 
     let mut state = State {
         is_link,
@@ -699,9 +726,9 @@ pub(crate) fn generate(entity: &EntityType, resolver: &NameResolver) -> TokenStr
         },
     };
 
-    let owned = generate_owned(entity, &location, &properties, &mut state);
-    let ref_ = generate_ref(entity, &location, &properties, &mut state);
-    let mut_ = generate_mut(entity, &location, &properties, &mut state);
+    let owned = generate_owned(entity, &location, &properties, &mut state, resolver);
+    let ref_ = generate_ref(entity, &location, &properties, &mut state, resolver);
+    let mut_ = generate_mut(entity, &location, &properties, &mut state, resolver);
 
     let mod_ = generate_mod(&location.kind, resolver);
     let use_ = generate_use(&references, &locations, &state);

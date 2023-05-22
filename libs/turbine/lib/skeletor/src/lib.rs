@@ -17,7 +17,7 @@ use cargo::{
     },
     util::toml_mut::manifest::DepTable,
 };
-use codegen::{AnyTypeRepr, Flavor, ModuleFlavor, Override};
+use codegen::{AnyTypeRepr, Flavor, ModuleFlavor, Output, Override};
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
 use onlyerror::Error;
 
@@ -237,7 +237,10 @@ fn setup(
 }
 
 pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
-    let types = codegen::process(types, codegen::Config {
+    let Output {
+        files: types,
+        utilities,
+    } = codegen::process(types, codegen::Config {
         module: Some(config.style.into()),
         overrides: config.overrides,
         flavors: config.flavors,
@@ -254,7 +257,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         folder.insert(VecDeque::from(directories), file, contents);
     }
 
-    folder.normalize_top_level(config.style);
+    folder.normalize_top_level(config.style, &utilities);
 
     folder
         .output(config.root.join("src"))

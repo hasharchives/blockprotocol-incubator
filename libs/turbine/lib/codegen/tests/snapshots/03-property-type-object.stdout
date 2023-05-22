@@ -19,6 +19,8 @@ pub struct FullEmail {
     pub secondary_email: Option<SecondaryEmail>,
 }
 impl TypeUrl for FullEmail {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
 }
@@ -103,6 +105,8 @@ pub struct FullEmailRef<'a> {
     pub secondary_email: Option<<SecondaryEmail as Type>::Ref<'a>>,
 }
 impl TypeUrl for FullEmailRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
 }
@@ -171,6 +175,8 @@ pub struct FullEmailMut<'a> {
     pub secondary_email: Option<<SecondaryEmail as Type>::Mut<'a>>,
 }
 impl TypeUrl for FullEmailMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/fullEmail/" / v / 1u32);
 }
@@ -255,6 +261,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmail(pub Text);
 impl TypeUrl for PrimaryEmail {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
 }
@@ -288,6 +296,8 @@ pub type PrimaryEmailV1 = PrimaryEmail;
 #[derive(Debug, Clone, Serialize)]
 pub struct PrimaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for PrimaryEmailRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
 }
@@ -315,6 +325,8 @@ pub type PrimaryEmailV1Ref<'a> = PrimaryEmailRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct PrimaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for PrimaryEmailMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/primaryEmail/" / v / 1u32);
 }
@@ -354,6 +366,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmail(pub Text);
 impl TypeUrl for SecondaryEmail {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
 }
@@ -387,6 +401,8 @@ pub type SecondaryEmailV1 = SecondaryEmail;
 #[derive(Debug, Clone, Serialize)]
 pub struct SecondaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for SecondaryEmailRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
 }
@@ -414,6 +430,8 @@ pub type SecondaryEmailV1Ref<'a> = SecondaryEmailRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct SecondaryEmailMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for SecondaryEmailMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/secondaryEmail/" / v / 1u32);
 }

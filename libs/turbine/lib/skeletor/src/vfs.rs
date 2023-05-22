@@ -157,7 +157,7 @@ impl VirtualFolder {
         result
     }
 
-    pub(crate) fn normalize_top_level(&mut self, style: Style) {
+    pub(crate) fn normalize_top_level(&mut self, style: Style, utilities: &TokenStream) {
         let top_level = quote! {
             #![no_std]
             #![allow(clippy::all)]
@@ -167,6 +167,11 @@ impl VirtualFolder {
             #![allow(clippy::undocumented_unsafe_blocks)] // present in the code generator
             #![allow(clippy::missing_safety_doc)] // present in the code generator
             #![allow(unused_imports)]
+
+            use turbine::TypeUrl;
+            use turbine::TypeHierarchyResolution as _;
+
+            #utilities
 
             extern crate alloc;
         };

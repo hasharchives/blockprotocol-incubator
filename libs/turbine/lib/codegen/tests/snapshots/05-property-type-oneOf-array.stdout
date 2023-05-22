@@ -70,6 +70,8 @@ pub enum ContrivedProperty {
     Variant1(Vec<Inner0>),
 }
 impl TypeUrl for ContrivedProperty {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 }
@@ -151,6 +153,8 @@ pub enum ContrivedPropertyRef<'a> {
     Variant1(Vec<Inner1<'a>>),
 }
 impl TypeUrl for ContrivedPropertyRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 }
@@ -221,6 +225,8 @@ pub enum ContrivedPropertyMut<'a> {
     Variant1(Vec<Inner2<'a>>),
 }
 impl TypeUrl for ContrivedPropertyMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@alice/property-type/contrived-property/" / v / 1u32);
 }

@@ -10,6 +10,8 @@ use turbine::{
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCode(pub Text);
 impl TypeUrl for CountryCode {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 }
@@ -43,6 +45,8 @@ pub type CountryCodeV1 = CountryCode;
 #[derive(Debug, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for CountryCodeRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 }
@@ -70,6 +74,8 @@ pub type CountryCodeV1Ref<'a> = CountryCodeRef<'a>;
 #[derive(Debug, Serialize)]
 pub struct CountryCodeMut<'a>(pub <Text as Type>::Mut<'a>);
 impl TypeUrl for CountryCodeMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("http://localhost:3000/@alice/types/property-type/countryCode/" / v / 1u32);
 }

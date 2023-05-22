@@ -4,14 +4,16 @@
 mod analysis;
 mod data;
 mod entity;
+mod error;
 mod graph;
 mod name;
 mod property;
 mod shared;
+mod utilities;
 
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     hash::{Hash, Hasher},
     path::PathBuf,
 };
@@ -22,7 +24,10 @@ use thiserror::Error;
 use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
 
 pub use crate::name::{Directory, File, Flavor, ModuleFlavor, Override, OverrideAction, Path};
-use crate::{analysis::DependencyAnalyzer, name::NameResolver};
+use crate::{
+    analysis::{unify::UnificationAnalyzer, DependencyAnalyzer},
+    name::NameResolver,
+};
 
 // what we need to do:
 // 1) Configuration:
@@ -143,13 +148,15 @@ pub struct Config {
     pub flavors: Vec<Flavor>,
 }
 
+pub struct Output {
+    pub files: BTreeMap<OutputPath, TokenStream>,
+    pub utilities: TokenStream,
+}
+
 /// ## Errors
 ///
 /// if `AnyTypeRepr` is malformed, or an error occurred while generating code
-pub fn process(
-    values: Vec<AnyTypeRepr>,
-    config: Config,
-) -> Result<BTreeMap<OutputPath, TokenStream>, Error> {
+pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error> {
     let values: Result<Vec<_>, _> = values
         .into_iter()
         .map(|any| match any {
@@ -168,15 +175,13 @@ pub fn process(
         })
         .collect();
 
-    let lookup: HashMap<_, _> = values?
-        .into_iter()
-        .map(|value| (value.id().clone(), value))
-        .collect();
+    let analyzer = UnificationAnalyzer::new(values?);
+    let (lookup, facts) = analyzer.run().change_context(Error::DependencyAnalysis)?;
 
     let analyzer =
         DependencyAnalyzer::new(lookup.values()).change_context(Error::DependencyAnalysis)?;
 
-    let mut names = NameResolver::new(&lookup, &analyzer);
+    let mut names = NameResolver::new(&lookup, &analyzer, &facts);
     for value in config.overrides {
         names.with_override(value);
     }
@@ -187,7 +192,8 @@ pub fn process(
         names.with_module_flavor(module);
     }
 
-    let mut output = BTreeMap::new();
+    let mut files = BTreeMap::new();
+    let mut entities = vec![];
 
     for value in lookup.values() {
         let location = names.location(value.id());
@@ -199,13 +205,19 @@ pub fn process(
         let contents = match value {
             AnyType::Data(data) => data::generate(data, &names),
             AnyType::Property(property) => Some(property::generate(property, &names)),
-            AnyType::Entity(entity) => Some(entity::generate(entity, &names)),
+            AnyType::Entity(entity) => {
+                entities.push(entity);
+                Some(entity::generate(entity, &names))
+            }
         };
 
         if let Some(contents) = contents {
-            output.insert(file, contents);
+            files.insert(file, contents);
         }
     }
 
-    Ok(output)
+    Ok(Output {
+        files,
+        utilities: utilities::generate(entities, &names),
+    })
 }

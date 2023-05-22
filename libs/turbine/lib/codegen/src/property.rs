@@ -231,6 +231,9 @@ impl<'a> PropertyTypeGenerator<'a> {
             #def
 
             impl TypeUrl for #name {
+                // The RFC for `allOf` on property types is still in draft
+                type InheritsFrom = ();
+
                 const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
             }
 
@@ -280,6 +283,9 @@ impl<'a> PropertyTypeGenerator<'a> {
             #def
 
             impl TypeUrl for #name_ref<'_> {
+                // The RFC for `allOf` on property types is still in draft
+                type InheritsFrom = ();
+
                 const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
             }
 
@@ -328,6 +334,9 @@ impl<'a> PropertyTypeGenerator<'a> {
             #def
 
             impl TypeUrl for #name_mut<'_> {
+                // The RFC for `allOf` on property types is still in draft
+                type InheritsFrom = ();
+
                 const ID: VersionedUrlRef<'static>  = url!(#base_url / v / #version);
             }
 

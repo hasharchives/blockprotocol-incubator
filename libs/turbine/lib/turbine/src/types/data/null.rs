@@ -17,6 +17,8 @@ pub enum NullError {
 pub struct Null;
 
 impl TypeUrl for Null {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/null/" / v / 1);
 }

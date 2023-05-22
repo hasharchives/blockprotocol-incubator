@@ -43,6 +43,8 @@ impl Deref for Number {
 }
 
 impl TypeUrl for Number {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 }
@@ -84,6 +86,8 @@ impl Deref for NumberRef<'_> {
 }
 
 impl TypeUrl for NumberRef<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 }
@@ -126,6 +130,8 @@ impl DerefMut for NumberMut<'_> {
 }
 
 impl TypeUrl for NumberMut<'_> {
+    type InheritsFrom = ();
+
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/number/" / v / 1);
 }
