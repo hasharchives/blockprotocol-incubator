@@ -5,7 +5,12 @@ use std::{
 
 use error_stack::{IntoReport, Report, Result, ResultExt};
 use once_cell::sync::Lazy;
-use petgraph::{algo::toposort, graph::DiGraph};
+use petgraph::{
+    algo::toposort,
+    graph::{DiGraph, NodeIndex},
+    visit::{Dfs, Walker},
+};
+use serde_json::json;
 use type_system::{repr, url::VersionedUrl, EntityType, EntityTypeReference};
 
 use crate::{
@@ -63,7 +68,7 @@ impl UnificationAnalyzer {
         self.fetch = Some(Box::new(func));
     }
 
-    pub(crate) fn fetch(&mut self, id: &VersionedUrl) -> Result<CacheResult, AnalysisError> {
+    fn fetch(&mut self, id: &VersionedUrl) -> Result<CacheResult, AnalysisError> {
         // Optimization, we don't need to query twice, if we know the type is missing
         if self.missing.contains(id) {
             return Err(Report::new(AnalysisError::IncompleteGraph));
@@ -140,10 +145,21 @@ impl UnificationAnalyzer {
 
         let mut entity: repr::EntityType = entity.into();
 
-        for url in parents {
-            let parent: repr::EntityType = self.entity_or_panic(&url).clone().into();
+        for url in &parents {
+            if url == LINK_REF.url() {
+                // We need to skip the link type, as it is hard-coded in the type system and
+                // special.
+                continue;
+            }
 
-            errors.push(entity.merge(parent));
+            let parent: repr::EntityType = self.entity_or_panic(url).clone().into();
+
+            let result = entity
+                .merge_parent(parent)
+                .into_report()
+                .change_context(AnalysisError::UnificationMerge);
+
+            errors.push(result);
         }
 
         errors.into_result()?;
@@ -152,7 +168,10 @@ impl UnificationAnalyzer {
         let mut entity = serde_json::to_value(entity)
             .into_report()
             .change_context(AnalysisError::UnificationSerde)?;
-        entity["allOf"] = parents.into_iter().map(|url| url.to_string()).collect();
+        entity["allOf"] = parents
+            .into_iter()
+            .map(|url| json!({ "$ref": url }))
+            .collect();
 
         let entity: repr::EntityType = serde_json::from_value(entity)
             .into_report()
@@ -169,16 +188,37 @@ impl UnificationAnalyzer {
         Ok(())
     }
 
-    pub(crate) fn unify(&mut self, id: VersionedUrl) -> Result<(), AnalysisError> {
-        let any = &self.cache[&id];
+    pub(crate) fn unify(&mut self, id: &VersionedUrl) -> Result<(), AnalysisError> {
+        let any = &self.cache[id];
 
-        let result = match any {
-            AnyType::Entity(_) => self.unify_entity(&id),
+        match any {
+            AnyType::Entity(_) => self.unify_entity(id),
             // currently not supported, so we skip
             _ => Ok(()),
-        };
+        }
+    }
 
-        result
+    pub(crate) fn gather_facts(
+        &mut self,
+        graph: &mut DiGraph<VersionedUrl, ()>,
+        lookup: &HashMap<VersionedUrl, NodeIndex>,
+    ) {
+        if let Some(link) = lookup.get(LINK_REF.url()) {
+            // find all types that are links, this is simply done by
+            // A) reversing the tree
+            // B) DFS the tree starting from the link and collect all nodes
+            graph.reverse();
+
+            let dfs = Dfs::new(&*graph, *link);
+
+            for node in dfs.iter(&*graph) {
+                let url = graph.node_weight(node).expect("node not found");
+                self.facts.links.insert(url.clone());
+            }
+
+            // reverse again so that we can use the graph again
+            graph.reverse();
+        }
     }
 
     pub(crate) fn stack(&mut self) -> Result<Vec<VersionedUrl>, AnalysisError> {
@@ -198,12 +238,21 @@ impl UnificationAnalyzer {
                     .entry(url.clone())
                     .or_insert_with(|| graph.add_node(url));
 
-                for parent in entity.inherits_from().all_of() {
+                // need to clone here, as otherwise we borrow the cache mutable and immutable at the
+                // same time (through fetch)
+                let all_of = entity.inherits_from().all_of().to_vec();
+                for parent in all_of {
+                    let rhs = *lookup
+                        .entry(parent.url().clone())
+                        .or_insert_with(|| graph.add_node(parent.url().clone()));
+
+                    graph.add_edge(lhs, rhs, ());
+
                     if parent.url() == LINK_REF.url() {
                         continue;
                     }
 
-                    let result = self.fetch(&parent.url());
+                    let result = self.fetch(parent.url());
 
                     let Some(entry) = errors.push(result) else {
                         continue;
@@ -213,17 +262,18 @@ impl UnificationAnalyzer {
                         CacheResult::Miss(any) => stack.push(any.id().clone()),
                         CacheResult::Hit(_) => {}
                     }
-
-                    let rhs = *lookup
-                        .entry(parent.url().clone())
-                        .or_insert_with(|| graph.add_node(parent.url().clone()));
-
-                    graph.add_edge(lhs, rhs, ());
                 }
             }
         }
 
         errors.into_result()?;
+
+        self.gather_facts(&mut graph, &lookup);
+
+        // remove the LINK_REF node, it is only used to find all types that are links
+        if let Some(id) = lookup.get(LINK_REF.url()) {
+            graph.remove_node(*id);
+        }
 
         let mut topo = toposort(&graph, None)
             .map_err(|_error| Report::new(AnalysisError::UnificationCycle))?;
@@ -232,7 +282,7 @@ impl UnificationAnalyzer {
 
         Ok(topo
             .into_iter()
-            .map(|id| graph.node_weight(id).unwrap().clone())
+            .map(|id| graph.node_weight(id).expect("node not found").clone())
             .collect())
     }
 
@@ -241,7 +291,7 @@ impl UnificationAnalyzer {
         let stack = self.stack()?;
 
         for id in stack {
-            errors.push(self.unify(id));
+            errors.push(self.unify(&id));
         }
 
         errors.into_result()?;

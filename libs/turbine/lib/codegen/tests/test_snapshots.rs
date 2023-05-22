@@ -52,6 +52,7 @@ fn snapshots() {
         println!("Elapsed: {:?}", now.elapsed().unwrap());
 
         let output = output
+            .files
             .into_iter()
             .map(|(file, stream)| {
                 let mut command = Command::new("rustfmt")
