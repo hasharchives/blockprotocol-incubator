@@ -18,7 +18,7 @@ fn generate_find_inherits_from<'a>(
             let ident = quote!(crate #(:: #path)* :: #name);
 
             quote!(
-                #ident::ID => #ident::InheritsFrom::resolve().collect()
+                #ident::ID => <#ident as TypeUrl>::InheritsFrom::resolve().collect()
             )
         });
 

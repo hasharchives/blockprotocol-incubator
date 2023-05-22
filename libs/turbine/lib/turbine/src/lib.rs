@@ -27,7 +27,7 @@ pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
 pub use crate::hierarchy::TypeHierarchyResolution;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct BaseUrlRef<'a>(&'a str);
 
 impl<'a> BaseUrlRef<'a> {
@@ -56,7 +56,7 @@ impl<'a> BaseUrlRef<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct VersionedUrlRef<'a> {
     base: BaseUrlRef<'a>,
     version: u32,
