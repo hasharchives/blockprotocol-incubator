@@ -16,6 +16,7 @@ use std::{
     collections::BTreeMap,
     hash::{Hash, Hasher},
     path::PathBuf,
+    time::SystemTime,
 };
 
 use error_stack::{IntoReport, Result, ResultExt};
@@ -146,6 +147,7 @@ pub struct Config {
     pub module: Option<ModuleFlavor>,
     pub overrides: Vec<Override>,
     pub flavors: Vec<Flavor>,
+    pub timings: bool,
 }
 
 pub struct Output {
@@ -157,6 +159,7 @@ pub struct Output {
 ///
 /// if `AnyTypeRepr` is malformed, or an error occurred while generating code
 pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error> {
+    let now = SystemTime::now();
     let values: Result<Vec<_>, _> = values
         .into_iter()
         .map(|any| match any {
@@ -174,9 +177,18 @@ pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error
                 .change_context(Error::Parse),
         })
         .collect();
+    if config.timings {
+        let elapsed = now.elapsed();
+        tracing::info!(?elapsed, "converting types to internal representation");
+    }
 
+    let now = SystemTime::now();
     let analyzer = UnificationAnalyzer::new(values?);
     let (lookup, facts) = analyzer.run().change_context(Error::DependencyAnalysis)?;
+    if config.timings {
+        let elapsed = now.elapsed();
+        tracing::info!(?elapsed, "unifying types");
+    }
 
     let analyzer =
         DependencyAnalyzer::new(lookup.values()).change_context(Error::DependencyAnalysis)?;
@@ -195,6 +207,7 @@ pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error
     let mut files = BTreeMap::new();
     let mut entities = vec![];
 
+    let now = SystemTime::now();
     for value in lookup.values() {
         let location = names.location(value.id());
         let file = OutputPath {
@@ -202,6 +215,7 @@ pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error
             typed: location.path,
         };
 
+        let now = SystemTime::now();
         let contents = match value {
             AnyType::Data(data) => data::generate(data, &names),
             AnyType::Property(property) => Some(property::generate(property, &names)),
@@ -210,10 +224,27 @@ pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error
                 Some(entity::generate(entity, &names))
             }
         };
+        if config.timings {
+            let elapsed = now.elapsed();
+            tracing::info!(
+                ?elapsed,
+                "generating code for {} ({})",
+                value.title(),
+                match value {
+                    AnyType::Data(_) => "data",
+                    AnyType::Property(_) => "property",
+                    AnyType::Entity(_) => "entity",
+                }
+            );
+        }
 
         if let Some(contents) = contents {
             files.insert(file, contents);
         }
+    }
+    if config.timings {
+        let elapsed = now.elapsed();
+        tracing::info!(?elapsed, "generating code");
     }
 
     Ok(Output {

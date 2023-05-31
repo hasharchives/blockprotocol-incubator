@@ -1,6 +1,7 @@
 use std::{
     fmt::{Display, Formatter},
     path::PathBuf,
+    time::SystemTime,
 };
 
 use clap::{Args, ValueEnum, ValueHint};
@@ -14,6 +15,7 @@ use reqwest::blocking::Client;
 use serde_json::{json, Value};
 use skeletor::Style;
 use thiserror::Error;
+use tracing_subscriber::EnvFilter;
 use url::Url;
 
 #[derive(ValueEnum, Copy, Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -67,6 +69,9 @@ pub(crate) struct Lib {
 
     #[arg(long)]
     force: Option<bool>,
+
+    #[arg(long)]
+    timings: Option<bool>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -246,6 +251,8 @@ pub(crate) struct Config {
 
     #[serde(default)]
     force: bool,
+    #[serde(default)]
+    timings: bool,
 
     turbine: Option<Dependency>,
 }
@@ -257,6 +264,7 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         style,
         name,
         force,
+        timings,
     } = lib;
 
     let mut figment = Figment::new();
@@ -297,6 +305,9 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
     if let Some(force) = force {
         figment = figment.merge(("force", figment::value::Value::from(force)));
     }
+    if let Some(timings) = timings {
+        figment = figment.merge(("timings", figment::value::Value::from(timings)));
+    }
 
     if let Some(profile) = Profile::from_env("TURBINE_PROFILE") {
         figment = figment.select(profile);
@@ -306,9 +317,16 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
 }
 
 pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
+    tracing_subscriber::fmt()
+        .pretty()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let config = load_config(lib)
         .into_report()
         .change_context(Error::Config)?;
+
+    let now = SystemTime::now();
 
     let types = match config.origin {
         Origin::Remote(remote) => call_remote(&remote)?,
@@ -323,6 +341,11 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
         }
     };
 
+    if config.timings {
+        let elapsed = now.elapsed();
+        tracing::info!(?elapsed, "fetching types");
+    }
+
     skeletor::generate(types, skeletor::Config {
         root: config.root,
         style: config.style.into(),
@@ -332,6 +355,7 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
         flavors: config.flavors,
 
         force: config.force,
+        timings: config.timings,
 
         turbine: config.turbine.unwrap_or_default().into(),
     })
