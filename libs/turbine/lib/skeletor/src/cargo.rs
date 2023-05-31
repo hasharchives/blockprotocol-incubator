@@ -146,5 +146,28 @@ struct CargoTemplate {
     versions: Versions,
 }
 
-#[cfg(test)]
-mod tests {}
+pub(crate) fn generate(config: &mut Config) -> Result<String, Error> {
+    config.turbine.make_relative_to(&config.root);
+
+    let versions = Versions::latest(config)?;
+
+    let name = config
+        .name
+        .clone()
+        .or_else(|| {
+            config
+                .root
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
+        .ok_or_else(|| Report::new(Error::Name))?;
+
+    let template = CargoTemplate { name, versions };
+
+    let cargo = template
+        .render()
+        .into_report()
+        .change_context(Error::Template)?;
+
+    Ok(cargo)
+}

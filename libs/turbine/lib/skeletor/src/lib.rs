@@ -11,7 +11,7 @@ use std::{
 };
 
 use ::cargo::{
-    core::{SourceId, Workspace},
+    core::{resolve_relative_path, SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
         NewOptions, VersionControl,
@@ -21,6 +21,7 @@ use ::cargo::{
 use codegen::{AnyTypeRepr, Flavor, ModuleFlavor, Output, Override};
 use error_stack::{IntoReport, IntoReportCompat, Result, ResultExt};
 use onlyerror::Error;
+use pathdiff::diff_paths;
 
 use crate::vfs::VirtualFolder;
 
@@ -34,6 +35,23 @@ pub enum Dependency {
         tag: Option<String>,
     },
     CratesIo,
+}
+
+impl Dependency {
+    pub(crate) fn make_relative_to(&mut self, parent: &Path) {
+        if let Self::Path(path) = self {
+            let cwd = std::env::current_dir().expect("unable to get current directory");
+
+            let canon = cwd
+                .join(path)
+                .canonicalize()
+                .expect("unable to canonicalize path");
+
+            *path = diff_paths(canon, parent)
+                .expect("unable to diff paths")
+                .to_path_buf();
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -63,6 +81,14 @@ pub struct Config {
     pub turbine: Dependency,
 }
 
+impl Config {
+    fn resolve(&mut self) {
+        self.root
+            .canonicalize()
+            .expect("unable to canonicalize root");
+    }
+}
+
 #[derive(Debug, Copy, Clone, Error)]
 pub enum Error {
     #[error("unable to generate code")]
@@ -79,6 +105,10 @@ pub enum Error {
     Http,
     #[error("serde error")]
     Serde,
+    #[error("unable to determine crate name")]
+    Name,
+    #[error("template error")]
+    Template,
 }
 
 #[allow(clippy::too_many_lines)]
