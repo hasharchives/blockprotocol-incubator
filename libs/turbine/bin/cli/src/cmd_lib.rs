@@ -264,9 +264,16 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
     for name in &["turbine", ".turbine"] {
         figment = figment.merge(Toml::file(format!("{name}.toml")));
 
-        for profile in &["prod", "dev", "test"] {
-            let path = format!("{name}.{profile}.toml");
-            figment = figment.merge(Toml::file(path).profile(Profile::const_new(profile)));
+        for (abbreviation, name) in &[
+            ("prod", "production"),
+            ("production", "production"),
+            ("dev", "development"),
+            ("devel", "development"),
+            ("development", "development"),
+            ("test", "test"),
+        ] {
+            let path = format!("{name}.{abbreviation}.toml");
+            figment = figment.merge(Toml::file(path).profile(Profile::const_new(name)));
         }
     }
 
