@@ -262,7 +262,7 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
     let mut figment = Figment::new()
         .merge(Toml::file("turbine.toml"))
         .merge(Toml::file(".turbine.toml"))
-        .merge(Env::prefixed("TURBINE_"));
+        .merge(Env::prefixed("TURBINE_").split("__").global());
 
     if let Some(root) = root {
         figment = figment.merge(("root".to_owned(), figment::value::Value::serialize(root)?));
