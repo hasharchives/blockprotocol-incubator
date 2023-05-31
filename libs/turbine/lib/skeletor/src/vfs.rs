@@ -167,6 +167,7 @@ impl VirtualFolder {
             #![allow(clippy::undocumented_unsafe_blocks)] // present in the code generator
             #![allow(clippy::missing_safety_doc)] // present in the code generator
             #![allow(unused_imports)]
+            #![allow(unused_variables)]
 
             use turbine::TypeUrl;
             use turbine::TypeHierarchyResolution as _;
