@@ -259,16 +259,18 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         force,
     } = lib;
 
-    let mut figment = Figment::new()
-        .merge(Toml::file("turbine.toml"))
-        .merge(Toml::file("turbine.prod.toml").profile(Profile::const_new("production")))
-        .merge(Toml::file("turbine.dev.toml").profile(Profile::const_new("development")))
-        .merge(Toml::file("turbine.test.toml").profile(Profile::const_new("test")))
-        .merge(Toml::file(".turbine.toml"))
-        .merge(Toml::file(".turbine.prod.toml").profile(Profile::const_new("production")))
-        .merge(Toml::file(".turbine.dev.toml").profile(Profile::const_new("development")))
-        .merge(Toml::file(".turbine.test.toml").profile(Profile::const_new("test")))
-        .merge(Env::prefixed("TURBINE_").split("__").global());
+    let mut figment = Figment::new();
+
+    for name in &["turbine", ".turbine"] {
+        figment = figment.merge(Toml::file(format!("{name}.toml")));
+
+        for profile in &["prod", "dev", "test"] {
+            let path = format!("{name}.{profile}.toml");
+            figment = figment.merge(Toml::file(path).profile(Profile::const_new(profile)));
+        }
+    }
+
+    figment = figment.merge(Env::prefixed("TURBINE_").split("__").global());
 
     if let Some(root) = root {
         figment = figment.merge(("root".to_owned(), figment::value::Value::serialize(root)?));
