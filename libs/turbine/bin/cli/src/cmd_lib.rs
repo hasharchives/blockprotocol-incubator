@@ -8,7 +8,7 @@ use codegen::{AnyTypeRepr, Flavor, Override};
 use error_stack::{IntoReport, Result, ResultExt};
 use figment::{
     providers::{Env, Format, Toml},
-    Figment,
+    Figment, Profile,
 };
 use reqwest::blocking::Client;
 use serde_json::{json, Value};
@@ -261,6 +261,7 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
 
     let mut figment = Figment::new()
         .merge(Toml::file("turbine.toml"))
+        .merge(Toml::file("turbine.prod.toml").profile(Profile::const_new("production")))
         .merge(Toml::file(".turbine.toml"))
         .merge(Env::prefixed("TURBINE_").split("__").global());
 
@@ -281,6 +282,10 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
     }
     if let Some(force) = force {
         figment = figment.merge(("force", figment::value::Value::from(force)));
+    }
+
+    if let Some(profile) = Profile::from_env("TURBINE_PROFILE") {
+        figment = figment.select(profile);
     }
 
     figment.extract()
