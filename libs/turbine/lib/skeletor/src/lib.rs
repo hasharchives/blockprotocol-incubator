@@ -1,5 +1,6 @@
 #![feature(error_in_core)]
 
+mod cargo;
 mod vfs;
 
 use std::{
@@ -9,7 +10,7 @@ use std::{
     process::Command,
 };
 
-use cargo::{
+use ::cargo::{
     core::{SourceId, Workspace},
     ops::{
         cargo_add::{AddOptions, DepOp},
@@ -74,6 +75,10 @@ pub enum Error {
     Io,
     #[error("format error")]
     Format,
+    #[error("http error")]
+    Http,
+    #[error("serde error")]
+    Serde,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -82,7 +87,7 @@ fn setup(
     name: Option<String>,
     force: bool,
     turbine: Dependency,
-) -> Result<(PathBuf, cargo::Config), Error> {
+) -> Result<(PathBuf, ::cargo::Config), Error> {
     let root = root.as_ref();
 
     if force && root.exists() {
@@ -109,11 +114,11 @@ fn setup(
     )
     .into_report()
     .change_context(Error::Cargo)?;
-    let cargo_config = cargo::Config::default()
+    let cargo_config = ::cargo::Config::default()
         .into_report()
         .change_context(Error::Cargo)?;
 
-    cargo::ops::init(&cargo_init, &cargo_config)
+    ::cargo::ops::init(&cargo_init, &cargo_config)
         .into_report()
         .change_context(Error::Cargo)?;
 
@@ -121,7 +126,7 @@ fn setup(
         .into_report()
         .change_context(Error::Cargo)?;
     let (package, _) =
-        cargo::ops::read_package(&abs_root.join("Cargo.toml"), source_id, &cargo_config)
+        ::cargo::ops::read_package(&abs_root.join("Cargo.toml"), source_id, &cargo_config)
             .into_report()
             .change_context(Error::Cargo)?;
 
@@ -229,7 +234,7 @@ fn setup(
         dry_run: false,
     };
 
-    cargo::ops::cargo_add::add(&workspace, &cargo_add)
+    ::cargo::ops::cargo_add::add(&workspace, &cargo_add)
         .into_report()
         .change_context(Error::Cargo)?;
 
