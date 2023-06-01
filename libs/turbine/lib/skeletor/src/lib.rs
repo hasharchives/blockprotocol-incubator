@@ -65,7 +65,9 @@ pub struct Config {
 
     pub overrides: Vec<Override>,
     pub flavors: Vec<Flavor>,
+
     pub force: bool,
+    pub timings: bool,
 
     pub turbine: Dependency,
 }
@@ -112,6 +114,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, mut config: Config) -> Result<(), Error
         module: Some(config.style.into()),
         overrides: config.overrides,
         flavors: config.flavors,
+        timings: config.timings,
     })
     .change_context(Error::Codegen)?;
 
