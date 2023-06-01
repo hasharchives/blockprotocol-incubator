@@ -1,4 +1,7 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    path::Path,
+};
 
 use askama::Template;
 use error_stack::{IntoReport, Report, Result, ResultExt};
@@ -12,19 +15,47 @@ struct Index {
     version: String,
 }
 
+/// Implementation of the registry index
+///
+/// This is an implementation of the protocol discussed in <https://doc.rust-lang.org/cargo/reference/registry-index.html>
 fn fetch_version(name: &str) -> Result<String, Error> {
     let url = Url::parse("https://index.crates.io/").expect("failed to parse url");
 
-    #[allow(clippy::string_slice)]
     let url = match name.len() {
         1 => url.join(&format!("1/{name}")).expect("failed to join url"),
         2 => url.join(&format!("2/{name}")).expect("failed to join url"),
-        3 => url
-            .join(&format!("3/{}/{}", &name[..1], name))
-            .expect("failed to join url"),
-        _ => url
-            .join(&format!("{}/{}/{}", &name[..2], &name[2..4], name))
-            .expect("failed to join url"),
+        3 => {
+            // longer than 3 chars, so we are always able to get the first char
+            let (index, _) = name
+                .char_indices()
+                .nth(1)
+                .expect("failed to get char index");
+
+            #[allow(clippy::string_slice)] // False-Positive, from trusted source
+            url.join(&format!("3/{}/{name}", &name[..index]))
+                .expect("failed to join url")
+        }
+        _ => {
+            // longer than 4 chars, so we are always able to get the first two chars (and four
+            // chars)
+            let (prefix1, _) = name
+                .char_indices()
+                .nth(2)
+                .expect("failed to get char index");
+            let prefix2 = name
+                .char_indices()
+                .nth(4)
+                .map_or_else(|| name.len() + 1, |(index, _)| index);
+
+            #[allow(clippy::string_slice)] // False-Positive, from trusted source
+            url.join(&format!(
+                "{}/{}/{}",
+                &name[..prefix1],
+                &name[prefix1..prefix2],
+                name
+            ))
+            .expect("failed to join url")
+        }
     };
 
     let response = reqwest::blocking::get(url)
@@ -46,7 +77,7 @@ fn fetch_version(name: &str) -> Result<String, Error> {
 }
 
 #[derive(Debug, Clone)]
-pub enum TurbineVersion {
+enum TurbineVersion {
     Path(String),
     Git {
         url: String,
@@ -141,33 +172,88 @@ impl Versions {
 
 #[derive(Debug, Template)]
 #[template(path = "Cargo.toml.askama", escape = "none")]
-struct CargoTemplate {
+struct CargoToml {
     name: String,
     versions: Versions,
 }
 
-pub(crate) fn generate(config: &mut Config) -> Result<String, Error> {
-    config.turbine.make_relative_to(&config.root);
+impl CargoToml {
+    fn render_from_config(config: &mut Config) -> Result<String, Error> {
+        config.turbine.make_relative_to(&config.root);
 
-    let versions = Versions::latest(config)?;
+        let versions = Versions::latest(config)?;
 
-    let name = config
-        .name
-        .clone()
-        .or_else(|| {
-            config
-                .root
-                .file_name()
-                .map(|name| name.to_string_lossy().into_owned())
-        })
-        .ok_or_else(|| Report::new(Error::Name))?;
+        let name = config
+            .name
+            .clone()
+            .or_else(|| {
+                config
+                    .root
+                    .file_name()
+                    .map(|name| name.to_string_lossy().into_owned())
+            })
+            .ok_or_else(|| Report::new(Error::Name))?;
 
-    let template = CargoTemplate { name, versions };
+        let template = Self { name, versions };
 
-    let cargo = template
-        .render()
+        let cargo = template
+            .render()
+            .into_report()
+            .change_context(Error::Template)?;
+
+        Ok(cargo)
+    }
+}
+
+fn is_empty(path: &Path) -> bool {
+    if let Ok(entries) = std::fs::read_dir(path) {
+        return entries.count() == 0;
+    }
+
+    false
+}
+
+pub(crate) fn init(config: &mut Config) -> Result<(), Error> {
+    config.resolve();
+
+    // if config is not force, and the folder already exists (and is not empty), we abort
+    if !config.force && config.root.exists() && !is_empty(&config.root) {
+        return Err(Report::new(Error::Exists));
+    }
+
+    // if the folder already exists, and we are in force mode, we delete it first, this way we
+    // ensure that we work with a blank slate
+    if config.force && config.root.exists() {
+        std::fs::remove_dir_all(&config.root)
+            .into_report()
+            .change_context(Error::Io)?;
+    }
+
+    // to create a new library we need:
+    // A) a Cargo.toml file
+    // B) a src/lib.rs file
+
+    // create folder if it doesn't exist
+    if !config.root.exists() {
+        std::fs::create_dir_all(&config.root)
+            .into_report()
+            .change_context(Error::Io)?;
+    }
+
+    // create Cargo.toml file
+    let cargo = CargoToml::render_from_config(config)?;
+    let cargo_path = config.root.join("Cargo.toml");
+    std::fs::write(cargo_path, cargo)
         .into_report()
-        .change_context(Error::Template)?;
+        .change_context(Error::Io)?;
 
-    Ok(cargo)
+    // create src/lib.rs file
+    // the contents of this file are going to be generated by turbine, therefore we simply leave it
+    // empty. This ensures that we do not leave a broken library behind if the process fails.
+    let lib_path = config.root.join("src").join("lib.rs");
+    std::fs::write(lib_path, "")
+        .into_report()
+        .change_context(Error::Io)?;
+
+    Ok(())
 }
