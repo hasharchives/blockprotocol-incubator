@@ -57,7 +57,9 @@ pub struct Config {
 
     pub overrides: Vec<Override>,
     pub flavors: Vec<Flavor>,
+
     pub force: bool,
+    pub timings: bool,
 
     pub turbine: Dependency,
 }
@@ -236,6 +238,9 @@ fn setup(
     Ok((abs_root, cargo_config))
 }
 
+/// # Errors
+///
+/// Will return an error if the codegen fails or if the setup fails.
 pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
     let Output {
         files: types,
@@ -244,6 +249,7 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         module: Some(config.style.into()),
         overrides: config.overrides,
         flavors: config.flavors,
+        timings: config.timings,
     })
     .change_context(Error::Codegen)?;
 
@@ -263,24 +269,6 @@ pub fn generate(types: Vec<AnyTypeRepr>, config: Config) -> Result<(), Error> {
         .output(config.root.join("src"))
         .into_report()
         .change_context(Error::Io)?;
-
-    // let workspace = Workspace::new(&abs_root.join("Cargo.toml"), &cargo_config)
-    //     .into_report()
-    //     .change_context(Error::Codegen)?;
-
-    // cargo::ops::fix(&workspace, &mut FixOptions {
-    //     edition: true,
-    //     idioms: true,
-    //     compile_opts: CompileOptions::new(&cargo_config, CompileMode::Check { test: true })
-    //         .into_report()
-    //         .change_context(Error::Codegen)?,
-    //     allow_dirty: true,
-    //     allow_no_vcs: true,
-    //     allow_staged: true,
-    //     broken_code: false,
-    // })
-    // .into_report()
-    // .change_context(Error::Codegen)?;
 
     let mut child = Command::new("cargo-fmt")
         .arg("--all")
