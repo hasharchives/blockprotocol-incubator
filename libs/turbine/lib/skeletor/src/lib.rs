@@ -104,6 +104,15 @@ pub enum Error {
     Exists,
 }
 
+/// # Errors
+///
+/// This function will return an error if:
+/// * The codegen process fails
+/// * Unable to contact crates.io
+/// * Unable to canonicalize the root path
+/// * Unable to determine the crate name
+/// * Unable to create the crate
+/// * Unable to format the crate
 pub fn generate(types: Vec<AnyTypeRepr>, mut config: Config) -> Result<(), Error> {
     cargo::init(&mut config)?;
 
