@@ -223,7 +223,7 @@ fn is_empty(path: &Path) -> bool {
 }
 
 pub(crate) fn init(config: &mut Config) -> Result<(), Error> {
-    config.resolve();
+    config.normalize();
 
     // if config is not force, and the folder already exists (and is not empty), we abort
     if !config.force && config.root.exists() && !is_empty(&config.root) {
