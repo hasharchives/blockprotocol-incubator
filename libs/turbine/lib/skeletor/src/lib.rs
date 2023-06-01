@@ -5,7 +5,7 @@ mod vfs;
 
 use std::{
     collections::VecDeque,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     process::Command,
 };
 
@@ -15,6 +15,34 @@ use onlyerror::Error;
 use pathdiff::diff_paths;
 
 use crate::vfs::VirtualFolder;
+
+// https://github.com/rust-lang/cargo/blob/809b720f05494388cbd54e3a9e7dedd8b3fc13e3/crates/cargo-util/src/paths.rs#L84
+pub(crate) fn normalize_path(path: &Path) -> PathBuf {
+    let mut components = path.components().peekable();
+    let mut ret = if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
+        components.next();
+        PathBuf::from(c.as_os_str())
+    } else {
+        PathBuf::new()
+    };
+
+    for component in components {
+        match component {
+            Component::Prefix(..) => unreachable!(),
+            Component::RootDir => {
+                ret.push(component.as_os_str());
+            }
+            Component::CurDir => {}
+            Component::ParentDir => {
+                ret.pop();
+            }
+            Component::Normal(c) => {
+                ret.push(c);
+            }
+        }
+    }
+    ret
+}
 
 #[derive(Debug, Clone)]
 pub enum Dependency {
@@ -33,12 +61,12 @@ impl Dependency {
         if let Self::Path(path) = self {
             let cwd = std::env::current_dir().expect("unable to get current directory");
 
-            let canon = cwd
+            let canonical = cwd
                 .join(&*path)
                 .canonicalize()
                 .expect("unable to canonicalize path");
 
-            *path = diff_paths(canon, parent).expect("unable to diff paths");
+            *path = diff_paths(canonical, parent).expect("unable to diff paths");
         }
     }
 }
@@ -73,10 +101,8 @@ pub struct Config {
 }
 
 impl Config {
-    fn resolve(&mut self) {
-        self.root
-            .canonicalize()
-            .expect("unable to canonicalize root");
+    fn normalize(&mut self) {
+        self.root = normalize_path(&self.root);
     }
 }
 
@@ -109,10 +135,10 @@ pub enum Error {
 /// This function will return an error if:
 /// * The codegen process fails
 /// * Unable to contact crates.io
-/// * Unable to canonicalize the root path
 /// * Unable to determine the crate name
 /// * Unable to create the crate
 /// * Unable to format the crate
+/// * Turbine library path does not exist
 pub fn generate(types: Vec<AnyTypeRepr>, mut config: Config) -> Result<(), Error> {
     cargo::init(&mut config)?;
 
