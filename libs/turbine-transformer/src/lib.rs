@@ -5,27 +5,26 @@ mod reachable;
 extern crate alloc;
 
 use alloc::collections::{BTreeMap, BTreeSet};
-use petgraph::Graph;
-use petgraph::graph::NodeIndex;
-use petgraph::visit::NodeFiltered;
+
+use petgraph::{graph::NodeIndex, visit::NodeFiltered, Graph};
 use turbine::entity::{Entity, EntityId, EntityVertex};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityNode {
-    id: EntityId
+    id: EntityId,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LinkEdge {
     Left,
-    Right
+    Right,
 }
 
 pub struct View {
     graph: Graph<EntityNode, LinkEdge>,
 
     lookup: BTreeMap<EntityId, NodeIndex>,
-    exclude: BTreeSet<NodeIndex>
+    exclude: BTreeSet<NodeIndex>,
 }
 
 impl View {
@@ -33,7 +32,7 @@ impl View {
         Self {
             graph: Graph::new(),
             lookup: BTreeMap::new(),
-            exclude: BTreeSet::new()
+            exclude: BTreeSet::new(),
         }
     }
 
@@ -42,9 +41,7 @@ impl View {
             return *node;
         }
 
-        let node = self.graph.add_node(EntityNode {
-            id: entity
-        });
+        let node = self.graph.add_node(EntityNode { id: entity });
 
         self.lookup.insert(entity, node);
 
