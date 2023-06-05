@@ -15,14 +15,14 @@ pub enum ReachableError {
 impl Display for ReachableError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::NotFound(id) => write!(f, "entity not found: {}", id),
+            Self::NotFound(id) => write!(f, "entity not found: {id}"),
         }
     }
 }
 
 impl core::error::Error for ReachableError {}
 
-impl View {
+impl View<'_> {
     /// Reduce the view to only the entities reachable from the given roots
     ///
     /// Internally this uses a depth-first search to find all reachable nodes, in contrast to
@@ -56,10 +56,14 @@ impl View {
             let exclude = &discovered | &self.exclude;
             neighbours = &neighbours - &exclude;
 
-            stack.extend(neighbours);
-            neighbours.clear();
+            stack.extend(
+                neighbours
+                    .into_iter()
+                    .filter_map(|index| self.graph.node_weight(index).map(|node| node.id)),
+            );
         }
 
+        self.exclude_complement(&discovered);
         Ok(())
     }
 
@@ -93,10 +97,14 @@ impl View {
             let exclude = &discovered | &self.exclude;
             neighbours = &neighbours - &exclude;
 
-            stack.extend(neighbours);
-            neighbours.clear();
+            stack.extend(
+                neighbours
+                    .into_iter()
+                    .filter_map(|index| self.graph.node_weight(index).map(|node| node.id)),
+            );
         }
 
+        self.exclude_complement(&discovered);
         Ok(())
     }
 }
