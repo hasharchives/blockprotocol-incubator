@@ -1,5 +1,7 @@
 #![no_std]
 
+mod reachable;
+
 extern crate alloc;
 
 use alloc::collections::{BTreeMap, BTreeSet};
@@ -49,7 +51,14 @@ impl View {
         node
     }
 
-    fn new(entities: &[Entity]) -> Self {
+    fn exclude_complement(&mut self, nodes: BTreeSet<NodeIndex>) {
+        let indices: BTreeSet<_> = self.graph.node_indices().collect();
+
+        let complement = &indices - &nodes;
+        self.exclude = complement;
+    }
+
+    pub fn new(entities: &[Entity]) -> Self {
         let mut this = Self::empty();
 
         for entity in entities {
