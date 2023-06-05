@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(error_in_core)]
 
+mod mutate;
 mod reachable;
 mod select;
 
@@ -71,19 +72,18 @@ impl<'a> View<'a> {
             return node;
         }
 
-        let node = if let Some(entity) = entity {
-            EntityNode {
-                id,
-                type_: Some(&entity.metadata.entity_type_id),
-                link_data: entity.link_data.as_ref(),
-            }
-        } else {
+        let node = entity.map_or(
             EntityNode {
                 id,
                 type_: None,
                 link_data: None,
-            }
-        };
+            },
+            |entity| EntityNode {
+                id,
+                type_: Some(&entity.metadata.entity_type_id),
+                link_data: entity.link_data.as_ref(),
+            },
+        );
 
         let node = self.graph.add_node(node);
         self.lookup.insert(id, node);
@@ -118,6 +118,19 @@ impl<'a> View<'a> {
         }
 
         this
+    }
+
+    pub fn filter(
+        self,
+        entities: impl Iterator<Item = &'a Entity>,
+    ) -> impl Iterator<Item = &'a Entity> {
+        entities.filter(move |entity| {
+            let Some(node) = self.lookup.get(&entity.metadata.record_id.entity_id) else {
+                return false;
+            };
+
+            !self.exclude.contains(node)
+        })
     }
 }
 
