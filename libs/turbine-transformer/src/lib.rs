@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(error_in_core)]
 
 mod reachable;
 
@@ -6,8 +7,8 @@ extern crate alloc;
 
 use alloc::collections::{BTreeMap, BTreeSet};
 
-use petgraph::{graph::NodeIndex, visit::NodeFiltered, Graph};
-use turbine::entity::{Entity, EntityId, EntityVertex};
+use petgraph::{graph::NodeIndex, Graph};
+use turbine::entity::{Entity, EntityId};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityNode {
