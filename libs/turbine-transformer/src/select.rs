@@ -1,19 +1,24 @@
-use alloc::{collections::BTreeSet, vec::Vec};
+use alloc::{boxed::Box, collections::BTreeSet, vec, vec::Vec};
 
 use petgraph::{graph::NodeIndex, visit::IntoNodeReferences};
 use turbine::{entity::EntityId, TypeUrl, VersionedUrlRef};
 
 use crate::{EntityNode, View};
 
+type DynamicMatch<'a> = dyn Fn(&View, &EntityNode) -> bool + 'a;
+type BoxedDynamicMatch = Box<DynamicMatch<'static>>;
+
 pub struct Matches<'a> {
     ids: BTreeSet<EntityId>,
     types: BTreeSet<VersionedUrlRef<'static>>,
 
     inherits_from: BTreeSet<VersionedUrlRef<'a>>,
+
+    dynamic: Option<BoxedDynamicMatch>,
 }
 
 impl Matches<'_> {
-    fn matches(&self, view: &View, node: &EntityNode) -> bool {
+    pub(crate) fn matches(&self, view: &View, node: &EntityNode) -> bool {
         if self.ids.contains(&node.id) {
             return true;
         }
@@ -29,7 +34,17 @@ impl Matches<'_> {
         let inherits_from = (view.lookup_inherits_from)(VersionedUrlRef::from(type_));
 
         let common = self.inherits_from.intersection(&inherits_from).count();
-        common > 0
+        if common > 0 {
+            return true;
+        }
+
+        // due to dynamic dispatch this is slow, so do it last, also we don't know the computational
+        // complexity of the closure provided.
+        if let Some(dynamic) = &self.dynamic {
+            return dynamic(view, node);
+        }
+
+        false
     }
 
     #[must_use]
@@ -38,6 +53,7 @@ impl Matches<'_> {
             ids: BTreeSet::new(),
             types: BTreeSet::new(),
             inherits_from: BTreeSet::new(),
+            dynamic: None,
         }
     }
 
@@ -55,70 +71,160 @@ impl Matches<'_> {
         self.inherits_from.insert(T::ID);
         self
     }
+
+    pub fn or_dynamic(mut self, f: impl Fn(&View, &EntityNode) -> bool + 'static) -> Self {
+        self.dynamic = Some(Box::new(f));
+        self
+    }
 }
 
 impl<'a> Matches<'a> {
-    pub fn or(mut self, other: Matches<'a>) -> Self {
-        self.ids.extend(other.ids);
-        self.types.extend(other.types);
-        self.inherits_from.extend(other.inherits_from);
+    pub fn or(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
+        let this = Clause::Matches(self);
+        let other = other.into();
 
-        self
+        if let Clause::All(mut clauses) = other {
+            clauses.insert(0, this);
+            Clause::All(clauses)
+        } else {
+            Clause::All(vec![this, other])
+        }
+    }
+
+    pub fn and(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
+        let this = Clause::Matches(self);
+        let other = other.into();
+
+        if let Clause::All(mut clauses) = other {
+            clauses.insert(0, this);
+            Clause::All(clauses)
+        } else {
+            Clause::All(vec![this, other])
+        }
+    }
+
+    pub fn not(self) -> Clause<'a> {
+        Clause::Not(Box::new(Clause::Matches(self)))
     }
 
     pub fn with_links(self) -> Statement<'a> {
         Statement::from(self)
     }
+
+    pub fn into_statement(self) -> Statement<'a> {
+        Statement::from(self)
+    }
+}
+
+pub enum Clause<'a> {
+    /// If empty, always true.
+    All(Vec<Clause<'a>>),
+    /// If empty, always false.
+    Any(Vec<Clause<'a>>),
+    Not(Box<Clause<'a>>),
+
+    Matches(Matches<'a>),
+}
+
+impl Clause<'_> {
+    pub fn matches(&self, view: &View, node: &EntityNode) -> bool {
+        match self {
+            Self::All(clauses) => clauses.iter().all(|c| c.matches(view, node)),
+            Self::Any(clauses) => clauses.iter().any(|c| c.matches(view, node)),
+            Self::Not(clause) => !clause.matches(view, node),
+
+            Self::Matches(matches) => matches.matches(view, node),
+        }
+    }
+
+    pub fn or(self, other: impl Into<Self>) -> Self {
+        let other = other.into();
+
+        if let Self::Any(mut clauses) = self {
+            clauses.push(other);
+            return Self::Any(clauses);
+        }
+
+        Self::Any(vec![self, other])
+    }
+
+    pub fn and(self, other: impl Into<Self>) -> Self {
+        let other = other.into();
+
+        if let Self::All(mut clauses) = self {
+            clauses.push(other);
+            return Self::All(clauses);
+        }
+
+        Self::All(vec![self, other])
+    }
+
+    pub fn not(self) -> Self {
+        Self::Not(Box::new(self))
+    }
+}
+
+impl<'a> Clause<'a> {
+    pub fn with_links(self) -> Statement<'a> {
+        Statement::from(self)
+    }
+
+    pub fn into_statement(self) -> Statement<'a> {
+        Statement::from(self)
+    }
+}
+
+impl<'a> From<Matches<'a>> for Clause<'a> {
+    fn from(value: Matches<'a>) -> Self {
+        Self::Matches(value)
+    }
 }
 
 pub struct Statement<'a> {
-    if_: Matches<'a>,
+    if_: Clause<'a>,
 
-    left: Option<Matches<'a>>,
-    right: Option<Matches<'a>>,
+    left: Option<Clause<'a>>,
+    right: Option<Clause<'a>>,
 }
 
 impl<'a> Statement<'a> {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            if_: Matches::new(),
+            if_: Clause::All(Vec::new()),
             left: None,
             right: None,
         }
     }
 
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // Reason: false-positive
-    pub fn with_if(mut self, if_: Matches<'a>) -> Self {
-        self.if_ = if_;
+    pub fn with_if(mut self, if_: impl Into<Clause<'a>>) -> Self {
+        self.if_ = if_.into();
         self
     }
 
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // Reason: false-positive
-    pub fn with_left(mut self, left: Matches<'a>) -> Self {
-        self.left = Some(left);
+    pub fn with_left(mut self, left: impl Into<Clause<'a>>) -> Self {
+        self.left = Some(left.into());
         self
     }
 
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // Reason: false-positive
-    pub fn with_right(mut self, right: Matches<'a>) -> Self {
-        self.right = Some(right);
+    pub fn with_right(mut self, right: impl Into<Clause<'a>>) -> Self {
+        self.right = Some(right.into());
         self
     }
 
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // Reason: false-positive
-    pub fn or_if(mut self, if_: Matches<'a>) -> Self {
+    pub fn or_if(mut self, if_: impl Into<Clause<'a>>) -> Self {
         self.if_ = self.if_.or(if_);
         self
     }
 
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // Reason: false-positive
-    pub fn or_left(mut self, left: Matches<'a>) -> Self {
+    pub fn or_left(mut self, left: impl Into<Clause<'a>>) -> Self {
+        let left = left.into();
+
         if let Some(this_left) = self.left {
             self.left = Some(this_left.or(left));
         } else {
@@ -128,8 +234,9 @@ impl<'a> Statement<'a> {
     }
 
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // Reason: false-positive
-    pub fn or_right(mut self, right: Matches<'a>) -> Self {
+    pub fn or_right(mut self, right: impl Into<Clause<'a>>) -> Self {
+        let right = right.into();
+
         if let Some(this_right) = self.right {
             self.right = Some(this_right.or(right));
         } else {
@@ -141,6 +248,12 @@ impl<'a> Statement<'a> {
 
 impl<'a> From<Matches<'a>> for Statement<'a> {
     fn from(value: Matches<'a>) -> Self {
+        Self::from(Clause::from(value))
+    }
+}
+
+impl<'a> From<Clause<'a>> for Statement<'a> {
+    fn from(value: Clause<'a>) -> Self {
         Self {
             if_: value,
             left: None,
@@ -154,7 +267,7 @@ struct Select<'a> {
 }
 
 impl Select<'_> {
-    fn eval_link(view: &View, link: Option<EntityId>, if_: Option<&Matches>) -> bool {
+    fn eval_link(view: &View, link: Option<EntityId>, if_: Option<&Clause>) -> bool {
         let Some(if_) = if_ else {
             // completely skip checks for links if we have no if_ statement
             // important(!) we do not check if link is None here, as we want to allow both
