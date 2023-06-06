@@ -10,7 +10,7 @@ extern crate alloc;
 
 use alloc::collections::{BTreeMap, BTreeSet};
 
-use petgraph::{graph::NodeIndex, Graph};
+use petgraph::{Graph, graph::NodeIndex};
 use turbine::{
     entity::{Entity, EntityId, LinkData},
     VersionedUrl, VersionedUrlRef,
