@@ -6,7 +6,7 @@
 
 extern crate alloc;
 
-use alloc::borrow::ToOwned;
+use alloc::borrow::{Cow, ToOwned};
 use core::fmt;
 
 use error_stack::{Context, Result};
@@ -18,6 +18,7 @@ use crate::entity::{Entity, LinkData};
 pub mod entity;
 mod error;
 mod hierarchy;
+pub mod path;
 mod polyfill;
 mod serialize;
 pub mod types;
@@ -26,6 +27,7 @@ pub use error::{GenericEntityError, GenericPropertyError};
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
 pub use crate::hierarchy::TypeHierarchyResolution;
+use crate::path::EntityPath;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct BaseUrlRef<'a>(&'a str);
@@ -140,20 +142,24 @@ pub trait TypeUrl {
     const ID: VersionedUrlRef<'static>;
 }
 
-pub trait TypeRef: TypeUrl + Sized {
+pub trait TypePath {
+    type Path: Into<EntityPath<'static>>;
+}
+
+pub trait TypeRef: TypeUrl + TypePath + Sized {
     type Owned;
 
     // called into_owned instead of to_owned to prevent confusion
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait TypeMut: TypeUrl + Sized {
+pub trait TypeMut: TypeUrl + TypePath + Sized {
     type Owned;
 
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait Type: TypeUrl + Sized {
+pub trait Type: TypeUrl + TypePath + Sized {
     type Mut<'a>: TypeMut<Owned = Self>
     where
         Self: 'a;

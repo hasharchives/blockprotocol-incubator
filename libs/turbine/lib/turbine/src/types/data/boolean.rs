@@ -6,7 +6,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
-    url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
+    types::data::DataTypePath, url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypePath,
+    TypeRef, TypeUrl, VersionedUrlRef,
 };
 
 #[derive(Debug, Clone, Error)]
@@ -44,6 +45,10 @@ impl TypeUrl for Boolean {
 
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
+}
+
+impl TypePath for Boolean {
+    type Path = DataTypePath;
 }
 
 impl Type for Boolean {
@@ -112,6 +117,10 @@ impl TypeUrl for BooleanMut<'_> {
 
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/boolean/" / v / 1);
+}
+
+impl TypePath for BooleanMut<'_> {
+    type Path = BooleanPath;
 }
 
 impl TypeMut for BooleanMut<'_> {
