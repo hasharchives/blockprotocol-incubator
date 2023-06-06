@@ -4,8 +4,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
-    types::data::DataTypePath, url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypePath,
-    TypeRef, TypeUrl, VersionedUrlRef,
+    types::data::DataTypePath, url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef,
+    TypeTraverse, TypeUrl, VersionedUrlRef,
 };
 
 #[derive(Debug, Clone, Error)]
@@ -24,7 +24,7 @@ impl TypeUrl for Null {
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/null/" / v / 1);
 }
 
-impl TypePath for Null {
+impl TypeTraverse for Null {
     type Path = DataTypePath;
 }
 

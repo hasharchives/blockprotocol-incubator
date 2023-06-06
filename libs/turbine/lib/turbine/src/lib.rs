@@ -27,7 +27,7 @@ pub use error::{GenericEntityError, GenericPropertyError};
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
 pub use crate::hierarchy::TypeHierarchyResolution;
-use crate::path::EntityPath;
+use crate::path::TypePath;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct BaseUrlRef<'a>(&'a str);
@@ -142,24 +142,24 @@ pub trait TypeUrl {
     const ID: VersionedUrlRef<'static>;
 }
 
-pub trait TypePath {
-    type Path: Into<EntityPath<'static>>;
+pub trait TypeTraverse {
+    type Path: TypePath;
 }
 
-pub trait TypeRef: TypeUrl + TypePath + Sized {
+pub trait TypeRef: TypeUrl + TypeTraverse + Sized {
     type Owned;
 
     // called into_owned instead of to_owned to prevent confusion
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait TypeMut: TypeUrl + TypePath + Sized {
+pub trait TypeMut: TypeUrl + TypeTraverse + Sized {
     type Owned;
 
     fn into_owned(self) -> Self::Owned;
 }
 
-pub trait Type: TypeUrl + TypePath + Sized {
+pub trait Type: TypeUrl + TypeTraverse + Sized {
     type Mut<'a>: TypeMut<Owned = Self>
     where
         Self: 'a;

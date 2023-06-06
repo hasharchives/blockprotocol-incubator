@@ -2,18 +2,19 @@ use alloc::{borrow::Cow, boxed::Box, vec::Vec};
 use core::slice;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PathSegment<'a> {
+pub enum Segment<'a> {
     Field(Cow<'a, str>),
     Index(usize),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Next<'a> {
-    Borrowed(&'a EntityPath<'a>),
-    Owned(Box<EntityPath<'a>>),
+    Borrowed(&'a Path<'a>),
+    Owned(Box<Path<'a>>),
 }
 
 impl<'a> Next<'a> {
-    fn as_ref(&self) -> &EntityPath<'a> {
+    fn as_ref(&self) -> &Path<'a> {
         match self {
             Self::Borrowed(path) => path,
             Self::Owned(path) => path,
@@ -21,69 +22,93 @@ impl<'a> Next<'a> {
     }
 }
 
-pub struct LinkedPathSegment<'a> {
-    this: &'a PathSegment<'a>,
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Link<'a> {
+    value: Cow<'a, Segment<'a>>,
     next: Option<Next<'a>>,
 }
 
-impl<'a> LinkedPathSegment<'a> {
+impl<'a> Link<'a> {
     #[must_use]
-    pub const fn new(this: &'a PathSegment<'a>, next: Option<Next<'a>>) -> Self {
-        Self { this, next }
+    pub const fn new(value: &'a Segment<'a>, next: Option<Next<'a>>) -> Self {
+        Self {
+            value: Cow::Borrowed(value),
+            next,
+        }
+    }
+
+    #[must_use]
+    pub fn new_owned(value: Segment<'a>, next: Option<Next<'a>>) -> Self {
+        Self {
+            value: Cow::Owned(value),
+            next,
+        }
     }
 }
 
-pub enum EntityPath<'a> {
-    Borrowed(&'a [PathSegment<'a>]),
-    Owned(Vec<PathSegment<'a>>),
-    Linked(LinkedPathSegment<'a>),
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Path<'a> {
+    Borrowed(&'a [Segment<'a>]),
+    Owned(Vec<Segment<'a>>),
+
+    Link(Link<'a>),
 }
 
-impl<'a> EntityPath<'a> {
+impl<'a> Path<'a> {
     #[must_use]
-    pub const fn new(path: &'a [PathSegment]) -> Self {
+    pub const fn new(path: &'a [Segment]) -> Self {
         Self::Borrowed(path)
     }
 
     #[must_use]
-    pub fn new_owned(path: Vec<PathSegment<'a>>) -> Self {
+    pub fn new_owned(path: Vec<Segment<'a>>) -> Self {
         Self::Owned(path)
     }
 
     #[must_use]
-    pub const fn new_linked(path: LinkedPathSegment<'a>) -> Self {
-        Self::Linked(path)
+    pub const fn new_linked(path: Link<'a>) -> Self {
+        Self::Link(path)
     }
 }
 
-pub enum EntityPathIterator<'a> {
-    Slice(slice::Iter<'a, PathSegment<'a>>),
-    Linked(&'a LinkedPathSegment<'a>),
+pub enum PathIterator<'a> {
+    Slice(slice::Iter<'a, Segment<'a>>),
+    Linked(&'a Link<'a>),
     Empty,
 }
 
-impl<'a> Iterator for EntityPathIterator<'a> {
-    type Item = &'a PathSegment<'a>;
+impl<'a> Iterator for PathIterator<'a> {
+    type Item = &'a Segment<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            EntityPathIterator::Slice(slice) => slice.next(),
-            EntityPathIterator::Linked(node) => {
-                let next = node.this;
+            Self::Slice(slice) => slice.next(),
+            Self::Linked(node) => {
+                let next = node.value.as_ref();
 
                 if let Some(next) = &node.next {
                     *self = match next.as_ref() {
-                        EntityPath::Borrowed(slice) => EntityPathIterator::Slice(slice.iter()),
-                        EntityPath::Owned(owned) => EntityPathIterator::Slice(owned.iter()),
-                        EntityPath::Linked(linked) => EntityPathIterator::Linked(linked),
+                        Path::Borrowed(slice) => Self::Slice(slice.iter()),
+                        Path::Owned(owned) => Self::Slice(owned.iter()),
+                        Path::Link(link) => Self::Linked(link),
                     };
                 } else {
-                    *self = EntityPathIterator::Empty;
+                    *self = Self::Empty;
                 }
 
                 Some(next)
             }
-            EntityPathIterator::Empty => None,
+            Self::Empty => None,
         }
     }
+}
+
+pub trait TypePath {
+    fn path(self) -> Path<'static>;
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn compile() {}
 }

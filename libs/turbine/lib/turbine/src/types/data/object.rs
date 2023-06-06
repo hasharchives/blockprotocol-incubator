@@ -7,8 +7,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
-    types::data::DataTypePath, url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypePath,
-    TypeRef, TypeUrl, VersionedUrlRef,
+    types::data::DataTypePath, url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef,
+    TypeTraverse, TypeUrl, VersionedUrlRef,
 };
 
 #[derive(Debug, Clone, Error)]
@@ -57,7 +57,7 @@ impl TypeUrl for Object {
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
 
-impl TypePath for Object {
+impl TypeTraverse for Object {
     type Path = DataTypePath;
 }
 
@@ -104,7 +104,7 @@ impl TypeUrl for ObjectRef<'_> {
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
 
-impl TypePath for ObjectRef<'_> {
+impl TypeTraverse for ObjectRef<'_> {
     type Path = DataTypePath;
 }
 
@@ -150,7 +150,7 @@ impl TypeUrl for ObjectMut<'_> {
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/object/" / v / 1);
 }
 
-impl TypePath for ObjectMut<'_> {
+impl TypeTraverse for ObjectMut<'_> {
     type Path = DataTypePath;
 }
 

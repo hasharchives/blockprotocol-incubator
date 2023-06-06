@@ -141,7 +141,6 @@ impl<'a> TypeMatch<'a> {
     }
 }
 
-// TODO: as types? ~> used during construction, but not after
 // new module
 pub enum Condition {
     Equals,
