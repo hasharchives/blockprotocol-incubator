@@ -5,19 +5,82 @@ use turbine::{entity::EntityId, TypeUrl, VersionedUrlRef};
 
 use crate::{EntityNode, View};
 
-type DynamicMatch<'a> = dyn Fn(&View, &EntityNode) -> bool + 'a;
-type BoxedDynamicMatch = Box<DynamicMatch<'static>>;
+type DynamicMatchFn<'a> = dyn Fn(&View, &EntityNode) -> bool + 'a;
+type BoxedDynamicMatchFn = Box<DynamicMatchFn<'static>>;
 
-pub struct Matches<'a> {
+macro_rules! combinator {
+    ($($v:lifetime ,)? or) => {
+    pub fn or$(<$v>)?(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
+        let this = self.into();
+        let other = other.into();
+
+        if let Clause::Any(mut clauses) = other {
+            clauses.insert(0, this);
+            Clause::Any(clauses)
+        } else {
+            Clause::Any(vec![this, other])
+        }
+    }
+    };
+
+    ($($v:lifetime ,)? and) => {
+    pub fn and$(<$v>)?(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
+        let this = self.into();
+        let other = other.into();
+
+        if let Clause::All(mut clauses) = other {
+            clauses.insert(0, this);
+            Clause::All(clauses)
+        } else {
+            Clause::All(vec![this, other])
+        }
+    }
+    };
+
+    ($($v:lifetime ,)? not) => {
+    pub fn not$(<$v>)?(self) -> Clause<'a> {
+        Clause::Not(Box::new(self.into()))
+    }
+    };
+
+    ($($tt:ident $(<$v:lifetime>)?),+) => {
+        $(combinator!($($v,)? $tt);)*
+    };
+}
+
+pub struct DynamicMatch {
+    dynamic: BoxedDynamicMatchFn,
+}
+
+impl DynamicMatch {
+    combinator!(or<'a>, and<'a>, not<'a>);
+
+    #[must_use]
+    pub fn new(dynamic: impl Fn(&View, &EntityNode) -> bool + 'static) -> Self {
+        Self {
+            dynamic: Box::new(dynamic),
+        }
+    }
+
+    pub(crate) fn matches(&self, view: &View, node: &EntityNode) -> bool {
+        (self.dynamic)(view, node)
+    }
+}
+
+impl<'a> From<DynamicMatch> for Clause<'a> {
+    fn from(dynamic: DynamicMatch) -> Self {
+        Clause::Dynamic(dynamic)
+    }
+}
+
+pub struct TypeMatch<'a> {
     ids: BTreeSet<EntityId>,
     types: BTreeSet<VersionedUrlRef<'static>>,
 
     inherits_from: BTreeSet<VersionedUrlRef<'a>>,
-
-    dynamic: Option<BoxedDynamicMatch>,
 }
 
-impl Matches<'_> {
+impl TypeMatch<'_> {
     pub(crate) fn matches(&self, view: &View, node: &EntityNode) -> bool {
         if self.ids.contains(&node.id) {
             return true;
@@ -38,12 +101,6 @@ impl Matches<'_> {
             return true;
         }
 
-        // due to dynamic dispatch this is slow, so do it last, also we don't know the computational
-        // complexity of the closure provided.
-        if let Some(dynamic) = &self.dynamic {
-            return dynamic(view, node);
-        }
-
         false
     }
 
@@ -53,7 +110,6 @@ impl Matches<'_> {
             ids: BTreeSet::new(),
             types: BTreeSet::new(),
             inherits_from: BTreeSet::new(),
-            dynamic: None,
         }
     }
 
@@ -71,41 +127,10 @@ impl Matches<'_> {
         self.inherits_from.insert(T::ID);
         self
     }
-
-    pub fn or_dynamic(mut self, f: impl Fn(&View, &EntityNode) -> bool + 'static) -> Self {
-        self.dynamic = Some(Box::new(f));
-        self
-    }
 }
 
-impl<'a> Matches<'a> {
-    pub fn or(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
-        let this = Clause::Matches(self);
-        let other = other.into();
-
-        if let Clause::All(mut clauses) = other {
-            clauses.insert(0, this);
-            Clause::All(clauses)
-        } else {
-            Clause::All(vec![this, other])
-        }
-    }
-
-    pub fn and(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
-        let this = Clause::Matches(self);
-        let other = other.into();
-
-        if let Clause::All(mut clauses) = other {
-            clauses.insert(0, this);
-            Clause::All(clauses)
-        } else {
-            Clause::All(vec![this, other])
-        }
-    }
-
-    pub fn not(self) -> Clause<'a> {
-        Clause::Not(Box::new(Clause::Matches(self)))
-    }
+impl<'a> TypeMatch<'a> {
+    combinator!(or, and, not);
 
     pub fn with_links(self) -> Statement<'a> {
         Statement::from(self)
@@ -116,6 +141,39 @@ impl<'a> Matches<'a> {
     }
 }
 
+// TODO: as types? ~> used during construction, but not after
+// new module
+pub enum Condition {
+    Equals,
+    NotEquals,
+    LessThan,
+    LessThanOrEquals,
+    GreaterThan,
+    GreaterThanOrEquals,
+    Contains,
+    StartsWith,
+    EndsWith,
+}
+
+// TODO: JsonPath should be done via turbine :thinking:
+//  (or untyped as alternative)
+pub enum ParameterOrValue<'a> {
+    Parameter(JsonPath<'a>),
+    Value(Value<'a>),
+}
+
+pub struct PropertyMatch<'a> {
+    lhs: ParameterOrValue<'a>,
+    condition: Condition,
+    rhs: ParameterOrValue<'a>,
+}
+
+impl PropertyMatch<'_> {
+    fn matches(&self, view: &View, node: &EntityNode) -> bool {
+        todo!()
+    }
+}
+
 pub enum Clause<'a> {
     /// If empty, always true.
     All(Vec<Clause<'a>>),
@@ -123,7 +181,9 @@ pub enum Clause<'a> {
     Any(Vec<Clause<'a>>),
     Not(Box<Clause<'a>>),
 
-    Matches(Matches<'a>),
+    Type(TypeMatch<'a>),
+    Dynamic(DynamicMatch),
+    Property(PropertyMatch<'a>),
 }
 
 impl Clause<'_> {
@@ -133,7 +193,9 @@ impl Clause<'_> {
             Self::Any(clauses) => clauses.iter().any(|c| c.matches(view, node)),
             Self::Not(clause) => !clause.matches(view, node),
 
-            Self::Matches(matches) => matches.matches(view, node),
+            Self::Type(matches) => matches.matches(view, node),
+            Self::Dynamic(matches) => matches.matches(view, node),
+            Self::Property(matches) => matches.matches(view, node),
         }
     }
 
@@ -174,9 +236,9 @@ impl<'a> Clause<'a> {
     }
 }
 
-impl<'a> From<Matches<'a>> for Clause<'a> {
-    fn from(value: Matches<'a>) -> Self {
-        Self::Matches(value)
+impl<'a> From<TypeMatch<'a>> for Clause<'a> {
+    fn from(value: TypeMatch<'a>) -> Self {
+        Self::Type(value)
     }
 }
 
@@ -246,8 +308,8 @@ impl<'a> Statement<'a> {
     }
 }
 
-impl<'a> From<Matches<'a>> for Statement<'a> {
-    fn from(value: Matches<'a>) -> Self {
+impl<'a> From<TypeMatch<'a>> for Statement<'a> {
+    fn from(value: TypeMatch<'a>) -> Self {
         Self::from(Clause::from(value))
     }
 }
