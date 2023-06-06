@@ -120,7 +120,7 @@ impl TypeUrl for BooleanMut<'_> {
 }
 
 impl TypePath for BooleanMut<'_> {
-    type Path = BooleanPath;
+    type Path = DataTypePath;
 }
 
 impl TypeMut for BooleanMut<'_> {
