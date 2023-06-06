@@ -13,8 +13,8 @@ pub enum Segment<'a> {
 pub struct JsonPath<'a>(Cow<'a, [Segment<'a>]>);
 
 impl<'a> JsonPath<'a> {
-    fn traverse_entity(&self, entity: &Entity) -> Option<Value<'a>> {
-        let mut value = entity.properties.properties();
+    pub(crate) fn traverse_entity<'b>(&self, entity: &'b Entity) -> Option<Value<'b>> {
+        let value = entity.properties.properties();
 
         if self.0.is_empty() {
             return Some(
@@ -38,7 +38,7 @@ impl<'a> JsonPath<'a> {
         JsonPath(Cow::Borrowed(rest)).traverse(value)
     }
 
-    fn traverse(&self, value: &'a serde_json::Value) -> Option<Value<'a>> {
+    fn traverse<'b>(&self, value: &'b serde_json::Value) -> Option<Value<'b>> {
         let mut value = value;
 
         for segment in self.0.iter() {

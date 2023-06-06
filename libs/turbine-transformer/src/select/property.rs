@@ -1,3 +1,5 @@
+use alloc::borrow::Cow;
+
 use funty::Numeric;
 
 use crate::{
@@ -86,6 +88,7 @@ pub enum Condition {
 
 // TODO: JsonPath should be done via turbine :thinking:
 //  (or untyped as alternative)
+//  (properly typed is possible in turbine ~> path to value)
 pub enum PathOrValue<'a> {
     Path(JsonPath<'a>),
     Value(Value<'a>),
@@ -111,5 +114,35 @@ impl PropertyMatch<'_> {
         let Some(entity) = view.entity(node.id) else {
             return false;
         };
+
+        let lhs = match &self.lhs {
+            PathOrValue::Path(path) => path.traverse_entity(entity).map(Cow::Owned),
+            PathOrValue::Value(value) => Some(Cow::Borrowed(value)),
+        };
+
+        let rhs = match &self.rhs {
+            PathOrValue::Path(path) => path.traverse_entity(entity).map(Cow::Owned),
+            PathOrValue::Value(value) => Some(Cow::Borrowed(value)),
+        };
+
+        let Some(lhs) = lhs else {
+            return false;
+        };
+
+        let Some(rhs) = rhs else {
+            return false;
+        };
+
+        match self.condition {
+            Condition::Equals => lhs == rhs,
+            Condition::NotEquals => lhs != rhs,
+            Condition::LessThan => lhs < rhs,
+            Condition::LessThanOrEquals => lhs <= rhs,
+            Condition::GreaterThan => lhs > rhs,
+            Condition::GreaterThanOrEquals => lhs >= rhs,
+            Condition::Contains => lhs.contains(rhs.as_ref()),
+            Condition::StartsWith => lhs.starts_with(rhs.as_ref()),
+            Condition::EndsWith => lhs.ends_with(rhs.as_ref()),
+        }
     }
 }

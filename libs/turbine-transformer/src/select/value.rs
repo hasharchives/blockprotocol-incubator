@@ -1,7 +1,25 @@
 use alloc::{borrow::Cow, collections::BTreeMap, string::String, vec::Vec};
 
+use ordered_float::OrderedFloat;
+use serde_json::Number;
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Array<'a> {
     pub values: Vec<Value<'a>>,
+}
+
+impl<'a> Array<'a> {
+    fn contains(&self, value: &Value) -> bool {
+        self.values.contains(value)
+    }
+
+    fn starts_with(&self, value: &Self) -> bool {
+        self.values.starts_with(&value.values)
+    }
+
+    fn ends_with(&self, value: &Self) -> bool {
+        self.values.ends_with(&value.values)
+    }
 }
 
 impl<'a> FromIterator<Value<'a>> for Array<'a> {
@@ -15,8 +33,15 @@ impl<'a> FromIterator<Value<'a>> for Array<'a> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Object<'a> {
     pub properties: Vec<(Value<'a>, Value<'a>)>,
+}
+
+impl<'a> Object<'a> {
+    fn contains(&self, key: &Value) -> bool {
+        self.properties.iter().any(|(k, _)| k == key)
+    }
 }
 
 impl<'a, K, V> FromIterator<(K, V)> for Object<'a>
@@ -34,14 +59,42 @@ where
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Value<'a> {
     Null,
     Bool(bool),
     Integer(i128),
-    Float(f64),
+    Float(OrderedFloat<f64>),
     String(Cow<'a, str>),
     Array(Array<'a>),
     Object(Object<'a>),
+}
+
+impl<'a> Value<'a> {
+    pub(crate) fn contains(&self, value: &Value) -> bool {
+        match (self, value) {
+            (Self::String(a), Self::String(b)) => a.contains(b),
+            (Self::Array(a), b) => a.contains(b),
+            (Self::Object(a), b) => a.contains(b),
+            _ => false,
+        }
+    }
+
+    pub(crate) fn starts_with(&self, value: &Value) -> bool {
+        match (self, value) {
+            (Self::String(a), Self::String(b)) => a.starts_with(b.as_ref()),
+            (Self::Array(a), Self::Array(b)) => a.starts_with(b),
+            _ => false,
+        }
+    }
+
+    pub(crate) fn ends_with(&self, value: &Value) -> bool {
+        match (self, value) {
+            (Self::String(a), Self::String(b)) => a.ends_with(b.as_ref()),
+            (Self::Array(a), Self::Array(b)) => a.ends_with(b),
+            _ => false,
+        }
+    }
 }
 
 macro_rules! impl_from {
@@ -59,7 +112,7 @@ macro_rules! impl_from {
         $(
             impl<'a> From<$ty> for Value<'a> {
                 fn from(value: $ty) -> Self {
-                    Self::Float(value as f64)
+                    Self::Float(OrderedFloat(value as f64))
                 }
             }
         )*
@@ -119,20 +172,25 @@ impl<'a> From<BTreeMap<String, Value<'a>>> for Value<'a> {
     }
 }
 
+impl From<&Number> for Value<'_> {
+    fn from(value: &Number) -> Self {
+        #[allow(clippy::option_if_let_else)]
+        if let Some(value) = value.as_i64() {
+            Self::Integer(i128::from(value))
+        } else if let Some(value) = value.as_f64() {
+            Self::Float(OrderedFloat(value))
+        } else {
+            unreachable!()
+        }
+    }
+}
+
 impl<'a> From<serde_json::Value> for Value<'a> {
     fn from(value: serde_json::Value) -> Self {
         match value {
             serde_json::Value::Null => Self::Null,
             serde_json::Value::Bool(value) => Self::Bool(value),
-            serde_json::Value::Number(value) => {
-                if let Some(value) = value.as_i64() {
-                    Self::Integer(value as i128)
-                } else if let Some(value) = value.as_f64() {
-                    Self::Float(value)
-                } else {
-                    unreachable!()
-                }
-            }
+            serde_json::Value::Number(value) => (&value).into(),
             serde_json::Value::String(value) => Self::String(Cow::Owned(value)),
             serde_json::Value::Array(array) => Self::Array(Array {
                 values: array.into_iter().map(Value::from).collect(),
@@ -152,15 +210,7 @@ impl<'a> From<&'a serde_json::Value> for Value<'a> {
         match value {
             serde_json::Value::Null => Self::Null,
             serde_json::Value::Bool(value) => Self::Bool(*value),
-            serde_json::Value::Number(value) => {
-                if let Some(value) = value.as_i64() {
-                    Self::Integer(value as i128)
-                } else if let Some(value) = value.as_f64() {
-                    Self::Float(value)
-                } else {
-                    unreachable!()
-                }
-            }
+            serde_json::Value::Number(value) => value.into(),
             serde_json::Value::String(value) => Self::String(Cow::Borrowed(value)),
             serde_json::Value::Array(array) => Self::Array(Array {
                 values: array.iter().map(Value::from).collect(),
