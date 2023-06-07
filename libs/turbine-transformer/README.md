@@ -12,6 +12,8 @@ has some trade-offs, you will still need to load in all entities from HASH, but 
 ones you want.
 
 This is _very_ early in development, and is not ready for production use. Tests are missing, and the API is not stable.
+Especially the names of the different types are likely to change. Do not expect this to be usable in production, over
+the next weeks and months I will be working on this project to make it more stable and usable.
 
 ## Examples
 
@@ -46,7 +48,7 @@ fn main() {
                     .or_type::<Post>()
             )
     ]);
-    
+
     // You can also update selected entities
     view.select_properties(vec![
         Select::new(TypeMatch::new().or_type::<User>(), Action::Exclude)
@@ -54,23 +56,22 @@ fn main() {
             .do_(StaticAction::new::<Email>())
             .do_(StaticAction::new::<Password>())
     ]);
-    
+
     // ... or change the value of specific properties
     view.update_properties(vec![
         Update::new(TypeMatch::new().or_type::<User>())
             .do_(StaticUpdate::new::<Name>("John Doe"))
     ]);
-    
+
     // or remap a specific user name to a different value
     view.update_properties(vec![
         Update::new(TypeMatch::new().or_type::<User>().or(
-                PropertyMatch::equals(
-                    JsonPath::new().then::<Name>(),
-                    "John Doe"
-                )
-            ))
+            PropertyMatch::equals(
+                JsonPath::new().then::<Name>(),
+                "John Doe"
+            )
+        ))
             .do_(StaticUpdate::new::<Name>("Doe John"))
-            
     ]);
 }
 ```

@@ -51,11 +51,13 @@ impl<'a> JsonPath<'a> {
         self
     }
 
+    #[must_use]
     pub fn then_field(mut self, field: impl Into<Cow<'a, str>>) -> Self {
         self.0.to_mut().push(Segment::Field(field.into()));
         self
     }
 
+    #[must_use]
     pub fn then_index(mut self, index: usize) -> Self {
         self.0.to_mut().push(Segment::Index(index));
         self
