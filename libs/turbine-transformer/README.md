@@ -4,8 +4,6 @@
 > transform the voltage. This project aims to take the input from the turbine and transform it, by applying a set of
 > instructions.
 
-> Or how [@thehabbos007](https://github.com/thehabbos007) put it: The name is incredibly cursed. I just always imagine a
-> transformer that turns into a wind turbine.
 
 The goal of the project is to supplement the HASH REST-APIs query abilities with a more powerful query language. This
 has some trade-offs, you will still need to load in all entities from HASH, but you can then filter them down to the
