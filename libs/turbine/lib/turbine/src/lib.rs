@@ -6,7 +6,7 @@
 
 extern crate alloc;
 
-use alloc::borrow::ToOwned;
+use alloc::borrow::{Cow, ToOwned};
 use core::fmt;
 
 use error_stack::{Context, Result};
@@ -18,6 +18,7 @@ use crate::entity::{Entity, LinkData};
 pub mod entity;
 mod error;
 mod hierarchy;
+pub mod path;
 mod polyfill;
 mod serialize;
 pub mod types;
@@ -26,6 +27,7 @@ pub use error::{GenericEntityError, GenericPropertyError};
 pub use polyfill::{fold_iter_reports, fold_tuple_reports};
 
 pub use crate::hierarchy::TypeHierarchyResolution;
+use crate::path::TypePath;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct BaseUrlRef<'a>(&'a str);
@@ -138,6 +140,10 @@ pub trait TypeUrl {
     type InheritsFrom: TypeHierarchyResolution;
 
     const ID: VersionedUrlRef<'static>;
+}
+
+pub trait TypeTraverse {
+    type Path: TypePath;
 }
 
 pub trait TypeRef: TypeUrl + Sized {

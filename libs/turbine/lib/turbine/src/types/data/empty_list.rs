@@ -4,7 +4,8 @@ use serde::{ser::SerializeSeq, Serialize, Serializer};
 use serde_json::Value;
 
 use crate::{
-    url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
+    types::data::DataTypePath, url, DataType, DataTypeMut, DataTypeRef, Type, TypeMut, TypeRef,
+    TypeTraverse, TypeUrl, VersionedUrlRef,
 };
 
 #[derive(Debug, Clone, Error)]
@@ -33,6 +34,10 @@ impl TypeUrl for EmptyList {
 
     const ID: VersionedUrlRef<'static> =
         url!("https://blockprotocol.org/@blockprotocol/types/data-type/emptyList/" / v / 1);
+}
+
+impl TypeTraverse for EmptyList {
+    type Path = DataTypePath;
 }
 
 impl Type for EmptyList {
