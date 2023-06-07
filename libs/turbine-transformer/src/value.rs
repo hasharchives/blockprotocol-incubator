@@ -1,7 +1,15 @@
-use alloc::{borrow::Cow, collections::BTreeMap, string::String, vec::Vec};
+use alloc::{
+    borrow::{Cow, ToOwned},
+    collections::BTreeMap,
+    string::String,
+    vec::Vec,
+};
 
+use funty::Fundamental;
+use hashbrown::HashMap;
 use ordered_float::OrderedFloat;
 use serde_json::Number;
+use turbine::entity::EntityProperties;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Array<'a> {
@@ -44,6 +52,19 @@ impl<'a> Object<'a> {
     }
 }
 
+// TODO: is lossy conversion okay?
+impl<'a> From<Object<'a>> for EntityProperties {
+    fn from(value: Object<'a>) -> Self {
+        let properties: HashMap<_, serde_json::Value> = value
+            .properties
+            .into_iter()
+            .filter_map(|(k, v)| k.as_str().map(|k| (k.to_owned(), v.into())))
+            .collect();
+
+        Self::from(properties)
+    }
+}
+
 impl<'a, K, V> FromIterator<(K, V)> for Object<'a>
 where
     K: Into<Value<'a>>,
@@ -71,6 +92,13 @@ pub enum Value<'a> {
 }
 
 impl<'a> Value<'a> {
+    fn as_str(&self) -> Option<&str> {
+        match self {
+            Self::String(s) => Some(s.as_ref()),
+            _ => None,
+        }
+    }
+
     pub(crate) fn contains(&self, value: &'a Value) -> bool {
         match (self, value) {
             (Self::String(a), Self::String(b)) => a.contains(b.as_ref()),
@@ -221,6 +249,32 @@ impl<'a> From<&'a serde_json::Value> for Value<'a> {
                     .map(|(k, v)| (Value::from(k.as_str()), Value::from(v)))
                     .collect(),
             }),
+        }
+    }
+}
+
+// TODO: conversion is potentially lossy
+impl<'a> From<Value<'a>> for serde_json::Value {
+    fn from(value: Value<'a>) -> Self {
+        match value {
+            Value::Null => Self::Null,
+            Value::Bool(value) => Self::Bool(value),
+            // Reason: There's no other way, we're already lossy.
+            #[allow(clippy::cast_possible_truncation)]
+            Value::Integer(value) => Self::Number((value as i64).into()),
+            Value::Float(value) => Self::Number(
+                Number::from_f64(value.as_f64())
+                    .expect("float can never be NaN, as OrderedFloat is not NaN"),
+            ),
+            Value::String(value) => Self::String(value.into_owned()),
+            Value::Array(value) => Self::Array(value.values.into_iter().map(Self::from).collect()),
+            Value::Object(value) => Self::Object(
+                value
+                    .properties
+                    .into_iter()
+                    .filter_map(|(k, v)| k.as_str().map(|k| (k.to_owned(), v.into())))
+                    .collect(),
+            ),
         }
     }
 }

@@ -92,10 +92,10 @@ mod not_equals {
 macro_rules! satisfies_numeric {
     ($module:ident, $name:ident, $condition:ident) => {
         mod $module {
+            use crate::path::JsonPath;
+            use crate::value::{Float, Integer};
             use crate::select::{
-                path::JsonPath,
                 property::{Condition, PathOrValue, PropertyMatch},
-                value::{Float, Integer},
             };
 
             pub trait $name<'a, Rhs> {

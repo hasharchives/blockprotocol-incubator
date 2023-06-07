@@ -113,6 +113,12 @@ impl EntityProperties {
     }
 }
 
+impl From<HashMap<String, Value>> for EntityProperties {
+    fn from(value: HashMap<String, Value>) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EntityMetadata {

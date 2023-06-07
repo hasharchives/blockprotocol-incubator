@@ -35,14 +35,17 @@ impl<'a> From<usize> for Segment<'a> {
 pub struct JsonPath<'a>(Cow<'a, [Segment<'a>]>);
 
 impl<'a> JsonPath<'a> {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self(Cow::Owned(Vec::new()))
     }
 
-    pub fn from_slice(segments: &'a [Segment<'a>]) -> Self {
+    #[must_use]
+    pub const fn from_slice(segments: &'a [Segment<'a>]) -> Self {
         Self(Cow::Borrowed(segments))
     }
 
+    #[must_use]
     pub fn then(mut self, segment: impl Into<Segment<'a>>) -> Self {
         self.0.to_mut().push(segment.into());
         self
@@ -94,13 +97,13 @@ impl<'a> JsonPath<'a> {
         Some(value.into())
     }
 
-    pub(crate) fn set(self, target: &mut serde_json::Value, value: Value<'a>) {
+    pub(crate) fn set(&self, target: &mut serde_json::Value, value: Value<'a>) {
         if self.0.is_empty() {
             *target = value.into();
             return;
         }
 
-        let (first, rest) = self.0.split_first().unwrap();
+        let (first, rest) = self.0.split_first().expect("infallible");
 
         let target = match first {
             Segment::Field(field) => {
@@ -126,7 +129,7 @@ impl<'a> JsonPath<'a> {
         JsonPath(Cow::Borrowed(rest)).set(target, value);
     }
 
-    pub(crate) fn set_entity(self, entity: &mut Entity, value: Value<'a>) {
+    pub(crate) fn set_entity(&self, entity: &mut Entity, value: Value<'a>) {
         if self.0.is_empty() {
             if let Value::Object(object) = value {
                 entity.properties = object.into();
@@ -135,7 +138,7 @@ impl<'a> JsonPath<'a> {
             return;
         }
 
-        let (first, rest) = self.0.split_first().unwrap();
+        let (first, rest) = self.0.split_first().expect("infallible");
 
         let target = match first {
             Segment::Field(field) => entity.properties.properties_mut().get_mut(field.as_ref()),

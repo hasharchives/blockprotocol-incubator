@@ -12,5 +12,6 @@ funty = "3.0.0-rc2"
 serde_json = "1.0.96"
 ordered-float = "3.7.0"
 paste = "1.0.12"
+hashbrown = "0.13.2"
 
 turbine = { path = "../turbine/lib/turbine" }
