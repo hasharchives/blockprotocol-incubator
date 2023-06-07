@@ -3,7 +3,7 @@ use alloc::{collections::BTreeSet, vec::Vec};
 use petgraph::{graph::NodeIndex, visit::IntoNodeReferences};
 use turbine::entity::EntityId;
 
-use crate::{select::clause::Clause, EntityNode, View};
+use crate::{EntityNode, View};
 
 macro_rules! combinator {
     ($($v:lifetime ,)? or) => {
@@ -63,6 +63,13 @@ mod path;
 mod property;
 mod type_;
 mod value;
+
+pub use clause::Clause;
+pub use dynamic::DynamicMatch;
+pub use path::{JsonPath, Segment};
+pub use property::{PathOrValue, PropertyMatch};
+pub use type_::TypeMatch;
+pub use value::Value;
 
 pub struct Statement<'a> {
     if_: Clause<'a>,

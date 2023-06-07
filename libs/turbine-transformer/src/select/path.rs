@@ -1,6 +1,9 @@
-use alloc::borrow::Cow;
+use alloc::{
+    borrow::{Cow, ToOwned},
+    vec::Vec,
+};
 
-use turbine::entity::Entity;
+use turbine::{entity::Entity, BaseUrl, BaseUrlRef};
 
 use crate::select::value::{Object, Value};
 
@@ -10,9 +13,40 @@ pub enum Segment<'a> {
     Index(usize),
 }
 
+impl<'a> From<BaseUrlRef<'a>> for Segment<'a> {
+    fn from(value: BaseUrlRef<'a>) -> Self {
+        Self::Field(Cow::Borrowed(value.as_str()))
+    }
+}
+
+impl<'a> From<BaseUrl> for Segment<'a> {
+    fn from(value: BaseUrl) -> Self {
+        Self::Field(Cow::Owned(value.as_str().to_owned()))
+    }
+}
+
+impl<'a> From<usize> for Segment<'a> {
+    fn from(value: usize) -> Self {
+        Self::Index(value)
+    }
+}
+
 pub struct JsonPath<'a>(Cow<'a, [Segment<'a>]>);
 
 impl<'a> JsonPath<'a> {
+    pub fn new() -> Self {
+        Self(Cow::Owned(Vec::new()))
+    }
+
+    pub fn from_slice(segments: &'a [Segment<'a>]) -> Self {
+        Self(Cow::Borrowed(segments))
+    }
+
+    pub fn then(mut self, segment: impl Into<Segment<'a>>) -> Self {
+        self.0.to_mut().push(segment.into());
+        self
+    }
+
     pub(crate) fn traverse_entity<'b>(&self, entity: &'b Entity) -> Option<Value<'b>> {
         let value = entity.properties.properties();
 

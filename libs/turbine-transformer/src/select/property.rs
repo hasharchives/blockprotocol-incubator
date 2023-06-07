@@ -1,4 +1,4 @@
-use alloc::borrow::Cow;
+use alloc::{borrow::Cow, boxed::Box, vec};
 
 use crate::{
     select::{
@@ -11,6 +11,7 @@ use crate::{
             starts_with::SatisfiesStartsWith,
         },
         value::Value,
+        Clause, Statement,
     },
     EntityNode, View,
 };
@@ -301,5 +302,21 @@ impl PropertyMatch<'_> {
             Condition::StartsWith => lhs.starts_with(rhs.as_ref()),
             Condition::EndsWith => lhs.ends_with(rhs.as_ref()),
         }
+    }
+}
+
+impl<'a> PropertyMatch<'a> {
+    combinator!(or, and, not, with_links, into_statement);
+}
+
+impl<'a> From<PropertyMatch<'a>> for Clause<'a> {
+    fn from(value: PropertyMatch<'a>) -> Self {
+        Clause::Property(value)
+    }
+}
+
+impl<'a> From<PropertyMatch<'a>> for Statement<'a> {
+    fn from(value: PropertyMatch<'a>) -> Self {
+        Self::from(Clause::from(value))
     }
 }
