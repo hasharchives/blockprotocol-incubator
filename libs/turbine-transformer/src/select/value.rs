@@ -125,7 +125,7 @@ impl From<()> for Value<'_> {
     }
 }
 
-impl_from!(Int => i8, i16, i32, i64, i128, isize);
+impl_from!(Int => i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 impl_from!(Float => f32, f64);
 
 impl From<bool> for Value<'_> {
@@ -224,3 +224,29 @@ impl<'a> From<&'a serde_json::Value> for Value<'a> {
         }
     }
 }
+
+pub trait Integer<'a>: Into<Value<'a>> {}
+
+macro_rules! impl_integer {
+    ($($ty:ty),*) => {
+        $(
+            impl Integer<'_> for $ty {}
+        )*
+    };
+}
+
+impl_integer!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
+);
+
+pub trait Float<'a>: Into<Value<'a>> {}
+
+macro_rules! impl_float {
+    ($($ty:ty),*) => {
+        $(
+            impl Float<'_> for $ty {}
+        )*
+    };
+}
+
+impl_float!(f32, f64);
