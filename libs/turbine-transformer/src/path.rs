@@ -3,7 +3,7 @@ use alloc::{
     vec::Vec,
 };
 
-use turbine::{entity::Entity, BaseUrl, BaseUrlRef};
+use turbine::{entity::Entity, BaseUrl, BaseUrlRef, TypeUrl};
 
 use crate::value::{Object, Value};
 
@@ -46,8 +46,18 @@ impl<'a> JsonPath<'a> {
     }
 
     #[must_use]
-    pub fn then(mut self, segment: impl Into<Segment<'a>>) -> Self {
-        self.0.to_mut().push(segment.into());
+    pub fn then<T: TypeUrl>(mut self) -> Self {
+        self.0.to_mut().push(T::ID.base().into());
+        self
+    }
+
+    pub fn then_field(mut self, field: impl Into<Cow<'a, str>>) -> Self {
+        self.0.to_mut().push(Segment::Field(field.into()));
+        self
+    }
+
+    pub fn then_index(mut self, index: usize) -> Self {
+        self.0.to_mut().push(Segment::Index(index));
         self
     }
 

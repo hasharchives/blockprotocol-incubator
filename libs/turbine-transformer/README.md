@@ -1,0 +1,76 @@
+# `turbine-transformer`
+
+> Origin of the name: A wind turbine uses wind to generate electricity through rotation. The transformer is used to
+> transform the voltage. This project aims to take the input from the turbine and transform it, by applying a set of
+> instructions.
+
+> Or how [@thehabbos007](https://github.com/thehabbos007) put it: The name is incredibly cursed. I just always imagine a
+> transformer that turns into a wind turbine.
+
+The goal of the project is to supplement the HASH REST-APIs query abilities with a more powerful query language. This
+has some trade-offs, you will still need to load in all entities from HASH, but you can then filter them down to the
+ones you want.
+
+This is _very_ early in development, and is not ready for production use. Tests are missing, and the API is not stable.
+
+## Examples
+
+```rust
+use turbine_transformer::View;
+
+fn main() {
+    let view = View::new(&mut subgraph.entities);
+    let always_include = /* entity id */;
+
+    view.select(vec![
+        Statement::type_()
+            .or_id(always_include)
+            .or_type::<User>()
+            .or_type::<Post>()
+            .or_inherits_from::<Person>()
+            .and(
+                PropertyMatch::equals(
+                    JsonPath::new().then::<Name>(),
+                    "John Doe"
+                )
+            )
+            .with_links()
+            .with_left(
+                TypeMatch::new()
+                    .or_type::<User>()
+                    .or_type::<Post>()
+            )
+            .with_right(
+                TypeMatch::new()
+                    .or_type::<User>()
+                    .or_type::<Post>()
+            )
+    ]);
+    
+    // You can also update selected entities
+    view.select_properties(vec![
+        Select::new(TypeMatch::new().or_type::<User>(), Action::Exclude)
+            .do_(StaticAction::new::<Name>())
+            .do_(StaticAction::new::<Email>())
+            .do_(StaticAction::new::<Password>())
+    ]);
+    
+    // ... or change the value of specific properties
+    view.update_properties(vec![
+        Update::new(TypeMatch::new().or_type::<User>())
+            .do_(StaticUpdate::new::<Name>("John Doe"))
+    ]);
+    
+    // or remap a specific user name to a different value
+    view.update_properties(vec![
+        Update::new(TypeMatch::new().or_type::<User>().or(
+                PropertyMatch::equals(
+                    JsonPath::new().then::<Name>(),
+                    "John Doe"
+                )
+            ))
+            .do_(StaticUpdate::new::<Name>("Doe John"))
+            
+    ]);
+}
+```

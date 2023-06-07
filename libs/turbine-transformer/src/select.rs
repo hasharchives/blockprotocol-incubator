@@ -86,18 +86,16 @@ pub struct Statement<'a> {
 
 impl<'a> Statement<'a> {
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new(clause: impl Into<Clause<'a>>) -> Self {
         Self {
-            if_: Clause::All(Vec::new()),
+            if_: clause.into(),
             left: None,
             right: None,
         }
     }
 
-    #[must_use]
-    pub fn with_if(mut self, if_: impl Into<Clause<'a>>) -> Self {
-        self.if_ = if_.into();
-        self
+    pub fn type_() -> TypeMatch<'a> {
+        TypeMatch::new()
     }
 
     #[must_use]

@@ -19,7 +19,7 @@ impl<'a> StaticUpdate<'a> {
     #[must_use]
     pub fn new<T: TypeUrl>(value: impl Into<Value<'a>>) -> Self {
         Self {
-            path: JsonPath::new().then(T::ID.base()),
+            path: JsonPath::new().then::<T>(),
             value: value.into(),
         }
     }
@@ -45,6 +45,12 @@ pub struct DynamicUpdate {
 }
 
 impl DynamicUpdate {
+    pub fn new(value: impl Fn(&mut Entity) + 'static) -> Self {
+        Self {
+            value: Box::new(value),
+        }
+    }
+
     fn apply(&self, entity: &mut Entity) {
         (self.value)(entity);
     }
@@ -55,6 +61,18 @@ pub enum UpdateStatement<'a> {
     Dynamic(DynamicUpdate),
 }
 
+impl<'a> From<StaticUpdate<'a>> for UpdateStatement<'a> {
+    fn from(update: StaticUpdate<'a>) -> Self {
+        Self::Static(update)
+    }
+}
+
+impl<'a> From<DynamicUpdate> for UpdateStatement<'a> {
+    fn from(update: DynamicUpdate) -> Self {
+        Self::Dynamic(update)
+    }
+}
+
 pub struct Update<'a> {
     if_: Clause<'a>,
 
@@ -62,6 +80,18 @@ pub struct Update<'a> {
 }
 
 impl<'a> Update<'a> {
+    pub fn new(if_: impl Into<Clause<'a>>) -> Self {
+        Self {
+            if_: if_.into(),
+            actions: Vec::new(),
+        }
+    }
+
+    pub fn do_(mut self, action: impl Into<UpdateStatement<'a>>) -> Self {
+        self.actions.push(action.into());
+        self
+    }
+
     fn matches(&self, view: &View, id: EntityId) -> bool {
         self.if_.matches(view, id)
     }

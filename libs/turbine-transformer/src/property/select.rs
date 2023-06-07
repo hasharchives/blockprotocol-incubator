@@ -45,7 +45,7 @@ impl StaticAction<'static> {
     #[must_use]
     pub fn new<T: TypeUrl>() -> Self {
         Self {
-            path: JsonPath::new().then(T::ID.base()),
+            path: JsonPath::new().then::<T>(),
             then: Then::Implicit,
         }
     }
@@ -76,7 +76,7 @@ impl DynamicAction<'static> {
     #[must_use]
     pub fn new<T: TypeUrl>(then: impl Fn(&Entity) -> Option<Action> + 'static) -> Self {
         Self {
-            path: JsonPath::new().then(T::ID.base()),
+            path: JsonPath::new().then::<T>(),
             then: Box::new(then),
         }
     }
@@ -98,6 +98,18 @@ impl<'a> DynamicAction<'a> {
 pub enum ActionStatement<'a> {
     Static(StaticAction<'a>),
     Dynamic(DynamicAction<'a>),
+}
+
+impl<'a> From<StaticAction<'a>> for ActionStatement<'a> {
+    fn from(action: StaticAction<'a>) -> Self {
+        Self::Static(action)
+    }
+}
+
+impl<'a> From<DynamicAction<'a>> for ActionStatement<'a> {
+    fn from(action: DynamicAction<'a>) -> Self {
+        Self::Dynamic(action)
+    }
 }
 
 pub struct Select<'a> {
