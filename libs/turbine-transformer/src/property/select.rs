@@ -239,9 +239,15 @@ impl<'a> PropertySelect<'a> {
         }
     }
 
-    pub fn run(self, view: &mut View) {
+    fn run(self, view: &mut View) {
         for statement in &self.statements {
             Self::eval(statement, view);
         }
+    }
+}
+
+impl<'a> View<'a> {
+    pub fn select_properties(&mut self, statements: Vec<Select>) {
+        PropertySelect { statements }.run(self);
     }
 }

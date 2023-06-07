@@ -3,8 +3,8 @@ use alloc::{borrow::Cow, boxed::Box, vec};
 use turbine::entity::EntityId;
 
 use crate::{
+    path::JsonPath,
     select::{
-        path::JsonPath,
         property::{
             contains::SatisfiesContains, ends_with::SatisfiesEndsWith, equals::SatisfiesEquals,
             greater_than::SatisfiesGreaterThan,
@@ -12,9 +12,9 @@ use crate::{
             less_than_or_equals::SatisfiesLessThanOrEquals, not_equals::SatisfiesNotEquals,
             starts_with::SatisfiesStartsWith,
         },
-        value::Value,
         Clause, Statement,
     },
+    value::Value,
     View,
 };
 
@@ -126,9 +126,9 @@ satisfies_numeric!(
 mod contains {
     use alloc::string::String;
 
-    use crate::select::{
+    use crate::{
         path::JsonPath,
-        property::{Condition, PathOrValue, PropertyMatch},
+        select::property::{Condition, PathOrValue, PropertyMatch},
         value::{Array, Object, Value},
     };
 
@@ -146,8 +146,8 @@ mod contains {
 mod starts_with {
     use alloc::string::String;
 
-    use crate::select::{
-        property::{Condition, JsonPath, PathOrValue, PropertyMatch},
+    use crate::{
+        select::property::{Condition, JsonPath, PathOrValue, PropertyMatch},
         value::Array,
     };
 
@@ -164,8 +164,8 @@ mod starts_with {
 mod ends_with {
     use alloc::string::String;
 
-    use crate::select::{
-        property::{Condition, JsonPath, PathOrValue, PropertyMatch},
+    use crate::{
+        select::property::{Condition, JsonPath, PathOrValue, PropertyMatch},
         value::Array,
     };
 

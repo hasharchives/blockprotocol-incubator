@@ -64,17 +64,18 @@ macro_rules! combinator {
 
 mod clause;
 mod dynamic;
-mod path;
 mod property;
 mod type_;
-mod value;
 
 pub use clause::Clause;
 pub use dynamic::DynamicMatch;
-pub use path::{JsonPath, Segment};
 pub use property::{PathOrValue, PropertyMatch};
 pub use type_::TypeMatch;
-pub use value::Value;
+
+pub use crate::{
+    path::{JsonPath, Segment},
+    value::Value,
+};
 
 pub struct Statement<'a> {
     if_: Clause<'a>,

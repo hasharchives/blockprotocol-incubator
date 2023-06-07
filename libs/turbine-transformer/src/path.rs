@@ -5,7 +5,7 @@ use alloc::{
 
 use turbine::{entity::Entity, BaseUrl, BaseUrlRef};
 
-use crate::select::value::{Object, Value};
+use crate::value::{Object, Value};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Segment<'a> {
@@ -92,5 +92,62 @@ impl<'a> JsonPath<'a> {
         }
 
         Some(value.into())
+    }
+
+    pub(crate) fn set(self, target: &mut serde_json::Value, value: Value<'a>) {
+        if self.0.is_empty() {
+            *target = value.into();
+            return;
+        }
+
+        let (first, rest) = self.0.split_first().unwrap();
+
+        let target = match first {
+            Segment::Field(field) => {
+                if let serde_json::Value::Object(object) = target {
+                    object.get_mut(field.as_ref())
+                } else {
+                    return;
+                }
+            }
+            Segment::Index(index) => {
+                if let serde_json::Value::Array(array) = target {
+                    array.get_mut(*index)
+                } else {
+                    return;
+                }
+            }
+        };
+
+        let Some(target) = target else {
+            return;
+        };
+
+        JsonPath(Cow::Borrowed(rest)).set(target, value);
+    }
+
+    pub(crate) fn set_entity(self, entity: &mut Entity, value: Value<'a>) {
+        if self.0.is_empty() {
+            if let Value::Object(object) = value {
+                entity.properties = object.into();
+            }
+
+            return;
+        }
+
+        let (first, rest) = self.0.split_first().unwrap();
+
+        let target = match first {
+            Segment::Field(field) => entity.properties.properties_mut().get_mut(field.as_ref()),
+            Segment::Index(_) => {
+                return;
+            }
+        };
+
+        let Some(target) = target else {
+            return;
+        };
+
+        JsonPath(Cow::Borrowed(rest)).set(target, value);
     }
 }

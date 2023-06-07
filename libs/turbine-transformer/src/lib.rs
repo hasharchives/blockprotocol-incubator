@@ -2,9 +2,11 @@
 #![feature(error_in_core)]
 #![feature(impl_trait_in_assoc_type)]
 
+mod path;
 pub mod property;
 mod reachable;
 pub mod select;
+mod value;
 
 extern crate alloc;
 
