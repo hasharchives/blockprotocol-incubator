@@ -71,16 +71,16 @@ pub enum Value<'a> {
 }
 
 impl<'a> Value<'a> {
-    pub(crate) fn contains(&self, value: &Value) -> bool {
+    pub(crate) fn contains(&self, value: &'a Value) -> bool {
         match (self, value) {
-            (Self::String(a), Self::String(b)) => a.contains(b),
+            (Self::String(a), Self::String(b)) => a.contains(b.as_ref()),
             (Self::Array(a), b) => a.contains(b),
             (Self::Object(a), b) => a.contains(b),
             _ => false,
         }
     }
 
-    pub(crate) fn starts_with(&self, value: &Value) -> bool {
+    pub(crate) fn starts_with(&self, value: &'a Value) -> bool {
         match (self, value) {
             (Self::String(a), Self::String(b)) => a.starts_with(b.as_ref()),
             (Self::Array(a), Self::Array(b)) => a.starts_with(b),
@@ -88,7 +88,7 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub(crate) fn ends_with(&self, value: &Value) -> bool {
+    pub(crate) fn ends_with(&self, value: &'a Value) -> bool {
         match (self, value) {
             (Self::String(a), Self::String(b)) => a.ends_with(b.as_ref()),
             (Self::Array(a), Self::Array(b)) => a.ends_with(b),
