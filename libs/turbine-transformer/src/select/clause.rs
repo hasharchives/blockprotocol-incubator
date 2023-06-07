@@ -1,8 +1,10 @@
 use alloc::{boxed::Box, vec, vec::Vec};
 
+use turbine::entity::EntityId;
+
 use crate::{
     select::{dynamic::DynamicMatch, property::PropertyMatch, type_::TypeMatch, Statement},
-    EntityNode, View,
+    View,
 };
 
 pub enum Clause<'a> {
@@ -18,18 +20,19 @@ pub enum Clause<'a> {
 }
 
 impl Clause<'_> {
-    pub fn matches(&self, view: &View, node: &EntityNode) -> bool {
+    pub(crate) fn matches(&self, view: &View, id: EntityId) -> bool {
         match self {
-            Self::All(clauses) => clauses.iter().all(|c| c.matches(view, node)),
-            Self::Any(clauses) => clauses.iter().any(|c| c.matches(view, node)),
-            Self::Not(clause) => !clause.matches(view, node),
+            Self::All(clauses) => clauses.iter().all(|c| c.matches(view, id)),
+            Self::Any(clauses) => clauses.iter().any(|c| c.matches(view, id)),
+            Self::Not(clause) => !clause.matches(view, id),
 
-            Self::Type(matches) => matches.matches(view, node),
-            Self::Dynamic(matches) => matches.matches(view, node),
-            Self::Property(matches) => matches.matches(view, node),
+            Self::Type(matches) => matches.matches(view, id),
+            Self::Dynamic(matches) => matches.matches(view, id),
+            Self::Property(matches) => matches.matches(view, id),
         }
     }
 
+    #[must_use]
     pub fn or(self, other: impl Into<Self>) -> Self {
         let other = other.into();
 
@@ -41,6 +44,7 @@ impl Clause<'_> {
         Self::Any(vec![self, other])
     }
 
+    #[must_use]
     pub fn and(self, other: impl Into<Self>) -> Self {
         let other = other.into();
 
@@ -52,6 +56,7 @@ impl Clause<'_> {
         Self::All(vec![self, other])
     }
 
+    #[must_use]
     pub fn not(self) -> Self {
         Self::Not(Box::new(self))
     }

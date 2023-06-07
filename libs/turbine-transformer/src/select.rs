@@ -3,10 +3,11 @@ use alloc::{collections::BTreeSet, vec::Vec};
 use petgraph::{graph::NodeIndex, visit::IntoNodeReferences};
 use turbine::entity::EntityId;
 
-use crate::{EntityNode, View};
+use crate::View;
 
 macro_rules! combinator {
     ($($v:lifetime ,)? or) => {
+    #[must_use]
     pub fn or$(<$v>)?(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
         let this = self.into();
         let other = other.into();
@@ -21,6 +22,7 @@ macro_rules! combinator {
     };
 
     ($($v:lifetime ,)? and) => {
+    #[must_use]
     pub fn and$(<$v>)?(self, other: impl Into<Clause<'a>>) -> Clause<'a> {
         let this = self.into();
         let other = other.into();
@@ -35,18 +37,21 @@ macro_rules! combinator {
     };
 
     ($($v:lifetime ,)? not) => {
+    #[must_use]
     pub fn not$(<$v>)?(self) -> Clause<'a> {
         Clause::Not(Box::new(self.into()))
     }
     };
 
     ($($v:lifetime ,)? with_links) => {
+    #[must_use]
     pub fn with_links$(<$v>)?(self) -> Statement<'a> {
         Statement::from(self)
     }
     };
 
     ($($v:lifetime ,)? into_statement) => {
+    #[must_use]
     pub fn into_statement$(<$v>)?(self) -> Statement<'a> {
         Statement::from(self)
     }
@@ -172,7 +177,7 @@ impl Select<'_> {
             return false;
         };
 
-        let Some(weight) = view.graph.node_weight(*node) else {
+        let Some(&weight) = view.graph.node_weight(*node) else {
             // in theory infallible, but we're not going to panic here
             return false;
         };
@@ -182,14 +187,14 @@ impl Select<'_> {
         if_.matches(view, weight)
     }
 
-    fn eval_statement(view: &View, weight: &EntityNode, statement: &Statement) -> bool {
-        if !statement.if_.matches(view, weight) {
+    fn eval_statement(view: &View, id: EntityId, statement: &Statement) -> bool {
+        if !statement.if_.matches(view, id) {
             return false;
         }
 
         if !Self::eval_link(
             view,
-            weight.link_data.as_ref().map(|link| link.left_entity_id),
+            view.entity_link(id).map(|link| link.left_entity_id),
             statement.left.as_ref(),
         ) {
             return false;
@@ -197,7 +202,7 @@ impl Select<'_> {
 
         if !Self::eval_link(
             view,
-            weight.link_data.as_ref().map(|link| link.right_entity_id),
+            view.entity_link(id).map(|link| link.right_entity_id),
             statement.right.as_ref(),
         ) {
             return false;
@@ -206,9 +211,9 @@ impl Select<'_> {
         true
     }
 
-    fn eval(&self, view: &View, weight: &EntityNode) -> bool {
+    fn eval(&self, view: &View, id: EntityId) -> bool {
         for statement in &self.statements {
-            if Self::eval_statement(view, weight, statement) {
+            if Self::eval_statement(view, id, statement) {
                 return true;
             }
         }
@@ -226,7 +231,7 @@ impl Select<'_> {
                 continue;
             }
 
-            if self.eval(view, weight) {
+            if self.eval(view, *weight) {
                 selected.insert(index);
             }
         }

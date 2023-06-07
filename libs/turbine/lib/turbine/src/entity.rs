@@ -106,6 +106,11 @@ impl EntityProperties {
     pub const fn properties(&self) -> &HashMap<String, Value> {
         &self.0
     }
+
+    #[must_use]
+    pub fn properties_mut(&mut self) -> &mut HashMap<String, Value> {
+        &mut self.0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]

@@ -2,15 +2,15 @@
 #![feature(error_in_core)]
 #![feature(impl_trait_in_assoc_type)]
 
-mod mutate;
+pub mod property;
 mod reachable;
-mod select;
+pub mod select;
 
 extern crate alloc;
 
 use alloc::collections::{BTreeMap, BTreeSet};
 
-use petgraph::{Graph, graph::NodeIndex};
+use petgraph::{graph::NodeIndex, Graph};
 use turbine::{
     entity::{Entity, EntityId, LinkData},
     VersionedUrl, VersionedUrlRef,
@@ -20,17 +20,6 @@ const fn no_lookup(_: VersionedUrlRef) -> BTreeSet<VersionedUrlRef<'static>> {
     BTreeSet::new()
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EntityNode<'a> {
-    id: EntityId,
-
-    /// Option<&'a VersionedUrl> is used to allow for incomplete graphs.
-    ///
-    /// During selection, these are simply ignored.
-    type_: Option<&'a VersionedUrl>,
-    link_data: Option<&'a LinkData>,
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LinkEdge {
     Left,
@@ -38,8 +27,8 @@ pub enum LinkEdge {
 }
 
 pub struct View<'a> {
-    graph: Graph<EntityNode<'a>, LinkEdge>,
-    entities: &'a [Entity],
+    graph: Graph<EntityId, LinkEdge>,
+    entities: &'a mut [Entity],
 
     exclude: BTreeSet<NodeIndex>,
 
@@ -52,7 +41,7 @@ impl<'a> View<'a> {
     fn empty() -> Self {
         Self {
             graph: Graph::new(),
-            entities: &[],
+            entities: &mut [],
 
             exclude: BTreeSet::new(),
 
@@ -62,37 +51,21 @@ impl<'a> View<'a> {
         }
     }
 
-    fn get_or_create(&mut self, id: EntityId, entity: Option<&'a Entity>) -> NodeIndex {
+    fn prepare(&mut self, entities: &[Entity]) {
+        for (index, entity) in entities.iter().enumerate() {
+            self.lookup_index
+                .insert(entity.metadata.record_id.entity_id, index);
+        }
+    }
+
+    fn get_or_create(&mut self, id: EntityId) -> NodeIndex {
         if let Some(node) = self.lookup.get(&id) {
-            let node = *node;
-
-            if let Some(weight) = self.graph.node_weight_mut(node) {
-                if weight.type_.is_none() {
-                    if let Some(entity) = entity {
-                        weight.type_ = Some(&entity.metadata.entity_type_id);
-                        weight.link_data = entity.link_data.as_ref();
-                    }
-                }
-            }
-
-            return node;
+            return *node;
         }
 
-        let node = entity.map_or(
-            EntityNode {
-                id,
-                type_: None,
-                link_data: None,
-            },
-            |entity| EntityNode {
-                id,
-                type_: Some(&entity.metadata.entity_type_id),
-                link_data: entity.link_data.as_ref(),
-            },
-        );
-
-        let node = self.graph.add_node(node);
+        let node = self.graph.add_node(id);
         self.lookup.insert(id, node);
+
         node
     }
 
@@ -108,24 +81,25 @@ impl<'a> View<'a> {
     }
 
     #[must_use]
-    pub fn new(entities: &'a [Entity]) -> Self {
+    pub fn new(entities: &'a mut [Entity]) -> Self {
         let mut this = Self::empty();
-        this.entities = entities;
+        this.prepare(entities);
 
         for (index, entity) in entities.iter().enumerate() {
-            let node = this.get_or_create(entity.metadata.record_id.entity_id, Some(entity));
+            let node = this.get_or_create(entity.metadata.record_id.entity_id);
             this.lookup_index
                 .insert(entity.metadata.record_id.entity_id, index);
 
             if let Some(link_data) = entity.link_data {
-                let lhs = this.get_or_create(link_data.left_entity_id, None);
-                let rhs = this.get_or_create(link_data.right_entity_id, None);
+                let lhs = this.get_or_create(link_data.left_entity_id);
+                let rhs = this.get_or_create(link_data.right_entity_id);
 
                 this.graph.add_edge(lhs, node, LinkEdge::Left);
                 this.graph.add_edge(node, rhs, LinkEdge::Right);
             }
         }
 
+        this.entities = entities;
         this
     }
 
@@ -135,14 +109,30 @@ impl<'a> View<'a> {
     }
 
     #[must_use]
-    pub fn entity(&self, index: EntityId) -> Option<&Entity> {
-        let index = *self.lookup_index.get(&index)?;
+    pub fn entity(&self, id: EntityId) -> Option<&Entity> {
+        let index = *self.lookup_index.get(&id)?;
 
         self.entities.get(index)
     }
 
     #[must_use]
-    pub const fn graph(&self) -> &Graph<EntityNode<'a>, LinkEdge> {
+    fn entity_type(&self, id: EntityId) -> Option<VersionedUrlRef> {
+        let index = *self.lookup_index.get(&id)?;
+        let entity = self.entities.get(index)?;
+
+        Some(VersionedUrlRef::from(&entity.metadata.entity_type_id))
+    }
+
+    #[must_use]
+    fn entity_link(&self, id: EntityId) -> Option<LinkData> {
+        let index = *self.lookup_index.get(&id)?;
+        let entity = self.entities.get(index)?;
+
+        entity.link_data
+    }
+
+    #[must_use]
+    pub const fn graph(&self) -> &Graph<EntityId, LinkEdge> {
         &self.graph
     }
 

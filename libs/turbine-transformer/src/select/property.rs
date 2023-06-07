@@ -1,5 +1,7 @@
 use alloc::{borrow::Cow, boxed::Box, vec};
 
+use turbine::entity::EntityId;
+
 use crate::{
     select::{
         path::JsonPath,
@@ -13,7 +15,7 @@ use crate::{
         value::Value,
         Clause, Statement,
     },
-    EntityNode, View,
+    View,
 };
 
 macro_rules! satisfies {
@@ -156,7 +158,7 @@ mod starts_with {
     satisfies!(SatisfiesStartsWith:StartsWith; String => [String, &'a str]);
     satisfies!(SatisfiesStartsWith:StartsWith; &'a str => [String, &'a str]);
     satisfies!(SatisfiesStartsWith:StartsWith; Array<'a> => [Array<'a>]);
-    satisfies!(SatisfiesStartsWith:StartsWith; JsonPath<'a> => [String, &'a str; Array<'a>]);
+    satisfies!(SatisfiesStartsWith:StartsWith; JsonPath<'a> => [String, &'a str, Array<'a>]);
 }
 
 mod ends_with {
@@ -268,8 +270,8 @@ impl<'a> PropertyMatch<'a> {
 }
 
 impl PropertyMatch<'_> {
-    pub(crate) fn matches(&self, view: &View, node: &EntityNode) -> bool {
-        let Some(entity) = view.entity(node.id) else {
+    pub(crate) fn matches(&self, view: &View, id: EntityId) -> bool {
+        let Some(entity) = view.entity(id) else {
             return false;
         };
 

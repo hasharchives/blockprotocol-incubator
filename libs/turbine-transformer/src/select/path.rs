@@ -31,6 +31,7 @@ impl<'a> From<usize> for Segment<'a> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct JsonPath<'a>(Cow<'a, [Segment<'a>]>);
 
 impl<'a> JsonPath<'a> {
@@ -45,6 +46,10 @@ impl<'a> JsonPath<'a> {
     pub fn then(mut self, segment: impl Into<Segment<'a>>) -> Self {
         self.0.to_mut().push(segment.into());
         self
+    }
+
+    pub(crate) fn segments(&self) -> &[Segment] {
+        &self.0
     }
 
     pub(crate) fn traverse_entity<'b>(&self, entity: &'b Entity) -> Option<Value<'b>> {

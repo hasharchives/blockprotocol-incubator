@@ -59,7 +59,7 @@ impl View<'_> {
             stack.extend(
                 neighbours
                     .into_iter()
-                    .filter_map(|index| self.graph.node_weight(index).map(|node| node.id)),
+                    .filter_map(|index| self.graph.node_weight(index).copied()),
             );
         }
 
@@ -100,7 +100,7 @@ impl View<'_> {
             stack.extend(
                 neighbours
                     .into_iter()
-                    .filter_map(|index| self.graph.node_weight(index).map(|node| node.id)),
+                    .filter_map(|index| self.graph.node_weight(index).copied()),
             );
         }
 
