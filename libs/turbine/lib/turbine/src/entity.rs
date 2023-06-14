@@ -27,7 +27,7 @@ pub struct EntityId {
 
 impl fmt::Display for EntityId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "{}%{}", self.owned_by_id, self.entity_uuid)
+        write!(fmt, "{}~{}", self.owned_by_id, self.entity_uuid)
     }
 }
 
@@ -38,14 +38,14 @@ impl<'de> Deserialize<'de> for EntityId {
     {
         // We can be more efficient than this, we know the byte sizes of all the elements
         let as_string = String::deserialize(deserializer)?;
-        let mut parts = as_string.split('%');
+        let mut parts = as_string.split('~');
 
         Ok(Self {
             owned_by_id: Uuid::deserialize(StrDeserializer::new(parts.next().ok_or_else(
-                || D::Error::custom("failed to find second component of `%` delimited string"),
+                || D::Error::custom("failed to find second component of `~` delimited string"),
             )?))?,
             entity_uuid: Uuid::deserialize(StrDeserializer::new(parts.next().ok_or_else(
-                || D::Error::custom("failed to find second component of `%` delimited string"),
+                || D::Error::custom("failed to find second component of `~` delimited string"),
             )?))?,
         })
     }
