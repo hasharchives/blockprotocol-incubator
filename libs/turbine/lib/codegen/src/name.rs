@@ -213,7 +213,7 @@ impl Flavor {
 
 static BLOCKPROTOCOL_FLAVOR: Lazy<Flavor> = Lazy::new(|| {
     let pattern = Regex::new(
-        r"^/@(?P<namespace>[\w-]+)/types/(?P<kind>data|property|entity)-type/(?P<id>[\w\-_%]+)/$",
+        r"^/@(?P<namespace>[\w-]+)/types/(?P<kind>data|property|entity)-type/(?P<id>[\w\-_%~]+)/$",
     )
     .expect("valid pattern");
 
