@@ -16,7 +16,7 @@ pub enum NumberError {
     NotANumber(Value),
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct Number(serde_json::Number);
 
 impl Number {
@@ -79,7 +79,7 @@ impl DataType for Number {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct NumberRef<'a>(&'a serde_json::Number);
 
 impl Deref for NumberRef<'_> {

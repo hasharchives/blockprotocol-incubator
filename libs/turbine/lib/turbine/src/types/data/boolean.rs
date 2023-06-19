@@ -16,7 +16,7 @@ pub enum BooleanError {
     NotABoolean(Value),
 }
 
-#[derive(Debug, Copy, Clone, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct Boolean(bool);
 
 impl Boolean {

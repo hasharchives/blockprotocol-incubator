@@ -17,7 +17,7 @@ pub enum ObjectError {
     NotAnObject(Value),
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Object(serde_json::Map<String, Value>);
 
 impl Object {
@@ -86,7 +86,7 @@ impl DataType for Object {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize)]
 pub struct ObjectRef<'a>(&'a serde_json::Map<String, Value>);
 
 impl Deref for ObjectRef<'_> {
