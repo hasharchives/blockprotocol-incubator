@@ -215,8 +215,14 @@ fn generate_type(
     let mut property_derives = vec![format_ident!("Debug")];
 
     if variant == Variant::Owned || variant == Variant::Ref {
-        derives.push(format_ident!("Clone"));
-        property_derives.push(format_ident!("Clone"));
+        for derive in [
+            format_ident!("Clone"),
+            format_ident!("PartialEq"),
+            format_ident!("Eq"),
+        ] {
+            derives.push(derive.clone());
+            property_derives.push(derive);
+        }
     }
 
     if !properties.is_empty() {

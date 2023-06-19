@@ -156,7 +156,9 @@ impl<'a> TypeGenerator<'a> {
 
     pub(super) fn finish(mut self) -> Type {
         let derive = match self.variant {
-            Variant::Owned | Variant::Ref => quote!(#[derive(Debug, Clone, Serialize)]),
+            Variant::Owned | Variant::Ref => {
+                quote!(#[derive(Debug, PartialEq, Eq, Clone, Serialize)])
+            }
             Variant::Mut => quote!(#[derive(Debug, Serialize)]),
         };
 
