@@ -26,6 +26,15 @@ impl Boolean {
     }
 }
 
+impl<T> From<T> for Boolean
+where
+    T: Into<bool>,
+{
+    fn from(value: T) -> Self {
+        Self(value.into())
+    }
+}
+
 impl Deref for Boolean {
     type Target = bool;
 
