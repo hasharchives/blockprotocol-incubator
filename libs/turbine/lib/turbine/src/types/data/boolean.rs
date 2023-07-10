@@ -16,13 +16,22 @@ pub enum BooleanError {
     NotABoolean(Value),
 }
 
-#[derive(Debug, Copy, Clone, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct Boolean(bool);
 
 impl Boolean {
     #[must_use]
     pub const fn new(value: bool) -> Self {
         Self(value)
+    }
+}
+
+impl<T> From<T> for Boolean
+where
+    T: Into<bool>,
+{
+    fn from(value: T) -> Self {
+        Self(value.into())
     }
 }
 

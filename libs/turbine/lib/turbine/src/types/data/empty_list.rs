@@ -17,7 +17,7 @@ pub enum EmptyListError {
     NotEmpty,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EmptyList;
 
 impl Serialize for EmptyList {

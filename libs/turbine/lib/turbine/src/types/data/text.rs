@@ -17,7 +17,7 @@ pub enum TextError {
     NotText(Value),
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct Text(String);
 
 impl Text {
@@ -86,7 +86,7 @@ impl DataType for Text {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct TextRef<'a>(&'a str);
 
 impl<'a> TextRef<'a> {
