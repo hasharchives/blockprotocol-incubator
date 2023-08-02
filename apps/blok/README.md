@@ -11,6 +11,7 @@ Blok comes with several commands, these include:
 * `plan`: Plan execution of operations required to sync types to a remote system
 * `apply`: Apply operations to sync types to a remote system
 * `new`: Create a new property/entity/data type from a template
+* `dump`: Dump all the types in a project to stdout
 
 `diff` is to `sync`, what `plan` is to `apply`. `diff` and `plan` are read-only operations, while `sync` and `apply` are
 read-write operations.
