@@ -108,3 +108,11 @@ variables can be inserted using the `${NAME}` syntax.
   }
 }
 ```
+
+## Imports
+
+Imports of types can either be local (things that are only loaded in the remote instance) or remote, remote types can be
+imported using imports by simply specifying the URL of the type, instead of a local path.
+
+The `@std` namespace is reserved for standard types, such as built-in data-types and types that are needed to express a
+type.
