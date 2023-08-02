@@ -1,0 +1,18 @@
+import { Property, Object } from '@std/types';
+import { Text } from '@std/data';
+import {PrimaryEMail} from "./primaryEmail.blok";
+import {SecondaryEMail} from "./secondaryEmail.blok";
+
+/**
+ * Full E-Mail Address
+ *
+ * A full e-mail address is a primary e-mail address or a secondary e-mail address.
+ *
+ * @id full-email
+ * @version 1
+ */
+export interface FullEMail extends Property {
+    oneOf:
+        | Object<PrimaryEMail & SecondaryEMail>
+        | Text;
+}

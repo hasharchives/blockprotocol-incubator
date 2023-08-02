@@ -1,0 +1,10 @@
+{
+  lint: {
+    case: {
+      id: 'kebab-case',
+    }
+  },
+  rewrite: {
+
+  }
+}

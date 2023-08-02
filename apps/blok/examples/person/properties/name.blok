@@ -1,0 +1,14 @@
+import { Property } from '@std/types';
+import { Text } from '@std/data';
+
+/**
+ * Name
+ *
+ * Name of an entity.
+ *
+ * @id name
+ * @version 1
+ */
+export interface Name extends Property {
+    oneOf: Text;
+}
