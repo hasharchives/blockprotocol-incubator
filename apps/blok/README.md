@@ -105,9 +105,28 @@ variables can be inserted using the `${NAME}` syntax.
     case: {
       id: 'kebab-case',
     }
-  }
+  },
+  overrrides: [
+    {
+      if: {
+        scheme: 'bp',
+        bp: {
+          domain: 'blockprotocol.org',
+        }
+      },
+      then: {
+        scheme: 'bp',
+        bp: {
+          domain: 'backup.blockprotocol.org',
+        }
+      }
+    }
+  ]
 }
 ```
+
+Configs can also be provided in `blokconfig.prod.json` and `blokconfig.dev.json`, which will be used depending on
+the `PROFILE` environment variable, they will be deep-merged with the base config.
 
 ## Imports
 
