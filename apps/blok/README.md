@@ -3,7 +3,7 @@
 Blok (pronounced blɔk) is a simple language to express types of the Block Protocol, the language is a subset of
 Typescript and allows to express the types of the protocol in a simple way.
 
-Blok comes with several tool to help you work with types, this includes:
+Blok comes with several commands, these include:
 
 * `diff`: Compare types between remote and local. This is useful to see what changes are required to sync types
 * `sync`: Import/sync types from a remote system
