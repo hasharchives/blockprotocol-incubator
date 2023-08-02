@@ -1,0 +1,12 @@
+[package]
+name = "dummy"
+description.workspace = true
+readme.workspace = true
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

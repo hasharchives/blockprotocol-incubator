@@ -1,0 +1,11 @@
+import {Entity} from '@std/types';
+
+/**
+ * Employed By
+ *
+ * Being paid to work for this entity.
+ *
+ * @id employed-by
+ * @version 1
+ */
+export interface EmployedBy extends Entity {}

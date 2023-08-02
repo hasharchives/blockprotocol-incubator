@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["lib/*", "bin/*"]
+default-members = ["bin/cli"]
+
+[workspace.package]
+description = "A DSL for writing Block-Protocol types"
+readme = "README.md"
+version = "0.0.0"
+edition = "2021"
+authors = ["Bilal Mahmoud"]
+publish = false
+
+[profile.production]
+inherits = "release"
+lto = "fat"
+strip = "symbols"

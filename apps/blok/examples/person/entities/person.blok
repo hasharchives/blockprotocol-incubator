@@ -1,0 +1,21 @@
+import {Entity, Link} from '@std/types';
+import {GreaterThanEqual} from '@std/conditions';
+import {EmployedBy} from "./employedBy.blok";
+import {EMail} from "../properties/email.blok";
+import {Name} from "../properties/name.blok";
+
+
+/**
+ * Person
+ *
+ * An extremely simplified representation of a person or human being.
+ *
+ * @id person
+ * @version 1
+ */
+export interface Person extends Entity {
+    properties: EMail & Name;
+    links: Link<EmployedBy, { length: GreaterThanEqual<0>; }>;
+}
+
+// To constrain a property on array length use: Array<Name, { length: GreaterThanEqual<1> }> instead of Name[]

@@ -1,0 +1,14 @@
+import { Property } from '@std/types';
+import { Text } from '@std/data';
+
+/**
+ * E-Mail
+ *
+ * E-Mail Address of an entity.
+ *
+ * @id email
+ * @version 1
+ */
+export interface EMail extends Property {
+    oneOf: Text;
+}
