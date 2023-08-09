@@ -135,3 +135,13 @@ imported using imports by simply specifying the URL of the type, instead of a lo
 
 The `@std` namespace is reserved for standard types, such as built-in data-types and types that are needed to express a
 type.
+
+## File Extension
+
+The primary (canonical) file extension is `.blok`, but due to limitations in `tsc`, the following extensions are also
+supported:
+
+* `.blok.ts`
+* `.blok.d.ts`
+
+To force code generation (via e.g. `sync`) to use a specific extension, use the configuration entry: `sync.extension`.
