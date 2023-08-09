@@ -1,4 +1,4 @@
-import { Property, PropertyVersions } from '@std/types';
+import { Property, Versioned } from '@std/types';
 import { Text } from '@std/data';
 
 /**
@@ -15,4 +15,4 @@ interface V1 extends Property {
     oneOf: Text;
 }
 
-export type PrimaryEMail = PropertyVersions<V1>;
+export type PrimaryEMail = Versioned<V1>;
