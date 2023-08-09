@@ -1,4 +1,4 @@
-import { Property } from '@std/types';
+import { Property, Versioned } from '@std/types';
 import { Text } from '@std/data';
 
 /**
@@ -7,8 +7,11 @@ import { Text } from '@std/data';
  * E-Mail Address of an entity.
  *
  * @id email
- * @version 1
  */
-export interface EMail extends Property {
+interface V1 extends Property {
+    version: 1;
+
     oneOf: Text;
 }
+
+export type EMail = Versioned<Property, V1>;

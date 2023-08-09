@@ -1,4 +1,4 @@
-import { Property } from '@std/types';
+import { Property, Versioned } from '@std/types';
 import { Text } from '@std/data';
 
 /**
@@ -7,8 +7,11 @@ import { Text } from '@std/data';
  * Name of an entity.
  *
  * @id name
- * @version 1
  */
-export interface Name extends Property {
+interface V1 extends Property {
+    version: 1;
+
     oneOf: Text;
 }
+
+export type Name = Versioned<Property, V1>;

@@ -1,4 +1,4 @@
-import {Entity} from '@std/types';
+import {Entity, Versioned} from '@std/types';
 
 /**
  * Employed By
@@ -6,6 +6,9 @@ import {Entity} from '@std/types';
  * Being paid to work for this entity.
  *
  * @id employed-by
- * @version 1
  */
-export interface EmployedBy extends Entity {}
+interface V1 extends Entity {
+    version: 1
+}
+
+export type EmployedBy = Versioned<Entity, V1>;
