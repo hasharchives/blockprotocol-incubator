@@ -1,0 +1,13 @@
+[package]
+name = "parser"
+description.workspace = true
+readme.workspace = true
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+stc_ts_type_checker = { git = "https://github.com/dudykr/stc.git" }
