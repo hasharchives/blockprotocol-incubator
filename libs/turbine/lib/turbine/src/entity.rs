@@ -64,6 +64,7 @@ impl Serialize for EntityId {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ProvenanceMetadata {
     pub record_created_by_id: Uuid,
+    pub record_archived_by_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
