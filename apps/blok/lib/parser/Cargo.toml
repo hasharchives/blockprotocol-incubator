@@ -17,4 +17,6 @@ swc_common.workspace = true
 error-stack.workspace = true
 thiserror.workspace = true
 
+shared.workspace = true
+
 text-size = "1.1.1"

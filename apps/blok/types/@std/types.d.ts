@@ -1,8 +1,5 @@
 import {NumericConstraint} from "./conditions";
 
-export interface Versioned<T, V extends T> {
-    versions: V;
-}
 
 export interface OntologyType {
     version: number;

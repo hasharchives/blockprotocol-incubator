@@ -11,4 +11,6 @@ interface V1 extends Entity {
     version: 1
 }
 
-export type EmployedBy = Versioned<Entity, V1>;
+export enum EmployedBy {
+    V1,
+}
