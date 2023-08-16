@@ -3,7 +3,10 @@
 //! This is the output of the parser, which is then used to generate the AST.
 //! This is a strict subset of valid TypeScript.
 
+use error_stack::Report;
 use text_size::TextRange;
+
+use crate::error::Error;
 
 struct Ident(String);
 
@@ -19,15 +22,15 @@ struct Export {
 }
 
 struct Type {
-    ident: Positional<Ident>,
+    ident: Spanned<Ident>,
 
-    generics: Vec<Positional<Ident>>,
+    generics: Vec<Spanned<Ident>>,
 }
 
 struct RecordField {
-    ident: Positional<Ident>,
+    ident: Spanned<Ident>,
 
-    expr: Positional<TypeExpr>,
+    expr: Spanned<TypeExpr>,
 }
 
 enum Literal {
@@ -40,7 +43,7 @@ enum TypeExpr {
     /// Type.
     ///
     /// Example: `T` or `T<U>`
-    Type(Positional<Type>),
+    Type(Spanned<Type>),
 
     /// Literal value
     ///
@@ -50,56 +53,56 @@ enum TypeExpr {
     /// The `|` operator.
     ///
     /// Example: `string | number`
-    Union(Vec<Positional<TypeExpr>>),
+    Union(Vec<Spanned<TypeExpr>>),
 
     /// The `&` operator.
     ///
     /// Example: `string & number`
-    Intersection(Vec<Positional<TypeExpr>>),
+    Intersection(Vec<Spanned<TypeExpr>>),
 
     /// The `[]` operator.
     ///
     /// Example: `string[]`
-    Array(Box<Positional<TypeExpr>>),
+    Array(Box<Spanned<TypeExpr>>),
 
     /// The `{...}` operator.
-    Record(Vec<Positional<RecordField>>),
+    Record(Vec<Spanned<RecordField>>),
 }
 
 struct TypeDef {
-    ident: Positional<Type>,
+    ident: Spanned<Type>,
 
-    expr: Positional<TypeExpr>,
+    expr: Spanned<TypeExpr>,
 }
 
 struct InterfaceField {
-    ident: Positional<Ident>,
+    ident: Spanned<Ident>,
 
-    expr: Positional<TypeExpr>,
+    expr: Spanned<TypeExpr>,
 }
 
 struct Interface {
-    ident: Positional<Type>,
+    ident: Spanned<Type>,
 
-    extends: Vec<Positional<Type>>,
+    extends: Vec<Spanned<Type>>,
 
-    fields: Vec<Positional<InterfaceField>>,
+    fields: Vec<Spanned<InterfaceField>>,
 }
 
 enum Statement {
-    TypeDef(Positional<TypeDef>),
-    Interface(Positional<Interface>),
+    TypeDef(Spanned<TypeDef>),
+    Interface(Spanned<Interface>),
 }
 
-struct Positional<T> {
+struct Spanned<T> {
     position: TextRange,
 
     value: T,
 }
 
-struct Module {
+pub(crate) struct Module {
     imports: Vec<Import>,
     exports: Vec<Export>,
 
-    nodes: Vec<Positional<Statement>>,
+    nodes: Vec<Spanned<Statement>>,
 }
