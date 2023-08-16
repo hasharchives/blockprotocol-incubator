@@ -11,6 +11,9 @@ edition = "2021"
 authors = ["Bilal Mahmoud"]
 publish = false
 
+[workspace.dependencies]
+swc_ecma_parser = "0.137.9"
+
 [profile.production]
 inherits = "release"
 lto = "fat"

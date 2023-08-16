@@ -10,4 +10,4 @@ publish.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-stc_ts_type_checker = { git = "https://github.com/dudykr/stc.git" }
+swc_ecma_parser.workspace = true
