@@ -11,3 +11,4 @@ publish.workspace = true
 
 [dependencies]
 swc_ecma_parser.workspace = true
+text-size = "1.1.1"
