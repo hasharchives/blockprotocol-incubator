@@ -1,4 +1,4 @@
-import { Property, Versioned, Object } from '@std/types';
+import { PropertyType, Versioned, Object } from '@std/types';
 import { Text } from '@std/data';
 import { PrimaryEMail } from "./primaryEmail.blok";
 import { SecondaryEMail } from "./secondaryEmail.blok";
@@ -11,7 +11,7 @@ import { SecondaryEMail } from "./secondaryEmail.blok";
  * @id full-email
  * @version 1
  */
-interface Latest extends Property {
+interface Latest extends PropertyType {
     // Not created yet, will be set to 1 when created.
     version: unknown;
 
@@ -20,4 +20,4 @@ interface Latest extends Property {
         | Text;
 }
 
-export type FullEMail = Versioned<Property, Latest>;
+export type FullEMail = Versioned<PropertyType, Latest>;

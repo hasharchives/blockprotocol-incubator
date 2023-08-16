@@ -1,5 +1,5 @@
-import {Data} from "./types";
+import {DataType} from "./types";
 
-export interface Text extends Data {
+export interface Text extends DataType {
     type: 'text';
 }

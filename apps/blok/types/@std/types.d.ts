@@ -4,28 +4,50 @@ export interface Versioned<T, V extends T> {
     versions: V;
 }
 
-export interface Data {
+export interface OntologyType {
+    version: number;
+    archived: boolean;
+}
+
+
+export interface DataType extends PropertyTypeVariant {
     version: number;
 }
 
-export interface Property {
-    version: number;
+interface PropertyTypeVariant {
+    __brand: 'PropertyTypeVariant';
+}
 
-    oneOf: Data | Versioned<Data, Data>
+export interface Object<T extends PropertyType> extends PropertyTypeVariant {
+    __type: T;
+}
+
+type ArrayItem = Object<PropertyType> | Array<ArrayItem>;
+
+export interface Array<T extends ArrayItem> extends PropertyTypeVariant {
+    __type: T;
+}
+
+export interface Ref<T extends OntologyType> extends PropertyTypeVariant {
+    __type: T;
+}
+
+export interface PropertyType extends OntologyType {
+    oneOf: PropertyTypeVariant
 }
 
 interface LinkProperties {
     length: NumericConstraint
 }
 
-export interface Link<T extends Entity, U extends LinkProperties> {
+export interface Link<T extends EntityType, U extends LinkProperties> {
     to: T
     properties: U
 }
 
-export interface Entity {
+export interface EntityType extends OntologyType {
     version: number;
 
-    properties: Property | Versioned<Property, Property>
-    links: Link<Entity, LinkProperties>
+    properties: PropertyType | Versioned<PropertyType, PropertyType>
+    links: Link<EntityType, LinkProperties>
 }
