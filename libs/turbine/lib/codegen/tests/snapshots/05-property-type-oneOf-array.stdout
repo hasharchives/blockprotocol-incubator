@@ -9,7 +9,7 @@ use turbine::{
     PropertyType, PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl,
     VersionedUrlRef,
 };
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Inner0(pub Number);
 impl Inner0 {
     fn try_from_value(value: serde_json::Value) -> Result<Self, GenericPropertError> {
@@ -30,7 +30,7 @@ impl Inner0 {
         Inner1(<Number as Type>::as_ref(value))
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Inner1<'a>(pub <Number as Type>::Ref<'a>);
 impl Inner1<'a> {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, GenericPropertError> {
@@ -63,7 +63,7 @@ impl Inner2<'a> {
     }
 }
 ///Contrived Property
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum ContrivedProperty {
     Variant0(Number),
@@ -146,7 +146,7 @@ impl PropertyType for ContrivedProperty {
 }
 pub type ContrivedPropertyV1 = ContrivedProperty;
 ///Contrived Property
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum ContrivedPropertyRef<'a> {
     Variant0(<Number as Type>::Ref<'a>),

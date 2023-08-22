@@ -8,7 +8,7 @@ use turbine::{
     VersionedUrlRef,
 };
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Text(pub Text0);
 impl TypeUrl for Text {
     type InheritsFrom = ();
@@ -43,7 +43,7 @@ impl PropertyType for Text {
 }
 pub type TextV1 = Text;
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct TextRef<'a>(pub <Text0 as Type>::Ref<'a>);
 impl TypeUrl for TextRef<'_> {
     type InheritsFrom = ();
@@ -116,7 +116,7 @@ use turbine::{
 
 use crate::blockprotocol::alice::property::text::Text as Text0;
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserId {
     Variant0(Text1),
@@ -171,11 +171,15 @@ impl PropertyType for UserId {
             },
         }
         let this = 'variant: {
-            let serde_json :: Value :: Object (mut properties) = value . clone () else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(mut properties) = value.clone() else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let text = 'property: {
                 let value =
                     properties.remove("https://blockprotocol.org/@alice/types/property-type/text/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -203,7 +207,7 @@ impl PropertyType for UserId {
 }
 pub type UserIdV1 = UserId;
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
     Variant0(<Text1 as Type>::Ref<'a>),
@@ -250,11 +254,15 @@ impl<'a> PropertyTypeRef<'a> for UserIdRef<'a> {
             },
         }
         let this = 'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let text = 'property: {
                 let value =
                     properties.get("https://blockprotocol.org/@alice/types/property-type/text/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -330,7 +338,9 @@ impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
             },
         }
         let this = 'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let text = 'property: {
                 let value = unsafe {
                     let value = properties
@@ -338,7 +348,9 @@ impl<'a> PropertyTypeMut<'a> for UserIdMut<'a> {
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };

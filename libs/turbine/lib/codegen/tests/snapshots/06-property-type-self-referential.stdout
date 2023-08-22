@@ -7,7 +7,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Primary E-Mail
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Email(pub Text);
 impl TypeUrl for Email {
     type InheritsFrom = ();
@@ -42,7 +42,7 @@ impl PropertyType for Email {
 }
 pub type EmailV1 = Email;
 ///Primary E-Mail
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct EmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for EmailRef<'_> {
     type InheritsFrom = ();
@@ -119,7 +119,7 @@ use crate::{
     https_blockprotocol_org_alice_property_type_contact_information::ContactInformation as ContactInformation0,
 };
 ///Contact Information
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct ContactInformation {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
     pub contact_information: Option<Box<ContactInformation0>>,
@@ -167,11 +167,15 @@ impl PropertyType for ContactInformation {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (mut properties) = value . clone () else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(mut properties) = value.clone() else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let contact_information = 'property: {
                 let value = properties
                     .remove("https://blockprotocol.org/@alice/property-type/contact-information/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -185,7 +189,11 @@ impl PropertyType for ContactInformation {
             let email = 'property: {
                 let value = properties
                     .remove("https://blockprotocol.org/@blockprotocol/types/property-type/email/");
-                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("https://blockprotocol.org/@blockprotocol/types/property-type/email/"))) ; } ;
+                let Some(value) = value else {
+                    break 'property Err(Report::new(GenericPropertyError::ExpectedProperty(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/email/",
+                    )));
+                };
                 let value =
                     <Email>::try_from_value(value).change_context(GenericPropertyError::Property(
                         "https://blockprotocol.org/@blockprotocol/types/property-type/email/",
@@ -204,7 +212,7 @@ impl PropertyType for ContactInformation {
 }
 pub type ContactInformationV1 = ContactInformation;
 ///Contact Information
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct ContactInformationRef<'a> {
     #[serde(rename = "https://blockprotocol.org/@alice/property-type/contact-information/")]
     pub contact_information: Option<Box<<ContactInformation0 as Type>::Ref<'a>>>,
@@ -242,11 +250,15 @@ impl<'a> PropertyTypeRef<'a> for ContactInformationRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let contact_information = 'property: {
                 let value = properties
                     .get("https://blockprotocol.org/@alice/property-type/contact-information/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -260,7 +272,11 @@ impl<'a> PropertyTypeRef<'a> for ContactInformationRef<'a> {
             let email = 'property: {
                 let value = properties
                     .get("https://blockprotocol.org/@blockprotocol/types/property-type/email/");
-                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("https://blockprotocol.org/@blockprotocol/types/property-type/email/"))) ; } ;
+                let Some(value) = value else {
+                    break 'property Err(Report::new(GenericPropertyError::ExpectedProperty(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/email/",
+                    )));
+                };
                 let value = <<Email as Type>::Ref<'a>>::try_from_value(value).change_context(
                     GenericPropertyError::Property(
                         "https://blockprotocol.org/@blockprotocol/types/property-type/email/",
@@ -318,7 +334,9 @@ impl<'a> PropertyTypeMut<'a> for ContactInformationMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let contact_information = 'property: {
                 let value = unsafe {
                     let value = properties.get_mut(
@@ -327,7 +345,9 @@ impl<'a> PropertyTypeMut<'a> for ContactInformationMut<'a> {
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -346,7 +366,11 @@ impl<'a> PropertyTypeMut<'a> for ContactInformationMut<'a> {
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("https://blockprotocol.org/@blockprotocol/types/property-type/email/"))) ; } ;
+                let Some(value) = value else {
+                    break 'property Err(Report::new(GenericPropertyError::ExpectedProperty(
+                        "https://blockprotocol.org/@blockprotocol/types/property-type/email/",
+                    )));
+                };
                 let value = <<Email as Type>::Mut<'a>>::try_from_value(value).change_context(
                     GenericPropertyError::Property(
                         "https://blockprotocol.org/@blockprotocol/types/property-type/email/",

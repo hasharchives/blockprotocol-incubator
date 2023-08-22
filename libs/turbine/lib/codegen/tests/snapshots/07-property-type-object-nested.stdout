@@ -7,7 +7,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Favorite Film
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct FavoriteFilm(pub Text);
 impl TypeUrl for FavoriteFilm {
     type InheritsFrom = ();
@@ -43,7 +43,7 @@ impl PropertyType for FavoriteFilm {
 }
 pub type FavoriteFilmV1 = FavoriteFilm;
 ///Favorite Film
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct FavoriteFilmRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for FavoriteFilmRef<'_> {
     type InheritsFrom = ();
@@ -115,7 +115,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Favorite Song
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct FavoriteSong(pub Text);
 impl TypeUrl for FavoriteSong {
     type InheritsFrom = ();
@@ -151,7 +151,7 @@ impl PropertyType for FavoriteSong {
 }
 pub type FavoriteSongV1 = FavoriteSong;
 ///Favorite Song
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct FavoriteSongRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for FavoriteSongRef<'_> {
     type InheritsFrom = ();
@@ -223,7 +223,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Hobby
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Hobby(pub Text);
 impl TypeUrl for Hobby {
     type InheritsFrom = ();
@@ -258,7 +258,7 @@ impl PropertyType for Hobby {
 }
 pub type HobbyV1 = Hobby;
 ///Hobby
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct HobbyRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for HobbyRef<'_> {
     type InheritsFrom = ();
@@ -334,7 +334,7 @@ use crate::blockprotocol::blockprotocol::property::{
     favorite_film::FavoriteFilm, favorite_song::FavoriteSong, hobby::Hobby,
 };
 ///Interests
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Interests {
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
@@ -406,12 +406,16 @@ impl PropertyType for Interests {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (mut properties) = value . clone () else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(mut properties) = value.clone() else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let favorite_film = 'property: {
                 let value = properties.remove(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
                 );
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -425,7 +429,9 @@ impl PropertyType for Interests {
                 let value = properties.remove(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
                 );
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -438,7 +444,9 @@ impl PropertyType for Interests {
             let hobby = 'property: {
                 let value = properties
                     .remove("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -472,7 +480,7 @@ impl PropertyType for Interests {
 }
 pub type InterestsV1 = Interests;
 ///Interests
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct InterestsRef<'a> {
     #[serde(
         rename = "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/"
@@ -522,12 +530,16 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let favorite_film = 'property: {
                 let value = properties.get(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/",
                 );
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -541,7 +553,9 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
                 let value = properties.get(
                     "https://blockprotocol.org/@blockprotocol/types/property-type/favorite-song/",
                 );
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -554,7 +568,9 @@ impl<'a> PropertyTypeRef<'a> for InterestsRef<'a> {
             let hobby = 'property: {
                 let value = properties
                     .get("https://blockprotocol.org/@blockprotocol/types/property-type/hobby/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -638,14 +654,18 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let favorite_film = 'property: {
                 let value = unsafe {
                     let value = properties . get_mut ("https://blockprotocol.org/@blockprotocol/types/property-type/favorite-film/") ;
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -661,7 +681,9 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -679,7 +701,9 @@ impl<'a> PropertyTypeMut<'a> for InterestsMut<'a> {
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };

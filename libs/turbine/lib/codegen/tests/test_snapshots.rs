@@ -44,6 +44,7 @@ fn snapshots() {
 
         let now = SystemTime::now();
         let output = codegen::process(contents, Config {
+            timings: false,
             module: None,
             overrides: vec![],
             flavors: vec![],

@@ -11,8 +11,7 @@ use turbine::{
     EntityTypeRef, GenericEntityError, OptionalEntityLink, PropertyType as _, PropertyTypeMut as _,
     PropertyTypeRef as _, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
-///Country
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Properties;
 turbine::serialize_compat!(Properties);
 impl Properties {
@@ -30,7 +29,8 @@ impl Properties {
         PropertiesRef(PhantomData)
     }
 }
-#[derive(Debug, Serialize, Clone)]
+///Country
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Country {
     pub properties: Properties,
@@ -84,8 +84,7 @@ impl OptionalEntityLink for Country {
         None
     }
 }
-///Country
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
 turbine::serialize_compat!(PropertiesRef<'a>);
 impl<'a> PropertiesRef<'a> {
@@ -99,7 +98,8 @@ impl<'a> PropertiesRef<'a> {
         Properties
     }
 }
-#[derive(Debug, Serialize, Clone)]
+///Country
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     pub properties: PropertiesRef<'a>,
@@ -146,7 +146,6 @@ impl OptionalEntityLink for CountryRef<'_> {
         None
     }
 }
-///Country
 #[derive(Debug)]
 pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
 turbine::serialize_compat!(PropertiesMut<'a>);
@@ -161,6 +160,7 @@ impl<'a> PropertiesMut<'a> {
         Properties
     }
 }
+///Country
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
