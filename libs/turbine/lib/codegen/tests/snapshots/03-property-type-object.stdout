@@ -11,7 +11,7 @@ use crate::localhost_3000::alice::property::{
     primary_email::PrimaryEmail, secondary_email::SecondaryEmail,
 };
 ///Full Email
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct FullEmail {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
     pub primary_email: PrimaryEmail,
@@ -59,11 +59,17 @@ impl PropertyType for FullEmail {
 
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (mut properties) = value . clone () else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(mut properties) = value.clone() else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let primary_email = 'property: {
                 let value = properties
                     .remove("http://localhost:3000/@alice/types/property-type/primaryEmail/");
-                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/primaryEmail/"))) ; } ;
+                let Some(value) = value else {
+                    break 'property Err(Report::new(GenericPropertyError::ExpectedProperty(
+                        "http://localhost:3000/@alice/types/property-type/primaryEmail/",
+                    )));
+                };
                 let value = <PrimaryEmail>::try_from_value(value).change_context(
                     GenericPropertyError::Property(
                         "http://localhost:3000/@alice/types/property-type/primaryEmail/",
@@ -74,7 +80,9 @@ impl PropertyType for FullEmail {
             let secondary_email = 'property: {
                 let value = properties
                     .remove("http://localhost:3000/@alice/types/property-type/secondaryEmail/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -97,7 +105,7 @@ impl PropertyType for FullEmail {
 }
 pub type FullEmailV1 = FullEmail;
 ///Full Email
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct FullEmailRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/primaryEmail/")]
     pub primary_email: <PrimaryEmail as Type>::Ref<'a>,
@@ -131,11 +139,17 @@ impl<'a> PropertyTypeRef<'a> for FullEmailRef<'a> {
 
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let primary_email = 'property: {
                 let value = properties
                     .get("http://localhost:3000/@alice/types/property-type/primaryEmail/");
-                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/primaryEmail/"))) ; } ;
+                let Some(value) = value else {
+                    break 'property Err(Report::new(GenericPropertyError::ExpectedProperty(
+                        "http://localhost:3000/@alice/types/property-type/primaryEmail/",
+                    )));
+                };
                 let value = <<PrimaryEmail as Type>::Ref<'a>>::try_from_value(value)
                     .change_context(GenericPropertyError::Property(
                         "http://localhost:3000/@alice/types/property-type/primaryEmail/",
@@ -145,7 +159,9 @@ impl<'a> PropertyTypeRef<'a> for FullEmailRef<'a> {
             let secondary_email = 'property: {
                 let value = properties
                     .get("http://localhost:3000/@alice/types/property-type/secondaryEmail/");
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -201,7 +217,9 @@ impl<'a> PropertyTypeMut<'a> for FullEmailMut<'a> {
 
     fn try_from_value(value: &'a mut serde_json::Value) -> Result<Self, Self::Error> {
         'variant: {
-            let serde_json :: Value :: Object (properties) = value else { break 'variant Err (Report :: new (GenericPropertyError :: ExpectedObject)) } ;
+            let serde_json::Value::Object(properties) = value else {
+                break 'variant Err(Report::new(GenericPropertyError::ExpectedObject));
+            };
             let primary_email = 'property: {
                 let value = unsafe {
                     let value = properties
@@ -209,7 +227,11 @@ impl<'a> PropertyTypeMut<'a> for FullEmailMut<'a> {
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Err (Report :: new (GenericPropertyError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/primaryEmail/"))) ; } ;
+                let Some(value) = value else {
+                    break 'property Err(Report::new(GenericPropertyError::ExpectedProperty(
+                        "http://localhost:3000/@alice/types/property-type/primaryEmail/",
+                    )));
+                };
                 let value = <<PrimaryEmail as Type>::Mut<'a>>::try_from_value(value)
                     .change_context(GenericPropertyError::Property(
                         "http://localhost:3000/@alice/types/property-type/primaryEmail/",
@@ -224,7 +246,9 @@ impl<'a> PropertyTypeMut<'a> for FullEmailMut<'a> {
                     let value = value.map(|value| value as *mut _);
                     value.map(|value: *mut serde_json::Value| &mut *value)
                 };
-                let Some (value) = value else { break 'property Ok (None) ; } ;
+                let Some(value) = value else {
+                    break 'property Ok(None);
+                };
                 if value.is_null() {
                     break 'property Ok(None);
                 };
@@ -258,7 +282,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Primary E-Mail
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct PrimaryEmail(pub Text);
 impl TypeUrl for PrimaryEmail {
     type InheritsFrom = ();
@@ -293,7 +317,7 @@ impl PropertyType for PrimaryEmail {
 }
 pub type PrimaryEmailV1 = PrimaryEmail;
 ///Primary E-Mail
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct PrimaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for PrimaryEmailRef<'_> {
     type InheritsFrom = ();
@@ -363,7 +387,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Secondary E-Mail
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct SecondaryEmail(pub Text);
 impl TypeUrl for SecondaryEmail {
     type InheritsFrom = ();
@@ -398,7 +422,7 @@ impl PropertyType for SecondaryEmail {
 }
 pub type SecondaryEmailV1 = SecondaryEmail;
 ///Secondary E-Mail
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct SecondaryEmailRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for SecondaryEmailRef<'_> {
     type InheritsFrom = ();

@@ -19,7 +19,7 @@ use std::{
     time::SystemTime,
 };
 
-use error_stack::{IntoReport, Result, ResultExt};
+use error_stack::{Result, ResultExt};
 use quote::__private::TokenStream;
 use thiserror::Error;
 use type_system::{repr, url::VersionedUrl, DataType, EntityType, PropertyType};
@@ -40,19 +40,15 @@ use crate::{
 //      - data types (if built-in refer to those, otherwise error out)
 //      - property types
 //      - entity types
-// 4) create modules for each type, they are designated by
-//      if hash: url base (backwards) / org / entity|property / id.rs
-//      if blockprotocol: bp / org / entity|property / id.rs
+// 4) create modules for each type, they are designated by if hash: url base (backwards) / org /
+//    entity|property / id.rs if blockprotocol: bp / org / entity|property / id.rs
 // 5) if there are multiple versions transform into a module, put the current one in mod, there
-//      others in v1.rs etc and suffix name w/ V1
+//    others in v1.rs etc and suffix name w/ V1
 // 6) for property types inner types should be named Inner (if multiple Inner1, Inner2, etc.)
 // 7) when referring to those just use crate::<URL>::...
-// 8) generate the code required: 2 variants: Owned and Ref (ref is lightweight)
-//      with proper accessors, id converted to snake_case,
-//          if duplicate error out,
-//              sort properties,
-//                  then increment
-//              same for import problems, just alias with the name we want
+// 8) generate the code required: 2 variants: Owned and Ref (ref is lightweight) with proper
+//    accessors, id converted to snake_case, if duplicate error out, sort properties, then increment
+//    same for import problems, just alias with the name we want
 //
 // internally we also need to keep track which entity is in which file
 // todo: generate code, that selects Ref out of all verticies of a specific type, should not be
@@ -84,7 +80,7 @@ impl Hash for OutputPath {
 
 impl PartialOrd<Self> for OutputPath {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.path.partial_cmp(&other.path)
+        Some(self.cmp(other))
     }
 }
 
@@ -164,15 +160,12 @@ pub fn process(values: Vec<AnyTypeRepr>, config: Config) -> Result<Output, Error
         .into_iter()
         .map(|any| match any {
             AnyTypeRepr::Data(data) => DataType::try_from(data)
-                .into_report()
                 .map(AnyType::Data)
                 .change_context(Error::Parse),
             AnyTypeRepr::Property(property) => PropertyType::try_from(property)
-                .into_report()
                 .map(AnyType::Property)
                 .change_context(Error::Parse),
             AnyTypeRepr::Entity(entity) => EntityType::try_from(entity)
-                .into_report()
                 .map(AnyType::Entity)
                 .change_context(Error::Parse),
         })

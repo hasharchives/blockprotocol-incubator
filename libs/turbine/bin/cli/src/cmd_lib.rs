@@ -6,7 +6,7 @@ use std::{
 
 use clap::{Args, ValueEnum, ValueHint};
 use codegen::{AnyTypeRepr, Flavor, Override};
-use error_stack::{IntoReport, Result, ResultExt};
+use error_stack::{Result, ResultExt};
 use figment::{
     providers::{Env, Format, Toml},
     Figment, Profile,
@@ -110,10 +110,7 @@ pub(crate) enum Error {
 }
 
 fn call_remote(url: &Url) -> Result<Vec<AnyTypeRepr>, Error> {
-    let url = url
-        .join("entity-types/query")
-        .into_report()
-        .change_context(Error::Url)?;
+    let url = url.join("entity-types/query").change_context(Error::Url)?;
 
     let query = json!({
       "filter": {
@@ -167,12 +164,11 @@ fn call_remote(url: &Url) -> Result<Vec<AnyTypeRepr>, Error> {
         .post(url)
         .json(&query)
         .send()
-        .into_report()
         .change_context(Error::Http)?;
 
     // Do the same as:
     // .vertices | .[] | .[] | .inner.schema
-    let response: Value = response.json().into_report().change_context(Error::Http)?;
+    let response: Value = response.json().change_context(Error::Http)?;
 
     // TODO: propagate error?!
     let types = response["vertices"]
@@ -322,22 +318,16 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    let config = load_config(lib)
-        .into_report()
-        .change_context(Error::Config)?;
+    let config = load_config(lib).change_context(Error::Config)?;
 
     let now = SystemTime::now();
 
     let types = match config.origin {
         Origin::Remote(remote) => call_remote(&remote)?,
         Origin::Local(local) => {
-            let types = std::fs::read_to_string(local)
-                .into_report()
-                .change_context(Error::Io)?;
+            let types = std::fs::read_to_string(local).change_context(Error::Io)?;
 
-            serde_json::from_str::<Vec<AnyTypeRepr>>(&types)
-                .into_report()
-                .change_context(Error::Serde)?
+            serde_json::from_str::<Vec<AnyTypeRepr>>(&types).change_context(Error::Serde)?
         }
     };
 

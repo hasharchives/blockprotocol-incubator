@@ -10,7 +10,7 @@ use std::{
 };
 
 use codegen::{AnyTypeRepr, Flavor, ModuleFlavor, Output, Override};
-use error_stack::{IntoReport, Result, ResultExt};
+use error_stack::{Result, ResultExt};
 use onlyerror::Error;
 use pathdiff::diff_paths;
 
@@ -165,7 +165,6 @@ pub fn generate(types: Vec<AnyTypeRepr>, mut config: Config) -> Result<(), Error
 
     folder
         .output(config.root.join("src"))
-        .into_report()
         .change_context(Error::Io)?;
 
     let mut child = Command::new("cargo-fmt")
@@ -175,10 +174,9 @@ pub fn generate(types: Vec<AnyTypeRepr>, mut config: Config) -> Result<(), Error
         .arg("normalize_doc_attributes=true")
         .current_dir(&config.root)
         .spawn()
-        .into_report()
         .change_context(Error::Format)?;
 
-    child.wait().into_report().change_context(Error::Format)?;
+    child.wait().change_context(Error::Format)?;
 
     Ok(())
 }

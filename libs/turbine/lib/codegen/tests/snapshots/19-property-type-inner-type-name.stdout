@@ -18,7 +18,7 @@ use turbine::{
 };
 
 use crate::blockprotocol::blockprotocol::data::inner::Inner;
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct _Inner0(pub Number);
 impl _Inner0 {
     fn try_from_value(value: serde_json::Value) -> Result<Self, GenericPropertError> {
@@ -39,7 +39,7 @@ impl _Inner0 {
         _Inner1(<Number as Type>::as_ref(value))
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct _Inner1<'a>(pub <Number as Type>::Ref<'a>);
 impl _Inner1<'a> {
     fn try_from_value(value: &'a serde_json::Value) -> Result<Self, GenericPropertError> {
@@ -72,7 +72,7 @@ impl _Inner2<'a> {
     }
 }
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserId {
     Variant0(Inner),
@@ -151,7 +151,7 @@ impl PropertyType for UserId {
 }
 pub type UserIdV1 = UserId;
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
     Variant0(<Inner as Type>::Ref<'a>),

@@ -12,8 +12,7 @@ use turbine::{
     GenericEntityError, OptionalEntityLink, PropertyType as _, PropertyTypeMut as _,
     PropertyTypeRef as _, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
-///Part Of
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Properties;
 turbine::serialize_compat!(Properties);
 impl Properties {
@@ -31,7 +30,8 @@ impl Properties {
         PropertiesRef(PhantomData)
     }
 }
-#[derive(Debug, Serialize, Clone)]
+///Part Of
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOf {
     pub properties: Properties,
@@ -94,8 +94,7 @@ impl EntityLink for PartOf {
         &self.link_data
     }
 }
-///Part Of
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PropertiesRef<'a>(pub PhantomData<&'a ()>);
 turbine::serialize_compat!(PropertiesRef<'a>);
 impl<'a> PropertiesRef<'a> {
@@ -109,7 +108,8 @@ impl<'a> PropertiesRef<'a> {
         Properties
     }
 }
-#[derive(Debug, Serialize, Clone)]
+///Part Of
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfRef<'a> {
     pub properties: PropertiesRef<'a>,
@@ -165,7 +165,6 @@ impl EntityLink for PartOfRef<'_> {
         self.link_data
     }
 }
-///Part Of
 #[derive(Debug)]
 pub struct PropertiesMut<'a>(pub PhantomData<&'a ()>);
 turbine::serialize_compat!(PropertiesMut<'a>);
@@ -180,6 +179,7 @@ impl<'a> PropertiesMut<'a> {
         Properties
     }
 }
+///Part Of
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartOfMut<'a> {

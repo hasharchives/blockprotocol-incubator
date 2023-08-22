@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use error_stack::{IntoReport, Report, Result, ResultExt};
+use error_stack::{Report, Result, ResultExt};
 use once_cell::sync::Lazy;
 use petgraph::{
     algo::toposort,
@@ -81,12 +81,12 @@ impl UnificationAnalyzer {
 
         let Some(fetch) = &mut self.fetch else {
             self.missing.insert(id.clone());
-            return Err(Report::new(AnalysisError::IncompleteGraph))
+            return Err(Report::new(AnalysisError::IncompleteGraph));
         };
 
         let Some(any) = (fetch)(id) else {
             self.missing.insert(id.clone());
-            return Err(Report::new(AnalysisError::IncompleteGraph))
+            return Err(Report::new(AnalysisError::IncompleteGraph));
         };
 
         self.cache.insert(any.id().clone(), any);
@@ -120,7 +120,7 @@ impl UnificationAnalyzer {
     /// A) convert to `repr::EntityType`
     /// B) for every parent in parent:
     ///      1) get the parent
-    ///      2) convert to repr::EntityType
+    ///      2) convert to [`repr::EntityType`]
     ///      3) merge
     /// C) convert to `Value`
     /// D) set `allOf` again to parents (used later in analysis stage)
@@ -156,7 +156,6 @@ impl UnificationAnalyzer {
 
             let result = entity
                 .merge_parent(parent)
-                .into_report()
                 .change_context(AnalysisError::UnificationMerge);
 
             errors.push(result);
@@ -165,22 +164,18 @@ impl UnificationAnalyzer {
         errors.into_result()?;
 
         // time to be evil
-        let mut entity = serde_json::to_value(entity)
-            .into_report()
-            .change_context(AnalysisError::UnificationSerde)?;
+        let mut entity =
+            serde_json::to_value(entity).change_context(AnalysisError::UnificationSerde)?;
         entity["allOf"] = parents
             .into_iter()
             .map(|url| json!({ "$ref": url }))
             .collect();
 
-        let entity: repr::EntityType = serde_json::from_value(entity)
-            .into_report()
-            .change_context(AnalysisError::UnificationSerde)?;
+        let entity: repr::EntityType =
+            serde_json::from_value(entity).change_context(AnalysisError::UnificationSerde)?;
 
-        let entity: EntityType = entity
-            .try_into()
-            .into_report()
-            .change_context(AnalysisError::UnificationConvert)?;
+        let entity =
+            EntityType::try_from(entity).change_context(AnalysisError::UnificationConvert)?;
 
         self.cache
             .insert(entity.id().clone(), AnyType::Entity(entity));

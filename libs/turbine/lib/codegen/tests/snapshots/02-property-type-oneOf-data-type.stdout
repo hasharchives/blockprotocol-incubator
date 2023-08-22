@@ -8,7 +8,7 @@ use turbine::{
     PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserId {
     Variant0(Text),
@@ -73,7 +73,7 @@ impl PropertyType for UserId {
 }
 pub type UserIdV1 = UserId;
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum UserIdRef<'a> {
     Variant0(<Text as Type>::Ref<'a>),

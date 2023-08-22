@@ -12,8 +12,7 @@ use turbine::{
 };
 
 use crate::localhost_3000::alice::property::properties::Properties as Properties0;
-///Country
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Properties {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
     pub properties: Properties0,
@@ -25,7 +24,11 @@ impl Properties {
         let properties = 'property: {
             let value =
                 properties.remove("http://localhost:3000/@alice/types/property-type/properties/");
-            let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/properties/"))) ; } ;
+            let Some(value) = value else {
+                break 'property Err(Report::new(GenericEntityError::ExpectedProperty(
+                    "http://localhost:3000/@alice/types/property-type/properties/",
+                )));
+            };
             let value =
                 <Properties0>::try_from_value(value).change_context(GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/properties/",
@@ -52,7 +55,8 @@ impl Properties {
         }
     }
 }
-#[derive(Debug, Serialize, Clone)]
+///Country
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Country {
     pub properties: Properties,
@@ -106,8 +110,7 @@ impl OptionalEntityLink for Country {
         None
     }
 }
-///Country
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PropertiesRef<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
     pub properties: <Properties0 as Type>::Ref<'a>,
@@ -119,7 +122,11 @@ impl<'a> PropertiesRef<'a> {
         let properties = 'property: {
             let value =
                 properties.get("http://localhost:3000/@alice/types/property-type/properties/");
-            let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/properties/"))) ; } ;
+            let Some(value) = value else {
+                break 'property Err(Report::new(GenericEntityError::ExpectedProperty(
+                    "http://localhost:3000/@alice/types/property-type/properties/",
+                )));
+            };
             let value = <<Properties0 as Type>::Ref<'a>>::try_from_value(value).change_context(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/properties/",
@@ -140,7 +147,8 @@ impl<'a> PropertiesRef<'a> {
         }
     }
 }
-#[derive(Debug, Serialize, Clone)]
+///Country
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryRef<'a> {
     pub properties: PropertiesRef<'a>,
@@ -187,7 +195,6 @@ impl OptionalEntityLink for CountryRef<'_> {
         None
     }
 }
-///Country
 #[derive(Debug, Serialize)]
 pub struct PropertiesMut<'a> {
     #[serde(rename = "http://localhost:3000/@alice/types/property-type/properties/")]
@@ -204,7 +211,11 @@ impl<'a> PropertiesMut<'a> {
                 let value = value.map(|value| value as *mut _);
                 value.map(|value: *mut serde_json::Value| &mut *value)
             };
-            let Some (value) = value else { break 'property Err (Report :: new (GenericEntityError :: ExpectedProperty ("http://localhost:3000/@alice/types/property-type/properties/"))) ; } ;
+            let Some(value) = value else {
+                break 'property Err(Report::new(GenericEntityError::ExpectedProperty(
+                    "http://localhost:3000/@alice/types/property-type/properties/",
+                )));
+            };
             let value = <<Properties0 as Type>::Mut<'a>>::try_from_value(value).change_context(
                 GenericEntityError::Property(
                     "http://localhost:3000/@alice/types/property-type/properties/",
@@ -225,6 +236,7 @@ impl<'a> PropertiesMut<'a> {
         }
     }
 }
+///Country
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountryMut<'a> {
@@ -285,7 +297,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Name
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Properties(pub Text);
 impl TypeUrl for Properties {
     type InheritsFrom = ();
@@ -320,7 +332,7 @@ impl PropertyType for Properties {
 }
 pub type PropertiesV1 = Properties;
 ///Name
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct PropertiesRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for PropertiesRef<'_> {
     type InheritsFrom = ();

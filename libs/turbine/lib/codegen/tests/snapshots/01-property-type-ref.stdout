@@ -7,7 +7,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///Country Code (ISO 3166-1 alpha-2)
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct CountryCode(pub Text);
 impl TypeUrl for CountryCode {
     type InheritsFrom = ();
@@ -42,7 +42,7 @@ impl PropertyType for CountryCode {
 }
 pub type CountryCodeV1 = CountryCode;
 ///Country Code (ISO 3166-1 alpha-2)
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct CountryCodeRef<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for CountryCodeRef<'_> {
     type InheritsFrom = ();

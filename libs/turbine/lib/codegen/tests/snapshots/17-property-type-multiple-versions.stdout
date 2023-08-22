@@ -8,7 +8,7 @@ use turbine::{
     VersionedUrlRef,
 };
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct UserId(pub Number);
 impl TypeUrl for UserId {
     type InheritsFrom = ();
@@ -43,7 +43,7 @@ impl PropertyType for UserId {
 }
 pub type UserIdV2 = UserId;
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct UserIdRef<'a>(pub <Number as Type>::Ref<'a>);
 impl TypeUrl for UserIdRef<'_> {
     type InheritsFrom = ();
@@ -115,7 +115,7 @@ use turbine::{
     PropertyTypeMut, PropertyTypeRef, Type, TypeMut, TypeRef, TypeUrl, VersionedUrlRef,
 };
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct UserIdV1(pub Text);
 impl TypeUrl for UserIdV1 {
     type InheritsFrom = ();
@@ -149,7 +149,7 @@ impl PropertyType for UserIdV1 {
     }
 }
 ///User ID
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct UserIdV1Ref<'a>(pub <Text as Type>::Ref<'a>);
 impl TypeUrl for UserIdV1Ref<'_> {
     type InheritsFrom = ();
