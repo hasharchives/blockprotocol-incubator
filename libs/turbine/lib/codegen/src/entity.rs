@@ -16,8 +16,8 @@ use crate::{
     shared,
     shared::{
         determine_import_path, generate_mod, generate_property,
-        generate_property_object_conversion_body, imports, ConversionFunction, Import,
-        IncludeLifetime, Property, Variant,
+        generate_property_object_conversion_body, imports, ConversionFunction, Import, Property,
+        Variant,
     },
 };
 
@@ -255,7 +255,7 @@ fn generate_type(
         Variant::Mut => Ident::new("PropertiesMut", Span::call_site()),
     };
 
-    let reference = variant.into_reference(IncludeLifetime::Yes);
+    let reference = variant.into_reference();
 
     let mutability = match variant {
         Variant::Owned => Some(quote!(mut)),

@@ -40,16 +40,6 @@ pub(crate) enum NodeKind {
     EntityType,
 }
 
-impl NodeKind {
-    const fn from_any(any: &AnyType) -> Self {
-        match any {
-            AnyType::Data(_) => Self::DataType,
-            AnyType::Property(_) => Self::PropertyType,
-            AnyType::Entity(_) => Self::EntityType,
-        }
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct Node<'a> {
     id: &'a VersionedUrl,
