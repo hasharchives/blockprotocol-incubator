@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = ["lib/*", "bin/*"]
 default-members = ["bin/cli"]
 
@@ -9,6 +10,9 @@ version = "0.0.0"
 edition = "2021"
 authors = ["Bilal Mahmoud"]
 publish = false
+
+[workspace.dependencies]
+error-stack = { git = "https://github.com/hashintel/hash.git", rev = "c582a04", default-features = false }
 
 [profile.production]
 inherits = "release"

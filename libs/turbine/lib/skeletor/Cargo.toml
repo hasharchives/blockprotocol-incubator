@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-error-stack = { version = "0.3.1", features = ['anyhow'] }
+error-stack = { workspace = true, features = ['anyhow'] }
 url = "2.3.1"
 reqwest = { version = "0.11.18", features = ['blocking'] }
 askama = "0.12.0"
