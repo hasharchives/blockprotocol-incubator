@@ -13,7 +13,6 @@
   "rangeStrategy": "bump",
   "rebaseWhen": "conflicted",
   "semanticCommits": "disabled",
-  "schedule": ["before 4am every weekday", "every weekend"],
 
   "packageRules": [
     {
