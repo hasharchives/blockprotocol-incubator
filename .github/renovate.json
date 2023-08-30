@@ -47,7 +47,6 @@
       "matchDepTypes": ["devDependencies"],
       "matchPackagePatterns": ["^jest-", "jest$", "^prettier", "prettier$"],
       "excludePackageNames": ["prettier-plugin-sql"],
-      "dependencyDashboardApproval": false
     },
     {
       "groupName": "Block Protocol npm packages",
@@ -69,7 +68,6 @@
         "^eslint-",
         "eslint$"
       ],
-      "dependencyDashboardApproval": false
     },
     {
       "groupName": "GraphQL npm packages",
@@ -80,7 +78,6 @@
       "groupName": "Jest npm packages",
       "matchManagers": ["npm"],
       "matchPackagePatterns": ["^jest-", "jest$"],
-      "dependencyDashboardApproval": false
     },
     {
       "groupName": "OpenTelemetry npm packages",
@@ -91,14 +88,12 @@
       "groupName": "Playwright npm packages",
       "matchManagers": ["npm"],
       "matchPackagePatterns": ["^@playwright/", "^playwright-", "playwright$"],
-      "dependencyDashboardApproval": false
     },
     {
       "groupName": "Prettier npm packages",
       "matchManagers": ["npm"],
       "matchPackagePatterns": ["^prettier", "prettier$"],
       "excludePackageNames": ["prettier-plugin-sql"],
-      "dependencyDashboardApproval": false
     },
     {
       "groupName": "ProseMirror npm packages",
@@ -123,7 +118,6 @@
     {
       "matchManagers": ["poetry"],
       "matchPackagePatterns": ["mypy", "ruff", "black"],
-      "dependencyDashboardApproval": false
     },
     {
       "matchManagers": ["regex"],
@@ -134,7 +128,6 @@
       "commitMessageExtra": "to nightly-{{newVersion}}",
       "additionalBranchPrefix": "rs/",
       "reviewers": ["team:Rust"],
-      "dependencyDashboardApproval": false
     },
     {
       "matchManagers": ["regex"],
@@ -161,7 +154,6 @@
       "matchManagers": ["cargo"],
       "matchPackagePatterns": ["^criterion[-_]?"],
       "groupName": "`criterion` Rust crates",
-      "dependencyDashboardApproval": false
     },
     {
       "matchManagers": ["cargo"],
