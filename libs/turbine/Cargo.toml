@@ -12,7 +12,7 @@ authors = ["Bilal Mahmoud"]
 publish = false
 
 [workspace.dependencies]
-error-stack = { git = "https://github.com/hashintel/hash.git", rev = "c582a04", default-features = false }
+error-stack = "0.4.1"
 
 [profile.production]
 inherits = "release"
