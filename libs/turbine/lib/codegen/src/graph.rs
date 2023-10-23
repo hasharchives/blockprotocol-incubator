@@ -146,15 +146,14 @@ where
 ///
 /// We generate all cycles of `graph` through binary partition.
 ///
-/// 1. Pick a node `v` in `G`
-///     a. Generate all cycles of `G` which contain the node `v`
-///     b. Recursively generate all cycles of `G \\ v`
+/// 1. Pick a node `v` in `G` a. Generate all cycles of `G` which contain the node `v` b.
+///    Recursively generate all cycles of `G \\ v`
 ///
 /// This is accomplished through the following:
 ///
 /// 1. Compute the strongly connected components `SCC` of `G`
-/// 2. Select and remove a biconnected component `C` from `SCC`.
-///    Select a non-tree edge `(u, v)` of a depth first search of `G[C]`
+/// 2. Select and remove a biconnected component `C` from `SCC`. Select a non-tree edge `(u, v)` of
+///    a depth first search of `G[C]`
 /// 3. For each simple cycle `P` containing `v` in `G[C]`, yield `P`
 /// 4. Add the biconnected components of `G[C \\ v]` to `SCC`
 fn directed_cycle_search(
