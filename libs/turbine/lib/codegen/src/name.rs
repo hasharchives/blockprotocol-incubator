@@ -381,7 +381,9 @@ impl<'a> NameResolver<'a> {
                 Mode::MatchAll => url.as_str(),
             };
 
-            let Some(captures)= flavor.pattern.captures(target) else { continue; };
+            let Some(captures) = flavor.pattern.captures(target) else {
+                continue;
+            };
 
             let origin = match flavor.mode {
                 Mode::MatchPath => {

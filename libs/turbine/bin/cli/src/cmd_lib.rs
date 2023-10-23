@@ -17,6 +17,7 @@ use skeletor::Style;
 use thiserror::Error;
 use tracing_subscriber::EnvFilter;
 use url::Url;
+use uuid::Uuid;
 
 #[derive(ValueEnum, Copy, Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -72,6 +73,9 @@ pub(crate) struct Lib {
 
     #[arg(long)]
     timings: Option<bool>,
+
+    #[arg(long)]
+    actor_id: Option<Uuid>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -109,7 +113,7 @@ pub(crate) enum Error {
     Config,
 }
 
-fn call_remote(url: &Url) -> Result<Vec<AnyTypeRepr>, Error> {
+fn call_remote(url: &Url, actor_id: Uuid) -> Result<Vec<AnyTypeRepr>, Error> {
     let url = url.join("entity-types/query").change_context(Error::Url)?;
 
     let query = json!({
@@ -163,6 +167,7 @@ fn call_remote(url: &Url) -> Result<Vec<AnyTypeRepr>, Error> {
     let response = client
         .post(url)
         .json(&query)
+        .header("X-Authenticated-User-Actor-Id", actor_id.to_string())
         .send()
         .change_context(Error::Http)?;
 
@@ -250,6 +255,8 @@ pub(crate) struct Config {
     #[serde(default)]
     timings: bool,
 
+    actor_id: Uuid,
+
     turbine: Option<Dependency>,
 }
 
@@ -261,6 +268,7 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         name,
         force,
         timings,
+        actor_id
     } = lib;
 
     let mut figment = Figment::new();
@@ -304,6 +312,9 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
     if let Some(timings) = timings {
         figment = figment.merge(("timings", figment::value::Value::from(timings)));
     }
+    if let Some(actor_id) = actor_id {
+        figment = figment.merge(("actor_id", figment::value::Value::from(actor_id.to_string())))
+    }
 
     if let Some(profile) = Profile::from_env("TURBINE_PROFILE") {
         figment = figment.select(profile);
@@ -323,7 +334,7 @@ pub(crate) fn execute(lib: Lib) -> Result<(), Error> {
     let now = SystemTime::now();
 
     let types = match config.origin {
-        Origin::Remote(remote) => call_remote(&remote)?,
+        Origin::Remote(remote) => call_remote(&remote, config.actor_id)?,
         Origin::Local(local) => {
             let types = std::fs::read_to_string(local).change_context(Error::Io)?;
 
