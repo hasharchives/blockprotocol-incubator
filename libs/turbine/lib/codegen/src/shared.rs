@@ -411,12 +411,16 @@ pub(crate) fn generate_property(
         }
     };
 
+    let mut skip = None;
+
     if !required {
+        skip = Some(quote!(#[serde(skip_serializing_if = "Option::is_none")]));
         type_ = quote!(Option<#type_>);
     }
 
     quote! {
         #[serde(rename = #url)]
+        #skip
         #visibility #name: #type_
     }
 }
