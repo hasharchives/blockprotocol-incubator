@@ -251,7 +251,7 @@ pub(crate) fn generate_properties_is_valid_value(
         |(
             base,
             Property {
-                name,
+                name: _,
                 type_,
                 kind,
                 required,

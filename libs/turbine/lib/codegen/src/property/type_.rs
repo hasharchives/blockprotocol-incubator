@@ -57,6 +57,7 @@ impl<'a> TypeGenerator<'a> {
         let PropertyValue {
             body,
             try_from,
+            is_valid_value,
             conversion,
         } = PropertyValueGenerator {
             id: self.id,
@@ -106,6 +107,13 @@ impl<'a> TypeGenerator<'a> {
             }
         };
 
+        let impl_is_valid_value = match self.variant {
+            Variant::Owned => quote! {
+                fn is_valid_value(value: &serde_json::Value) -> bool #is_valid_value
+            },
+            _ => quote!(),
+        };
+
         let impl_ty = quote!(#name #lifetime);
 
         Type {
@@ -113,6 +121,7 @@ impl<'a> TypeGenerator<'a> {
             lifetime,
             impl_ty,
             impl_try_from_value: try_from,
+            impl_is_valid_value,
             impl_conversion,
         }
     }
@@ -182,7 +191,12 @@ impl<'a> TypeGenerator<'a> {
         // in the enum we could in theory name the variant by the name of the struct, problem here
         // is ofc that we would still need to name the other variants and then we have
         // potential name conflicts... Do we need to box on Ref and Mut self-referential?
-        let (body, try_from_variants, conversion): (Vec<_>, Vec<_>, Vec<_>) = self
+        let (body, try_from_variants, is_valid_value, conversion): (
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+        ) = self
             .values
             .iter()
             .enumerate()
@@ -193,6 +207,7 @@ impl<'a> TypeGenerator<'a> {
                 let PropertyValue {
                     body,
                     try_from,
+                    is_valid_value,
                     conversion,
                 } = PropertyValueGenerator {
                     id: self.id,
@@ -212,6 +227,7 @@ impl<'a> TypeGenerator<'a> {
                         #name #body
                     },
                     try_from,
+                    is_valid_value,
                     conversion,
                 )
             })
@@ -236,6 +252,13 @@ impl<'a> TypeGenerator<'a> {
             unreachable!();
         };
 
+        let is_valid_value = quote! {
+            fn is_valid_value(value: &serde_json::Value) -> bool {
+                true #(|| #is_valid_value)*
+            }
+
+        };
+
         let name = self.name;
         let def = quote! {
             #derive
@@ -252,6 +275,7 @@ impl<'a> TypeGenerator<'a> {
             lifetime,
             impl_ty,
             impl_try_from_value: try_from,
+            impl_is_valid_value: is_valid_value,
             impl_conversion: self.impl_conversion(&conversion),
         }
     }

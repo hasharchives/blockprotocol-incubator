@@ -130,6 +130,7 @@ impl<'a> InnerGenerator<'a> {
             lifetime,
             impl_ty,
             impl_try_from_value,
+            impl_is_valid_value,
             impl_conversion,
         } = TypeGenerator {
             id: self.id,
@@ -154,6 +155,11 @@ impl<'a> InnerGenerator<'a> {
             Variant::Mut => Some(quote!(&'a mut)),
         };
 
+        let is_valid_value = match self.variant {
+            Variant::Owned => impl_is_valid_value,
+            _ => quote!(),
+        };
+
         self.state.extra.push(quote!(
             #def
 
@@ -161,6 +167,8 @@ impl<'a> InnerGenerator<'a> {
                 fn try_from_value(value: #value_ref serde_json::Value) -> Result<Self, GenericPropertyError> {
                     #impl_try_from_value
                 }
+
+                #is_valid_value
 
                 #impl_conversion
             }

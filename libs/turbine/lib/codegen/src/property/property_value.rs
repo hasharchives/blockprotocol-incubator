@@ -226,7 +226,7 @@ impl<'a> PropertyValueGenerator<'a> {
         let is_valid_value = match self.variant {
             Variant::Owned => {
                 quote! {
-                    fn is_valid_value(value: &serde_json::Value) -> bool {
+                    {
                         <#owned_type_name as DataType>::is_valid_value(value)
                     }
                 }
@@ -387,7 +387,7 @@ impl<'a> PropertyValueGenerator<'a> {
                 let body = shared::generate_properties_is_valid_value(&properties);
 
                 quote! {
-                    fn is_valid_value(value: &serde_json::Value) -> bool {
+                    {
                         let serde_json::Value::Object(ref properties) = value else {
                             break 'variant false
                         };
@@ -590,7 +590,7 @@ impl<'a> PropertyValueGenerator<'a> {
         let is_valid_value = match self.variant {
             Variant::Owned => {
                 quote! {
-                    fn is_valid_value(value: &serde_json::Value) -> bool {
+                    {
                         let serde_json::Value::Array(array) = value else {
                             break 'variant false
                         };
