@@ -377,13 +377,10 @@ pub(crate) fn generate_properties_try_from_value(
                 }
             } else {
                 // the value is wrapped in `Option<>` and can be missing!
+                // null != missing, therefore can only break out if missing, not if null.
                 quote! {
                     let Some(value) = value else {
                         break 'property Ok(None);
-                    };
-
-                    if value.is_null() {
-                        break 'property Ok(None)
                     };
                 }
             };

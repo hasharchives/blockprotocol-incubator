@@ -133,7 +133,7 @@ fn generate_properties_is_valid_properties(
 
     if properties.is_empty() {
         quote! {
-            fn is_valid_value(value: &serde_json::value::Value) -> bool {
+            fn is_valid_value(_: &HashMap<String, serde_json::value::Value>) -> bool {
                 true
             }
         }
@@ -141,7 +141,7 @@ fn generate_properties_is_valid_properties(
         let body = generate_properties_is_valid_value(properties);
 
         quote! {
-            fn is_valid_value(value: &serde_json::value::Value) -> bool {
+            fn is_valid_value(properties: &HashMap<String, serde_json::value::Value>) -> bool {
                 #body
             }
         }
@@ -471,12 +471,6 @@ fn generate_owned(
                     #(#link_data: &self.link_data)*
                 }
             }
-
-            fn is_valid_entity(value: &Entity) -> bool {
-                value.metadata.entity_type_id == Self::ID &&
-                    #(value.#link_data.is_some() &&)*
-                    Properties::is_valid_value(&value.properties.0)
-            }
         }
 
         impl EntityType for #name {
@@ -503,6 +497,12 @@ fn generate_owned(
                         )
                     )
                 }
+            }
+
+            fn is_valid_entity(value: &Entity) -> bool {
+                value.metadata.entity_type_id == Self::ID &&
+                    #(value.#link_data.is_some() &&)*
+                    Properties::is_valid_value(&value.properties.0)
             }
         }
 
