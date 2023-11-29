@@ -232,6 +232,87 @@ fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
     }
 }
 
+pub(crate) fn generate_properties_is_valid_value(
+    properties: &BTreeMap<&BaseUrl, Property>,
+) -> TokenStream {
+    // fundamentally do:
+    // for every property:
+    //  check if exists, if yes:
+    //      check if valid value
+    //  else:
+    //      check if required
+    //      if yes:
+    //          return false
+    //      else:
+    //          continue
+
+    // makes use of labelled breaks in blocks (introduced in 1.65)
+    let values = properties.iter().map(
+        |(
+            base,
+            Property {
+                name,
+                type_,
+                kind,
+                required,
+            },
+        )| {
+            let index = base.as_str();
+
+            let access = quote!(let value = properties.get(#index));
+
+            let unwrap = if *required {
+                quote! {
+                    let Some(value) = value else { return false; }
+                }
+            } else {
+                // the value is wrapped in `Option<>` and can be missing!
+                // therefore we break out of the block and continue with the next property
+                quote! {
+                    let Some(value) = value else { break 'property; }
+                }
+            };
+
+            let apply = match kind {
+                PropertyKind::Array => {
+                    quote! {
+                        let serde_json::Value::Array(value) = value else {
+                            return false;
+                        };
+
+                        for value in value {
+                            if !<#type_>::is_valid_value(value) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                _ => quote! {
+                    if !<#type_>::is_valid_value(value) {
+                        return false;
+                    }
+                },
+            };
+
+            quote! {
+                'property: {
+                    #access
+
+                    #unwrap
+
+                    #apply
+                };
+            }
+        },
+    );
+
+    quote! {
+        #(#values)*
+
+        true
+    }
+}
+
 pub(crate) fn generate_properties_try_from_value(
     variant: Variant,
     properties: &BTreeMap<&BaseUrl, Property>,

@@ -19,9 +19,10 @@ use crate::{
 pub(super) struct Type {
     pub(super) def: TokenStream,
     pub(super) lifetime: Option<TokenStream>,
-    // TODO: rename
+
     pub(super) impl_ty: TokenStream,
     pub(super) impl_try_from_value: TokenStream,
+    pub(super) impl_is_valid_value: TokenStream,
     pub(super) impl_conversion: TokenStream,
 }
 

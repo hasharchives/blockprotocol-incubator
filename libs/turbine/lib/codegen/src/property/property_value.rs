@@ -87,6 +87,7 @@ pub(super) struct ConversionBody {
 pub(super) struct PropertyValue {
     pub(super) body: TokenStream,
     pub(super) try_from: TokenStream,
+    pub(super) is_valid_value: TokenStream,
     pub(super) conversion: ConversionBody,
 }
 
@@ -193,6 +194,7 @@ impl<'a> PropertyValueGenerator<'a> {
             .as_ref()
             .unwrap_or(&location.name.value);
         let mut type_name = Ident::new(type_name_raw, Span::call_site()).to_token_stream();
+        let owned_type_name = type_name.clone();
         let mut anon_type_name = type_name.clone();
 
         match self.variant {
@@ -221,11 +223,25 @@ impl<'a> PropertyValueGenerator<'a> {
             value.map(#self_type)
         });
 
+        let is_valid_value = match self.variant {
+            Variant::Owned => {
+                quote! {
+                    fn is_valid_value(value: &serde_json::Value) -> bool {
+                        <#owned_type_name as DataType>::is_valid_value(value)
+                    }
+                }
+            }
+            _ => quote!(compile_error!(
+                "unable to check validity of non-owned data type"
+            )),
+        };
+
         let conversion = self.data_type_conversion(&anon_type_name);
 
         PropertyValue {
             body: quote!((#vis #type_name)),
             try_from,
+            is_valid_value,
             conversion,
         }
     }
@@ -366,6 +382,25 @@ impl<'a> PropertyValueGenerator<'a> {
             &self.self_type.to_token_stream(),
         );
 
+        let is_valid_value = match self.variant {
+            Variant::Owned => {
+                let body = shared::generate_properties_is_valid_value(&properties);
+
+                quote! {
+                    fn is_valid_value(value: &serde_json::Value) -> bool {
+                        let serde_json::Value::Object(ref properties) = value else {
+                            break 'variant false
+                        };
+
+                        #body
+                    }
+                }
+            }
+            _ => quote!(compile_error!(
+                "unable to check validity of non-owned object"
+            )),
+        };
+
         let visibility = self.self_type.hoisted_visibility();
 
         let conversion = self.object_conversion(&properties);
@@ -402,6 +437,7 @@ impl<'a> PropertyValueGenerator<'a> {
 
                 #try_from
             }),
+            is_valid_value,
             conversion,
         }
     }
@@ -551,6 +587,23 @@ impl<'a> PropertyValueGenerator<'a> {
             }
         });
 
+        let is_valid_value = match self.variant {
+            Variant::Owned => {
+                quote! {
+                    fn is_valid_value(value: &serde_json::Value) -> bool {
+                        let serde_json::Value::Array(array) = value else {
+                            break 'variant false
+                        };
+
+                        array.iter().all(<#inner #lifetime>::is_valid_value)
+                    }
+                }
+            }
+            _ => quote!(compile_error!(
+                "unable to check validity of non-owned array"
+            )),
+        };
+
         let conversion = self.array_conversion(&inner.to_token_stream());
 
         // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
@@ -569,6 +622,7 @@ impl<'a> PropertyValueGenerator<'a> {
         PropertyValue {
             body,
             try_from,
+            is_valid_value,
             conversion,
         }
     }

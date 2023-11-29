@@ -15,7 +15,7 @@ use crate::{
     name::{Location, NameResolver, PropertyName},
     shared,
     shared::{
-        determine_import_path, generate_mod, generate_property,
+        determine_import_path, generate_mod, generate_properties_is_valid_value, generate_property,
         generate_property_object_conversion_body, imports, ConversionFunction, Import, Property,
         Variant,
     },
@@ -121,6 +121,31 @@ fn generate_properties_try_from_value(
         &Ident::new("GenericEntityError", Span::call_site()),
         &quote!(Self),
     )
+}
+
+fn generate_properties_is_valid_properties(
+    variant: Variant,
+    properties: &BTreeMap<&BaseUrl, Property>,
+) -> TokenStream {
+    if variant != Variant::Owned {
+        return quote!();
+    }
+
+    if properties.is_empty() {
+        quote! {
+            fn is_valid_value(value: &serde_json::value::Value) -> bool {
+                true
+            }
+        }
+    } else {
+        let body = generate_properties_is_valid_value(properties);
+
+        quote! {
+            fn is_valid_value(value: &serde_json::value::Value) -> bool {
+                #body
+            }
+        }
+    }
 }
 
 fn generate_properties_convert(
@@ -306,6 +331,8 @@ fn generate_type(
 
     let conversion = generate_properties_convert(variant, properties);
 
+    let is_valid_value = generate_properties_is_valid_properties(variant, properties);
+
     quote! {
         #property_derive
         pub struct #properties_name #lifetime #body
@@ -318,6 +345,8 @@ fn generate_type(
             }
 
             #conversion
+
+            #is_valid_value
         }
 
         #doc
@@ -441,6 +470,12 @@ fn generate_owned(
                     properties: self.properties.as_ref(),
                     #(#link_data: &self.link_data)*
                 }
+            }
+
+            fn is_valid_entity(value: &Entity) -> bool {
+                value.metadata.entity_type_id == Self::ID &&
+                    #(value.#link_data.is_some() &&)*
+                    Properties::is_valid_value(&value.properties.0)
             }
         }
 
