@@ -58,6 +58,7 @@ impl ToTokens for SelfType<'_> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub(super) struct SelfVariants {
     pub(super) owned: TokenStream,
     pub(super) ref_: TokenStream,
@@ -223,17 +224,12 @@ impl<'a> PropertyValueGenerator<'a> {
             value.map(#self_type)
         });
 
-        let is_valid_value = match self.variant {
-            Variant::Owned => {
-                quote! {
-                    {
-                        <#owned_type_name as DataType>::is_valid_value(value)
-                    }
+        let is_valid_value = {
+            quote! {
+                {
+                    <#owned_type_name as DataType>::is_valid_value(value)
                 }
             }
-            _ => quote!(compile_error!(
-                "unable to check validity of non-owned data type"
-            )),
         };
 
         let conversion = self.data_type_conversion(&anon_type_name);
@@ -382,23 +378,18 @@ impl<'a> PropertyValueGenerator<'a> {
             &self.self_type.to_token_stream(),
         );
 
-        let is_valid_value = match self.variant {
-            Variant::Owned => {
-                let body = shared::generate_properties_is_valid_value(&properties);
+        let is_valid_value = {
+            let body = shared::generate_properties_is_valid_value(&properties);
 
-                quote! {
-                    {
-                        let serde_json::Value::Object(ref properties) = value else {
-                            break 'variant false
-                        };
+            quote! {
+                {
+                    let serde_json::Value::Object(ref properties) = value else {
+                        return false;
+                    };
 
-                        #body
-                    }
+                    #body
                 }
             }
-            _ => quote!(compile_error!(
-                "unable to check validity of non-owned object"
-            )),
         };
 
         let visibility = self.self_type.hoisted_visibility();
@@ -551,7 +542,7 @@ impl<'a> PropertyValueGenerator<'a> {
         let items = array.items();
 
         self.state.stack.push(PathSegment::Array);
-        let inner = InnerGenerator {
+        let (inner, inner_variants) = InnerGenerator {
             id: self.id,
             variant: self.variant,
             values: items.one_of(),
@@ -587,21 +578,16 @@ impl<'a> PropertyValueGenerator<'a> {
             }
         });
 
-        let is_valid_value = match self.variant {
-            Variant::Owned => {
-                quote! {
-                    {
-                        let serde_json::Value::Array(array) = value else {
-                            break 'variant false
-                        };
+        let is_valid_value = {
+            let owned = inner_variants.owned;
 
-                        array.iter().all(<#inner #lifetime>::is_valid_value)
-                    }
+            quote! {
+                {
+                    let serde_json::Value::Array(array) = value else { return false; };
+
+                    array.iter().all(#owned::is_valid_value)
                 }
             }
-            _ => quote!(compile_error!(
-                "unable to check validity of non-owned array"
-            )),
         };
 
         let conversion = self.array_conversion(&inner.to_token_stream());

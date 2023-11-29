@@ -259,17 +259,17 @@ pub(crate) fn generate_properties_is_valid_value(
         )| {
             let index = base.as_str();
 
-            let access = quote!(let value = properties.get(#index));
+            let access = quote!(let value = properties.get(#index););
 
             let unwrap = if *required {
                 quote! {
-                    let Some(value) = value else { return false; }
+                    let Some(value) = value else { return false; };
                 }
             } else {
                 // the value is wrapped in `Option<>` and can be missing!
                 // therefore we break out of the block and continue with the next property
                 quote! {
-                    let Some(value) = value else { break 'property; }
+                    let Some(value) = value else { break 'property; };
                 }
             };
 

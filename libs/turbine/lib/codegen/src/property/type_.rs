@@ -107,13 +107,9 @@ impl<'a> TypeGenerator<'a> {
             }
         };
 
-        let impl_is_valid_value = match self.variant {
-            Variant::Owned => quote! {
-                fn is_valid_value(value: &serde_json::Value) -> bool #is_valid_value
-            },
-            _ => quote!(),
+        let impl_is_valid_value = quote! {
+            fn is_valid_value(value: &serde_json::Value) -> bool #is_valid_value
         };
-
         let impl_ty = quote!(#name #lifetime);
 
         Type {
@@ -233,30 +229,40 @@ impl<'a> TypeGenerator<'a> {
             })
             .multiunzip();
 
-        let try_from = quote! {
-            let mut errors: Result<(), GenericPropertyError> = Ok(());
+        let deref = match self.variant {
+            Variant::Owned => quote!(&),
+            Variant::Ref => quote!(),
+            Variant::Mut => quote!(&*),
+        };
 
-            #(
-                let this = #try_from_variants;
+        let try_from_tries =
+            is_valid_value
+                .iter()
+                .zip(try_from_variants)
+                .map(|(is_valid_value, try_from)| {
+                    quote! {
+                        // LLVM is smart enough to optimize away the immediate function invocation
+                        // we use this to be able to use `return` in the generated code.
+                        let is_valid = (|value| #is_valid_value)(#deref value);
 
-                match this {
-                    Ok(this) => return Ok(this),
-                    Err(error) => match &mut errors {
-                        Err(errors) => errors.extend_one(error),
-                        errors => *errors = Err(error)
+                        if is_valid {
+                            return #try_from;
+                        }
                     }
-                }
+                });
+
+        let try_from = quote! {
+            #(
+                #try_from_tries
             )*
 
-            errors?;
-            unreachable!();
+            Err(Report::new(GenericPropertyError::InvalidValue))
         };
 
         let is_valid_value = quote! {
             fn is_valid_value(value: &serde_json::Value) -> bool {
                 true #(|| #is_valid_value)*
             }
-
         };
 
         let name = self.name;

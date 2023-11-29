@@ -116,13 +116,18 @@ pub(super) struct InnerGenerator<'a> {
 }
 
 impl<'a> InnerGenerator<'a> {
-    pub(super) fn finish(self) -> Ident {
+    pub(super) fn finish(self) -> (Ident, SelfVariants) {
         let names = self.state.inner.get_or_insert(&self.state.stack);
 
         let (name, index) = names.to_variant(self.variant);
         let NameVariants {
             owned, ref_, mut_, ..
         } = names;
+        let self_variants = SelfVariants {
+            owned: owned.to_token_stream(),
+            ref_: ref_.to_token_stream(),
+            mut_: mut_.to_token_stream(),
+        };
 
         self.state.stack.push(PathSegment::Inner { index });
         let Type {
@@ -136,11 +141,7 @@ impl<'a> InnerGenerator<'a> {
             id: self.id,
             name: &name,
             variant: self.variant,
-            self_variants: SelfVariants {
-                owned: owned.to_token_stream(),
-                ref_: ref_.to_token_stream(),
-                mut_: mut_.to_token_stream(),
-            },
+            self_variants: self_variants.clone(),
             values: self.values,
             resolver: self.resolver,
             locations: self.locations,
@@ -174,6 +175,6 @@ impl<'a> InnerGenerator<'a> {
             }
         ));
 
-        name
+        (name, self_variants)
     }
 }
