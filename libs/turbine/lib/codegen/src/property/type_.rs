@@ -105,10 +105,12 @@ impl<'a> TypeGenerator<'a> {
             }
         };
 
+        let impl_ty = quote!(#name #lifetime);
+
         Type {
             def,
             lifetime,
-            impl_ty: quote!(#name #lifetime),
+            impl_ty,
             impl_try_from_value: try_from,
             impl_conversion,
         }
@@ -242,10 +244,12 @@ impl<'a> TypeGenerator<'a> {
             }
         };
 
+        let impl_ty = quote!(#name #lifetime);
+
         Type {
             def,
             lifetime,
-            impl_ty: quote!(#name #lifetime),
+            impl_ty,
             impl_try_from_value: try_from,
             impl_conversion: self.impl_conversion(&conversion),
         }

@@ -149,7 +149,7 @@ impl<'a> PropertyValueGenerator<'a> {
 
                         #mut_(<#inner_type as Type>::as_mut(value))
                     }, |variant| quote! {
-                        Self #variant (value) => <#mut_> #variant (<#inner_type as TypeMut>::as_mut(value))
+                        Self #variant (value) => <#mut_> #variant (<#inner_type as Type>::as_mut(value))
                     });
 
                 ConversionBody {
@@ -486,10 +486,15 @@ impl<'a> PropertyValueGenerator<'a> {
                         }
                     },
                     |variant| {
+                        let into_iter = match self.variant {
+                            Variant::Ref => quote!(value.into_vec().into_iter()),
+                            Variant::Mut => quote!(value.into_iter()),
+                            Variant::Owned => unreachable!(),
+                        };
+
                         quote! {
                             Self #variant (value) => <#owned> #variant (
-                                value
-                                    .into_iter()
+                                #into_iter
                                     .map(|value| #inner_type::into_owned(value))
                                     .collect()
                             )
@@ -550,10 +555,19 @@ impl<'a> PropertyValueGenerator<'a> {
 
         // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
         // Array
-        self.state.import.vec = true;
+        let body = match self.variant {
+            Variant::Ref => {
+                self.state.import.box_ = true;
+                quote!((#vis Box<[#inner #lifetime]>))
+            }
+            _ => {
+                self.state.import.vec = true;
+                quote!((#vis Vec<#inner #lifetime>))
+            }
+        };
 
         PropertyValue {
-            body: quote!((#vis Vec<#inner #lifetime>)),
+            body,
             try_from,
             conversion,
         }
