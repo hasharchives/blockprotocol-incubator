@@ -211,11 +211,14 @@ fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
     }
 
     if let Some(remainder) = chunks.into_remainder() {
-        let result = format_ident!("__report{index}");
         let chunk: Vec<_> = remainder.collect();
 
-        fold.push(quote!(let #result = turbine::fold_tuple_reports((#(#chunk,)*))));
-        unfold.push((quote!((#(#chunk,)*)), result));
+        if !chunk.is_empty() {
+            let result = format_ident!("__report{index}");
+
+            fold.push(quote!(let #result = turbine::fold_tuple_reports((#(#chunk,)*))));
+            unfold.push((quote!((#(#chunk,)*)), result));
+        }
     }
 
     // this creates an implicit limit of 16*16 elements (~> 256 element)
