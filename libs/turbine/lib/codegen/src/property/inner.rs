@@ -127,6 +127,7 @@ impl<'a> InnerGenerator<'a> {
         self.state.stack.push(PathSegment::Inner { index });
         let Type {
             def,
+            lifetime,
             impl_ty,
             impl_try_from_value,
             impl_conversion,
@@ -156,8 +157,8 @@ impl<'a> InnerGenerator<'a> {
         self.state.extra.push(quote!(
             #def
 
-            impl #impl_ty {
-                fn try_from_value(value: #value_ref serde_json::Value) -> Result<Self, GenericPropertError> {
+            impl #lifetime #impl_ty {
+                fn try_from_value(value: #value_ref serde_json::Value) -> Result<Self, GenericPropertyError> {
                     #impl_try_from_value
                 }
 

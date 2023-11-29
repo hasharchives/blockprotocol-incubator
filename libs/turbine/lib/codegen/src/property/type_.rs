@@ -18,6 +18,7 @@ use crate::{
 
 pub(super) struct Type {
     pub(super) def: TokenStream,
+    pub(super) lifetime: Option<TokenStream>,
     // TODO: rename
     pub(super) impl_ty: TokenStream,
     pub(super) impl_try_from_value: TokenStream,
@@ -42,7 +43,7 @@ impl<'a> TypeGenerator<'a> {
         &mut self,
         value: &PropertyValues,
         derive: &TokenStream,
-        lifetime: Option<&TokenStream>,
+        lifetime: Option<TokenStream>,
     ) -> Type {
         let name = self.name;
 
@@ -106,6 +107,7 @@ impl<'a> TypeGenerator<'a> {
 
         Type {
             def,
+            lifetime,
             impl_ty: quote!(#name #lifetime),
             impl_try_from_value: try_from,
             impl_conversion,
@@ -168,7 +170,7 @@ impl<'a> TypeGenerator<'a> {
         };
 
         if let [value] = self.values {
-            return self.hoist(value, &derive, lifetime.as_ref());
+            return self.hoist(value, &derive, lifetime);
         }
 
         // we cannot hoist and therefore need to create an enum
@@ -242,6 +244,7 @@ impl<'a> TypeGenerator<'a> {
 
         Type {
             def,
+            lifetime,
             impl_ty: quote!(#name #lifetime),
             impl_try_from_value: try_from,
             impl_conversion: self.impl_conversion(&conversion),
