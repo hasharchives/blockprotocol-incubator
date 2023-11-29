@@ -202,6 +202,9 @@ where
     ///
     /// if the value is malformed and not of the correct shape
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
+
+    /// Equivalent to [`Self::try_from_value`] but fails-fast if the valid is not of expected shape.
+    fn is_valid_value(value: &serde_json::Value) -> bool;
 }
 
 pub trait PropertyTypeRef<'a>: Serialize + TypeRef {
@@ -233,6 +236,9 @@ where
     ///
     /// if the value is malformed and not of the correct shape
     fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error>;
+
+    /// Equivalent to [`Self::try_from_value`] but fails-fast if the valid is not of expected shape.
+    fn is_valid_value(value: &serde_json::Value) -> bool;
 }
 
 pub trait EntityTypeRef<'a>: Serialize + TypeRef {
@@ -255,6 +261,9 @@ where
     type Error: Context;
 
     fn try_from_entity(value: Entity) -> Option<Result<Self, Self::Error>>;
+
+    /// Equivalent to [`Self::try_from_value`] but fails-fast if the valid is not of expected shape.
+    fn is_valid_entity(value: &Entity) -> bool;
 }
 
 // These might be removed, but act as a marker trait.

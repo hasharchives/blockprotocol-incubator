@@ -84,6 +84,10 @@ impl DataType for Text {
             Err(Report::new(TextError::NotText(value)))
         }
     }
+
+    fn is_valid_value(value: &Value) -> bool {
+        value.is_string()
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]

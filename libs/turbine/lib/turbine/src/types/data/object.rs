@@ -84,6 +84,10 @@ impl DataType for Object {
             Err(Report::new(ObjectError::NotAnObject(value)))
         }
     }
+
+    fn is_valid_value(value: &Value) -> bool {
+        value.is_object()
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize)]

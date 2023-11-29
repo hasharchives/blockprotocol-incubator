@@ -77,6 +77,10 @@ impl DataType for Number {
             Err(Report::new(NumberError::NotANumber(value)))
         }
     }
+
+    fn is_valid_value(value: &Value) -> bool {
+        value.is_number()
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize)]
