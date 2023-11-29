@@ -116,29 +116,32 @@ pub(super) struct InnerGenerator<'a> {
 }
 
 impl<'a> InnerGenerator<'a> {
-    pub(super) fn finish(self) -> Ident {
+    pub(super) fn finish(self) -> (Ident, SelfVariants) {
         let names = self.state.inner.get_or_insert(&self.state.stack);
 
         let (name, index) = names.to_variant(self.variant);
         let NameVariants {
             owned, ref_, mut_, ..
         } = names;
+        let self_variants = SelfVariants {
+            owned: owned.to_token_stream(),
+            ref_: ref_.to_token_stream(),
+            mut_: mut_.to_token_stream(),
+        };
 
         self.state.stack.push(PathSegment::Inner { index });
         let Type {
             def,
+            lifetime,
             impl_ty,
             impl_try_from_value,
+            impl_is_valid_value,
             impl_conversion,
         } = TypeGenerator {
             id: self.id,
             name: &name,
             variant: self.variant,
-            self_variants: SelfVariants {
-                owned: owned.to_token_stream(),
-                ref_: ref_.to_token_stream(),
-                mut_: mut_.to_token_stream(),
-            },
+            self_variants: self_variants.clone(),
             values: self.values,
             resolver: self.resolver,
             locations: self.locations,
@@ -153,18 +156,25 @@ impl<'a> InnerGenerator<'a> {
             Variant::Mut => Some(quote!(&'a mut)),
         };
 
+        let is_valid_value = match self.variant {
+            Variant::Owned => impl_is_valid_value,
+            _ => quote!(),
+        };
+
         self.state.extra.push(quote!(
             #def
 
-            impl #impl_ty {
-                fn try_from_value(value: #value_ref serde_json::Value) -> Result<Self, GenericPropertError> {
+            impl #lifetime #impl_ty {
+                fn try_from_value(value: #value_ref serde_json::Value) -> Result<Self, GenericPropertyError> {
                     #impl_try_from_value
                 }
+
+                #is_valid_value
 
                 #impl_conversion
             }
         ));
 
-        name
+        (name, self_variants)
     }
 }

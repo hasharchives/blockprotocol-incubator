@@ -211,11 +211,14 @@ fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
     }
 
     if let Some(remainder) = chunks.into_remainder() {
-        let result = format_ident!("__report{index}");
         let chunk: Vec<_> = remainder.collect();
 
-        fold.push(quote!(let #result = turbine::fold_tuple_reports((#(#chunk,)*))));
-        unfold.push((quote!((#(#chunk,)*)), result));
+        if !chunk.is_empty() {
+            let result = format_ident!("__report{index}");
+
+            fold.push(quote!(let #result = turbine::fold_tuple_reports((#(#chunk,)*))));
+            unfold.push((quote!((#(#chunk,)*)), result));
+        }
     }
 
     // this creates an implicit limit of 16*16 elements (~> 256 element)
@@ -226,6 +229,89 @@ fn generate_fold(properties: &BTreeMap<&BaseUrl, Property>) -> TokenStream {
         #(#fold;)*
 
         let (#(#unfold_lhs,)*) = turbine::fold_tuple_reports((#(#unfold_rhs,)*))?;
+    }
+}
+
+pub(crate) fn generate_properties_is_valid_value(
+    properties: &BTreeMap<&BaseUrl, Property>,
+) -> TokenStream {
+    // fundamentally do:
+    // for every property:
+    //  check if exists, if yes:
+    //      check if valid value
+    //  else:
+    //      check if required
+    //      if yes:
+    //          return false
+    //      else:
+    //          continue
+
+    // makes use of labelled breaks in blocks (introduced in 1.65)
+    let values = properties.iter().map(
+        |(
+            base,
+            Property {
+                name: _,
+                type_,
+                kind,
+                required,
+            },
+        )| {
+            let index = base.as_str();
+            let mut label = None;
+
+            let access = quote!(let value = properties.get(#index););
+
+            let unwrap = if *required {
+                quote! {
+                    let Some(value) = value else { return false; };
+                }
+            } else {
+                // the value is wrapped in `Option<>` and can be missing!
+                // therefore we break out of the block and continue with the next property
+                label = Some(quote!('property:));
+                quote! {
+                    let Some(value) = value else { break 'property; };
+                }
+            };
+
+            let apply = match kind {
+                PropertyKind::Array => {
+                    quote! {
+                        let serde_json::Value::Array(value) = value else {
+                            return false;
+                        };
+
+                        for value in value {
+                            if !<#type_>::is_valid_value(value) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                _ => quote! {
+                    if !<#type_>::is_valid_value(value) {
+                        return false;
+                    }
+                },
+            };
+
+            quote! {
+                #label {
+                    #access
+
+                    #unwrap
+
+                    #apply
+                };
+            }
+        },
+    );
+
+    quote! {
+        #(#values)*
+
+        true
     }
 }
 
@@ -293,13 +379,10 @@ pub(crate) fn generate_properties_try_from_value(
                 }
             } else {
                 // the value is wrapped in `Option<>` and can be missing!
+                // null != missing, therefore can only break out if missing, not if null.
                 quote! {
                     let Some(value) = value else {
                         break 'property Ok(None);
-                    };
-
-                    if value.is_null() {
-                        break 'property Ok(None)
                     };
                 }
             };

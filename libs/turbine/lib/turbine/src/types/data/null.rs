@@ -52,6 +52,10 @@ impl DataType for Null {
             Err(Report::new(NullError::NotNull(value)))
         }
     }
+
+    fn is_valid_value(value: &Value) -> bool {
+        value.is_null()
+    }
 }
 
 impl TypeRef for Null {

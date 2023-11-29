@@ -14,6 +14,8 @@ pub enum GenericPropertyError {
     Property(&'static str),
     #[error("expected object as value")]
     ExpectedObject,
+    #[error("invalid value")]
+    InvalidValue,
 }
 
 #[derive(Debug, Copy, Clone, Error)]

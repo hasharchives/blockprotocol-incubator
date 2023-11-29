@@ -68,6 +68,14 @@ impl DataType for EmptyList {
             Err(Report::new(EmptyListError::NotAnArray(value)))
         }
     }
+
+    fn is_valid_value(value: &Value) -> bool {
+        if let Value::Array(value) = value {
+            value.is_empty()
+        } else {
+            false
+        }
+    }
 }
 
 impl TypeRef for EmptyList {

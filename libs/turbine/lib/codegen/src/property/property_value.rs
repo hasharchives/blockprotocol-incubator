@@ -58,6 +58,7 @@ impl ToTokens for SelfType<'_> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub(super) struct SelfVariants {
     pub(super) owned: TokenStream,
     pub(super) ref_: TokenStream,
@@ -87,6 +88,7 @@ pub(super) struct ConversionBody {
 pub(super) struct PropertyValue {
     pub(super) body: TokenStream,
     pub(super) try_from: TokenStream,
+    pub(super) is_valid_value: TokenStream,
     pub(super) conversion: ConversionBody,
 }
 
@@ -149,7 +151,7 @@ impl<'a> PropertyValueGenerator<'a> {
 
                         #mut_(<#inner_type as Type>::as_mut(value))
                     }, |variant| quote! {
-                        Self #variant (value) => <#mut_> #variant (<#inner_type as TypeMut>::as_mut(value))
+                        Self #variant (value) => <#mut_> #variant (<#inner_type as Type>::as_mut(value))
                     });
 
                 ConversionBody {
@@ -193,6 +195,7 @@ impl<'a> PropertyValueGenerator<'a> {
             .as_ref()
             .unwrap_or(&location.name.value);
         let mut type_name = Ident::new(type_name_raw, Span::call_site()).to_token_stream();
+        let owned_type_name = type_name.clone();
         let mut anon_type_name = type_name.clone();
 
         match self.variant {
@@ -221,11 +224,20 @@ impl<'a> PropertyValueGenerator<'a> {
             value.map(#self_type)
         });
 
+        let is_valid_value = {
+            quote! {
+                {
+                    <#owned_type_name as DataType>::is_valid_value(value)
+                }
+            }
+        };
+
         let conversion = self.data_type_conversion(&anon_type_name);
 
         PropertyValue {
             body: quote!((#vis #type_name)),
             try_from,
+            is_valid_value,
             conversion,
         }
     }
@@ -366,6 +378,20 @@ impl<'a> PropertyValueGenerator<'a> {
             &self.self_type.to_token_stream(),
         );
 
+        let is_valid_value = {
+            let body = shared::generate_properties_is_valid_value(&properties);
+
+            quote! {
+                {
+                    let serde_json::Value::Object(ref properties) = value else {
+                        return false;
+                    };
+
+                    #body
+                }
+            }
+        };
+
         let visibility = self.self_type.hoisted_visibility();
 
         let conversion = self.object_conversion(&properties);
@@ -402,6 +428,7 @@ impl<'a> PropertyValueGenerator<'a> {
 
                 #try_from
             }),
+            is_valid_value,
             conversion,
         }
     }
@@ -486,10 +513,15 @@ impl<'a> PropertyValueGenerator<'a> {
                         }
                     },
                     |variant| {
+                        let into_iter = match self.variant {
+                            Variant::Ref => quote!(value.into_vec().into_iter()),
+                            Variant::Mut => quote!(value.into_iter()),
+                            Variant::Owned => unreachable!(),
+                        };
+
                         quote! {
                             Self #variant (value) => <#owned> #variant (
-                                value
-                                    .into_iter()
+                                #into_iter
                                     .map(|value| #inner_type::into_owned(value))
                                     .collect()
                             )
@@ -510,7 +542,7 @@ impl<'a> PropertyValueGenerator<'a> {
         let items = array.items();
 
         self.state.stack.push(PathSegment::Array);
-        let inner = InnerGenerator {
+        let (inner, inner_variants) = InnerGenerator {
             id: self.id,
             variant: self.variant,
             values: items.one_of(),
@@ -546,15 +578,37 @@ impl<'a> PropertyValueGenerator<'a> {
             }
         });
 
+        let is_valid_value = {
+            let owned = inner_variants.owned;
+
+            quote! {
+                {
+                    let serde_json::Value::Array(array) = value else { return false; };
+
+                    array.iter().all(#owned::is_valid_value)
+                }
+            }
+        };
+
         let conversion = self.array_conversion(&inner.to_token_stream());
 
         // in theory we could do some more hoisting, e.g. if we have multiple OneOf that are
         // Array
-        self.state.import.vec = true;
+        let body = match self.variant {
+            Variant::Ref => {
+                self.state.import.box_ = true;
+                quote!((#vis Box<[#inner #lifetime]>))
+            }
+            _ => {
+                self.state.import.vec = true;
+                quote!((#vis Vec<#inner #lifetime>))
+            }
+        };
 
         PropertyValue {
-            body: quote!((#vis Vec<#inner #lifetime>)),
+            body,
             try_from,
+            is_valid_value,
             conversion,
         }
     }

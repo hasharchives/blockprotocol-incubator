@@ -223,6 +223,7 @@ impl<'a> PropertyTypeGenerator<'a> {
             def,
             impl_try_from_value,
             impl_conversion,
+            impl_is_valid_value,
             ..
         } = self.type_(&name, Variant::Owned);
 
@@ -250,6 +251,8 @@ impl<'a> PropertyTypeGenerator<'a> {
                 fn try_from_value(value: serde_json::Value) -> Result<Self, Self::Error> {
                     #impl_try_from_value
                 }
+
+                #impl_is_valid_value
             }
 
             #alias

@@ -12,8 +12,6 @@ error-stack = { workspace = true, default-features = false }
 time = { version = "0.3.20", features = ['serde-well-known'], default-features = false }
 hashbrown = { version = "0.14.0", default-features = false, features = ["ahash", "serde"] }
 uuid = { version = "1.3.1", features = ['serde'], default-features = false }
-
-# Once stabilized move to 0.1.3, but we need the fully quantified paths
-onlyerror = { git = "https://github.com/parasyte/onlyerror", default-features = false }
+onlyerror = { version = "0.1.3", default-features = false }
 
 type-system = { git = "https://github.com/blockprotocol/blockprotocol", rev = "542836" }

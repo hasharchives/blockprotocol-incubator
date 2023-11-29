@@ -18,9 +18,11 @@ use crate::{
 
 pub(super) struct Type {
     pub(super) def: TokenStream,
-    // TODO: rename
+    pub(super) lifetime: Option<TokenStream>,
+
     pub(super) impl_ty: TokenStream,
     pub(super) impl_try_from_value: TokenStream,
+    pub(super) impl_is_valid_value: TokenStream,
     pub(super) impl_conversion: TokenStream,
 }
 
@@ -42,7 +44,7 @@ impl<'a> TypeGenerator<'a> {
         &mut self,
         value: &PropertyValues,
         derive: &TokenStream,
-        lifetime: Option<&TokenStream>,
+        lifetime: Option<TokenStream>,
     ) -> Type {
         let name = self.name;
 
@@ -55,6 +57,7 @@ impl<'a> TypeGenerator<'a> {
         let PropertyValue {
             body,
             try_from,
+            is_valid_value,
             conversion,
         } = PropertyValueGenerator {
             id: self.id,
@@ -104,10 +107,17 @@ impl<'a> TypeGenerator<'a> {
             }
         };
 
+        let impl_is_valid_value = quote! {
+            fn is_valid_value(value: &serde_json::Value) -> bool #is_valid_value
+        };
+        let impl_ty = quote!(#name #lifetime);
+
         Type {
             def,
-            impl_ty: quote!(#name #lifetime),
+            lifetime,
+            impl_ty,
             impl_try_from_value: try_from,
+            impl_is_valid_value,
             impl_conversion,
         }
     }
@@ -168,7 +178,7 @@ impl<'a> TypeGenerator<'a> {
         };
 
         if let [value] = self.values {
-            return self.hoist(value, &derive, lifetime.as_ref());
+            return self.hoist(value, &derive, lifetime);
         }
 
         // we cannot hoist and therefore need to create an enum
@@ -177,7 +187,12 @@ impl<'a> TypeGenerator<'a> {
         // in the enum we could in theory name the variant by the name of the struct, problem here
         // is ofc that we would still need to name the other variants and then we have
         // potential name conflicts... Do we need to box on Ref and Mut self-referential?
-        let (body, try_from_variants, conversion): (Vec<_>, Vec<_>, Vec<_>) = self
+        let (body, try_from_variants, is_valid_value, conversion): (
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+        ) = self
             .values
             .iter()
             .enumerate()
@@ -188,6 +203,7 @@ impl<'a> TypeGenerator<'a> {
                 let PropertyValue {
                     body,
                     try_from,
+                    is_valid_value,
                     conversion,
                 } = PropertyValueGenerator {
                     id: self.id,
@@ -207,28 +223,46 @@ impl<'a> TypeGenerator<'a> {
                         #name #body
                     },
                     try_from,
+                    is_valid_value,
                     conversion,
                 )
             })
             .multiunzip();
 
-        let try_from = quote! {
-            let mut errors: Result<(), GenericPropertyError> = Ok(());
+        let deref = match self.variant {
+            Variant::Owned => quote!(&),
+            Variant::Ref => quote!(),
+            Variant::Mut => quote!(&*),
+        };
 
-            #(
-                let this = #try_from_variants;
+        let try_from_tries =
+            is_valid_value
+                .iter()
+                .zip(try_from_variants)
+                .map(|(is_valid_value, try_from)| {
+                    quote! {
+                        // LLVM is smart enough to optimize away the immediate function invocation
+                        // we use this to be able to use `return` in the generated code.
+                        let is_valid = (|value: &serde_json::value::Value| #is_valid_value)(#deref value);
 
-                match this {
-                    Ok(this) => return Ok(this),
-                    Err(error) => match &mut errors {
-                        Err(errors) => errors.extend_one(error),
-                        errors => *errors = Err(error)
+                        if is_valid {
+                            return #try_from;
+                        }
                     }
-                }
+                });
+
+        let try_from = quote! {
+            #(
+                #try_from_tries
             )*
 
-            errors?;
-            unreachable!();
+            Err(Report::new(GenericPropertyError::InvalidValue))
+        };
+
+        let is_valid_value = quote! {
+            fn is_valid_value(value: &serde_json::Value) -> bool {
+                true #(|| #is_valid_value)*
+            }
         };
 
         let name = self.name;
@@ -240,10 +274,14 @@ impl<'a> TypeGenerator<'a> {
             }
         };
 
+        let impl_ty = quote!(#name #lifetime);
+
         Type {
             def,
-            impl_ty: quote!(#name #lifetime),
+            lifetime,
+            impl_ty,
             impl_try_from_value: try_from,
+            impl_is_valid_value: is_valid_value,
             impl_conversion: self.impl_conversion(&conversion),
         }
     }

@@ -83,6 +83,10 @@ impl DataType for Boolean {
             Err(Report::new(BooleanError::NotABoolean(value)))
         }
     }
+
+    fn is_valid_value(value: &Value) -> bool {
+        value.is_boolean()
+    }
 }
 
 impl TypeRef for Boolean {
