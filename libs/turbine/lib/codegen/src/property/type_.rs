@@ -243,7 +243,7 @@ impl<'a> TypeGenerator<'a> {
                     quote! {
                         // LLVM is smart enough to optimize away the immediate function invocation
                         // we use this to be able to use `return` in the generated code.
-                        let is_valid = (|value| #is_valid_value)(#deref value);
+                        let is_valid = (|value: &serde_json::value::Value| #is_valid_value)(#deref value);
 
                         if is_valid {
                             return #try_from;

@@ -258,6 +258,7 @@ pub(crate) fn generate_properties_is_valid_value(
             },
         )| {
             let index = base.as_str();
+            let mut label = None;
 
             let access = quote!(let value = properties.get(#index););
 
@@ -268,6 +269,7 @@ pub(crate) fn generate_properties_is_valid_value(
             } else {
                 // the value is wrapped in `Option<>` and can be missing!
                 // therefore we break out of the block and continue with the next property
+                label = Some(quote!('property:));
                 quote! {
                     let Some(value) = value else { break 'property; };
                 }
@@ -295,7 +297,7 @@ pub(crate) fn generate_properties_is_valid_value(
             };
 
             quote! {
-                'property: {
+                #label {
                     #access
 
                     #unwrap

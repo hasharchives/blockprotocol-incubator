@@ -500,7 +500,7 @@ fn generate_owned(
             }
 
             fn is_valid_entity(value: &Entity) -> bool {
-                value.metadata.entity_type_id == Self::ID &&
+                Self::ID == value.metadata.entity_type_id &&
                     #(value.#link_data.is_some() &&)*
                     Properties::is_valid_value(&value.properties.0)
             }
