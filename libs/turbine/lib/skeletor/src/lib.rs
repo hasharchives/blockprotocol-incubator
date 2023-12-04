@@ -47,6 +47,7 @@ pub(crate) fn normalize_path(path: &Path) -> PathBuf {
 #[derive(Debug, Clone)]
 pub enum Dependency {
     Path(PathBuf),
+    Workspace,
     Git {
         url: String,
         rev: Option<String>,

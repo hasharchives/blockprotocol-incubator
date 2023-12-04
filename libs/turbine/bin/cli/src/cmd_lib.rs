@@ -197,6 +197,7 @@ fn call_remote(url: &Url, actor_id: Uuid) -> Result<Vec<AnyTypeRepr>, Error> {
 #[serde(tag = "type", content = "value", rename_all = "kebab-case")]
 pub enum Dependency {
     Path(PathBuf),
+    Workspace,
     Git {
         url: Url,
         rev: Option<String>,
@@ -222,6 +223,7 @@ impl From<Dependency> for skeletor::Dependency {
     fn from(value: Dependency) -> Self {
         match value {
             Dependency::Path(path) => Self::Path(path),
+            Dependency::Workspace => Self::Workspace,
             Dependency::Git {
                 url,
                 rev,
@@ -268,7 +270,7 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         name,
         force,
         timings,
-        actor_id
+        actor_id,
     } = lib;
 
     let mut figment = Figment::new();
@@ -313,7 +315,10 @@ pub(crate) fn load_config(lib: Lib) -> core::result::Result<Config, figment::Err
         figment = figment.merge(("timings", figment::value::Value::from(timings)));
     }
     if let Some(actor_id) = actor_id {
-        figment = figment.merge(("actor_id", figment::value::Value::from(actor_id.to_string())))
+        figment = figment.merge((
+            "actor_id",
+            figment::value::Value::from(actor_id.to_string()),
+        ))
     }
 
     if let Some(profile) = Profile::from_env("TURBINE_PROFILE") {

@@ -84,6 +84,7 @@ fn fetch_version(name: &str, timings: bool) -> Result<String, Error> {
 #[derive(Debug, Clone)]
 enum TurbineVersion {
     Path(String),
+    Workspace,
     Git {
         url: String,
         rev: Option<String>,
@@ -98,6 +99,7 @@ impl From<Dependency> for TurbineVersion {
     fn from(value: Dependency) -> Self {
         match value {
             Dependency::Path(path) => Self::Path(path.to_string_lossy().into_owned()),
+            Dependency::Workspace => Self::Workspace,
             Dependency::Git {
                 url,
                 rev,
@@ -120,6 +122,7 @@ impl Display for TurbineVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Path(path) => f.write_fmt(format_args!(r##"{{ path = "{path}" }}"##)),
+            Self::Workspace => f.write_str("{ workspace = true }"),
             Self::Git {
                 url,
                 rev,
