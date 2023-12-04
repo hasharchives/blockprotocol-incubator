@@ -54,6 +54,7 @@ pub enum Dependency {
         tag: Option<String>,
     },
     CratesIo,
+    Workspace,
 }
 
 impl Dependency {
