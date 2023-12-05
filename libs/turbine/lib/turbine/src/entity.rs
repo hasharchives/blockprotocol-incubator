@@ -128,6 +128,7 @@ pub struct EntityMetadata {
     pub entity_type_id: VersionedUrl,
     pub provenance: ProvenanceMetadata,
     pub archived: bool,
+    pub draft: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
